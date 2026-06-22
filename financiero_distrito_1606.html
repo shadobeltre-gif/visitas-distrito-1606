@@ -320,9 +320,14 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="sb-sec">Principal</div>
   <button class="nb active" onclick="nav('dashboard',this)"><span class="ni">📊</span>Dashboard</button>
   <div class="sb-sec">Transacciones</div>
-  <button class="nb" onclick="nav('cheques',this)"><span class="ni">🧾</span>Emisión de Cheques</button>
-  <button class="nb" onclick="nav('ingresos',this)"><span class="ni">💵</span>Registro de Ingresos</button>
-  <button class="nb" onclick="nav('libro',this)"><span class="ni">📒</span>Libro Banco</button>
+  <button class="nb-grupo" id="grupo-trans-btn" onclick="toggleGrupoSidebar('trans')">
+    <span class="ni">🧾</span>Transacciones<span class="chev">▸</span>
+  </button>
+  <div class="sub-menu" id="grupo-trans-sub">
+    <button class="nb" onclick="nav('cheques',this)"><span class="ni">🧾</span>Emisión de Cheques</button>
+    <button class="nb" onclick="nav('ingresos',this)"><span class="ni">💵</span>Registro de Ingresos</button>
+    <button class="nb" onclick="nav('libro',this)"><span class="ni">📒</span>Libro Banco</button>
+  </div>
   <div class="sb-sec sec-vt">Visitas Técnicas</div>
   <button class="nb-grupo nb-vt" id="grupo-vt-btn" onclick="toggleGrupoSidebar('vt')">
     <span class="ni">📋</span>Visitas técnicas<span class="chev">▸</span>
@@ -330,6 +335,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="sub-menu" id="grupo-vt-sub">
     <button class="nb nb-vt" onclick="nav('cronograma-vt',this)"><span class="ni">🗓️</span>Mi cronograma</button>
     <button class="nb nb-vt" onclick="nav('visitas-tecnicas',this)"><span class="ni">📋</span>Fichas de visita</button>
+    <button class="nb nb-vt" onclick="nav('manual-tecnico-vt',this)"><span class="ni">📖</span>Cómo usar el sistema</button>
     <button class="nb admin-only" onclick="nav('cronograma-vt-admin',this)"><span class="ni">🗓️</span>Cronogramas (todos)</button>
     <button class="nb admin-only" onclick="nav('aprobaciones-vt',this)"><span class="ni">✅</span>Aprobaciones</button>
     <button class="nb admin-only" onclick="nav('dietas-vt',this)"><span class="ni">💰</span>Dietas técnicos</button>
@@ -346,8 +352,13 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <button class="nb" onclick="nav('centros',this)"><span class="ni">🏫</span>Centros Auxiliares</button>
   </div>
   <div class="sb-sec">Reportes</div>
-  <button class="nb" onclick="nav('reportes',this)"><span class="ni">📈</span>Reportes</button>
-  <button class="nb" onclick="nav('catalogos',this)"><span class="ni">📋</span>Catálogos</button>
+  <button class="nb-grupo" id="grupo-reportes-btn" onclick="toggleGrupoSidebar('reportes')">
+    <span class="ni">📈</span>Reportes y catálogos<span class="chev">▸</span>
+  </button>
+  <div class="sub-menu" id="grupo-reportes-sub">
+    <button class="nb" onclick="nav('reportes',this)"><span class="ni">📈</span>Reportes</button>
+    <button class="nb" onclick="nav('catalogos',this)"><span class="ni">📋</span>Catálogos</button>
+  </div>
   <div class="sb-sec admin-only-sec">Admin</div>
   <button class="nb-grupo admin-only" id="grupo-admin-btn" onclick="toggleGrupoSidebar('admin')">
     <span class="ni">⚙️</span>Administración<span class="chev">▸</span>
@@ -451,6 +462,90 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 
 <!-- ════════════════ VISITAS TÉCNICAS ════════════════ -->
 <!-- CRONOGRAMA SEMANAL (TECNICO) -->
+<!-- MANUAL DEL TÉCNICO -->
+<div id="page-manual-tecnico-vt" class="page">
+  <div class="page-hdr"><h2>📖 Cómo usar el sistema</h2><div class="phd-act"><button class="btn btn-navy btn-sm" onclick="window.print()">🖨️ Imprimir</button></div></div>
+
+  <div class="card" style="border-left:4px solid #0ea5e9">
+    <p style="font-size:13px;color:var(--text2);line-height:1.8">Esta guía te explica, paso a paso, cómo usar el sistema desde tu celular: planificar tus visitas de la semana y subir tu ficha después de cada acompañamiento.</p>
+  </div>
+
+  <div class="card">
+    <div class="chdr">1️⃣ Cómo entrar al sistema</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.9">
+      <ol style="padding-left:1.25rem">
+        <li>En la pantalla de inicio, toca la pestaña <strong>"Técnico distrital"</strong></li>
+        <li>Escribe tu <strong>cédula</strong> (con o sin guiones)</li>
+        <li><strong>La primera vez:</strong> el sistema te dará la bienvenida y te pedirá crear tu propia contraseña. Escríbela dos veces para confirmarla</li>
+        <li><strong>Las próximas veces:</strong> solo escribe tu cédula y tu contraseña</li>
+      </ol>
+      <div style="margin-top:1rem;padding:10px 14px;background:var(--amber-bg);border-radius:8px;font-size:12px;color:var(--amber)">
+        ⚠️ Tu contraseña la creas tú y solo la sabes tú. Si la olvidas, pide a contabilidad que te ayude a restablecerla.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">2️⃣ Planificar tu cronograma de la semana</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.9">
+      <p style="margin-bottom:.75rem">Antes de salir a visitar un centro, primero lo planificas aquí. Ve a <strong>"Mi cronograma"</strong> → <strong>"+ Planificar visita"</strong>.</p>
+      <ul style="padding-left:1.25rem;margin-bottom:.75rem">
+        <li style="margin-bottom:.4rem"><strong>Acompañamiento pedagógico:</strong> solo puedes planificarlo <strong>martes, miércoles o jueves</strong>, y máximo <strong>3 veces por semana</strong></li>
+        <li style="margin-bottom:.4rem"><strong>Supervisión u otro trabajo:</strong> puedes elegir cualquier día, pero debes describir qué actividad vas a realizar</li>
+      </ul>
+      <p>Si necesitas eliminar una visita planificada que aún no has realizado, toca la ✕ junto a ella.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">3️⃣ Subir tu ficha después de la visita</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.9">
+      <p style="margin-bottom:.75rem">Después de que el director firme y selle tu ficha en papel, regístrala en el sistema. Ve a <strong>"Fichas de visita"</strong> → <strong>"+ Nueva ficha"</strong>.</p>
+      <ol style="padding-left:1.25rem;margin-bottom:.75rem">
+        <li>Selecciona el <strong>centro</strong> educativo</li>
+        <li>Selecciona la <strong>fecha</strong> real en que hiciste la visita</li>
+        <li>Selecciona el <strong>tipo de trabajo</strong></li>
+        <li><strong>Toma una foto clara</strong> de la ficha firmada y sellada (o sube una imagen)</li>
+        <li>Toca <strong>"Guardar"</strong></li>
+      </ol>
+      <div style="padding:10px 14px;background:var(--amber-bg);border-radius:8px;font-size:12px;color:var(--amber)">
+        ⚠️ Si la fecha no coincide con lo que planificaste para ese centro, el sistema te pedirá escribir una <strong>observación</strong> explicando por qué cambió. Es obligatorio para poder guardar.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">4️⃣ Qué pasa después</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.9">
+      <ul style="padding-left:1.25rem">
+        <li style="margin-bottom:.4rem">Tu ficha queda en estado <strong>"Pendiente"</strong> hasta que el distrito la revise</li>
+        <li style="margin-bottom:.4rem">Si la <strong>aprueban</strong>, tu dieta queda lista para pago</li>
+        <li style="margin-bottom:.4rem">Si la <strong>rechazan</strong>, contacta al distrito para saber por qué</li>
+        <li style="margin-bottom:.4rem">Cuando te paguen, tu ficha pasa a estado <strong>"Pagada"</strong></li>
+      </ul>
+      <p style="margin-top:.75rem">Entrega también tu ficha física en papel a contabilidad, junto con tu cronograma, para completar tu expediente.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">❓ Preguntas frecuentes</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+      <p style="margin-bottom:.5rem"><strong style="color:var(--navy)">¿Puedo ver las fichas de otros técnicos?</strong><br>No, solo ves tus propias fichas y tu propio cronograma.</p>
+      <p style="margin-bottom:.5rem;margin-top:.75rem"><strong style="color:var(--navy)">¿Cuánto es mi dieta por visita?</strong><br>Depende del centro que visites — varía según la zona o distancia. Contabilidad puede confirmarte el monto exacto de cada centro.</p>
+      <p style="margin-bottom:.5rem;margin-top:.75rem"><strong style="color:var(--navy)">¿Qué hago si me equivoco al subir una ficha?</strong><br>Contacta a contabilidad para que la corrija o elimine.</p>
+      <p style="margin-top:.75rem"><strong style="color:var(--navy)">¿Necesito internet todo el tiempo?</strong><br>Sí, necesitas conexión para iniciar sesión y guardar tus fichas y cronograma.</p>
+    </div>
+  </div>
+
+  <div class="card" style="background:var(--navy);color:#fff;border-color:var(--navy)">
+    <p style="font-size:12px;color:#7fa8d4;text-align:center">
+      Sistema Financiero — Distrito Educativo 16-06 Bonao Nordeste<br>
+      Guía para Técnicos Distritales<br><br>
+      <span style="color:#a0c4e8">💻 Desarrollador: <strong style="color:#fff">EMETERIO BELTRE TINEO</strong> — 📞 809-773-1320</span>
+    </p>
+  </div>
+</div>
+
 <div id="page-cronograma-vt" class="page">
   <div class="page-hdr"><h2>🗓️ Mi Cronograma Semanal</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCronogramaVT()">+ Planificar visita</button></div></div>
   <div class="card" style="border-left:4px solid var(--blue2)">
@@ -461,8 +556,11 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div class="ttbar">
       <input type="week" id="q-cron-semana" onchange="filtrarCronogramaVT()"/>
     </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
+      <button class="btn btn-danger btn-xs" id="btn-del-cronograma" style="display:none" onclick="eliminarSeleccionados('cronograma','chk-cron')">🗑️ Eliminar seleccionados</button>
+    </div>
     <div class="twrap"><table>
-      <thead><tr><th>Fecha</th><th>Día</th><th>Centro</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <thead><tr><th><input type="checkbox" onclick="selTodo('chk-cron',this)" style="width:16px;height:16px"/></th><th>Fecha</th><th>Día</th><th>Centro</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody id="tb-cron-vt"></tbody>
     </table></div>
   </div>
@@ -500,8 +598,11 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       </select>
       <input type="month" id="q-vt-mes" onchange="filtrarFichasVT()"/>
     </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem;display:flex;gap:8px;align-items:center">
+      <button class="btn btn-danger btn-xs admin-only" id="btn-del-fichas" style="display:none" onclick="eliminarSeleccionados('fichas','chk-fic')">🗑️ Eliminar seleccionados</button>
+    </div>
     <div class="twrap"><table>
-      <thead><tr><th>Fecha</th><th>Técnico</th><th>Centro</th><th>Tipo</th><th>Foto</th><th>Estado</th><th>Monto</th><th>Acciones</th></tr></thead>
+      <thead><tr><th class="admin-only"><input type="checkbox" onclick="selTodo('chk-fic',this)" style="width:16px;height:16px"/></th><th>Fecha</th><th>Técnico</th><th>Centro</th><th>Tipo</th><th>Foto</th><th>Estado</th><th>Monto</th><th>Acciones</th></tr></thead>
       <tbody id="tb-vt-fichas"></tbody>
     </table></div>
   </div>
@@ -545,6 +646,10 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div></div>
   <div class="card">
     <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Cada técnico ingresa al sistema con su cédula. Aquí solo registras sus datos básicos — la contraseña la crea él mismo la primera vez que inicia sesión.</p>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;display:flex;align-items:center;gap:8px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" onclick="selTodo('chk-tecvt',this)" style="width:16px;height:16px"/> Seleccionar todos</label>
+      <button class="btn btn-danger btn-xs" id="btn-del-tecnicos" style="display:none" onclick="eliminarSeleccionados('tecnicos','chk-tecvt')">🗑️ Eliminar seleccionados</button>
+    </div>
     <div id="tecvt-list"></div>
   </div>
 </div>
@@ -573,6 +678,9 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <div id="page-ajustes" class="page">
   <div class="page-hdr"><h2>⚖️ Ajustes Contables</h2><div class="phd-act"><button class="btn btn-primary" onclick="openMod('m-ajuste')">+ Nuevo ajuste</button></div></div>
   <div class="card">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
+      <button class="btn btn-danger btn-xs" id="btn-del-ajustes" style="display:none" onclick="eliminarSeleccionados('ajustes','chk-aj')">🗑️ Eliminar seleccionados</button>
+    </div>
     <div class="twrap"><table>
       <thead><tr><th><input type="checkbox" onclick="selTodo('chk-aj',this)" style="width:16px;height:16px;cursor:pointer"/></th><th>#</th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Monto</th><th>Registrado por</th><th>Acciones</th></tr></thead>
       <tbody id="tb-ajustes"></tbody>
@@ -584,6 +692,9 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <div id="page-centros" class="page">
   <div class="page-hdr"><h2>🏫 Centros Educativos Auxiliares</h2><div class="phd-act"><button class="btn btn-primary" onclick="openMod('m-centro')">+ Nuevo centro</button></div></div>
   <div class="card">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
+      <button class="btn btn-danger btn-xs" id="btn-del-centros" style="display:none" onclick="eliminarSeleccionados('centros','chk-cen')">🗑️ Eliminar seleccionados</button>
+    </div>
     <div class="twrap"><table>
       <thead><tr><th><input type="checkbox" onclick="selTodo('chk-cen',this)" style="width:16px;height:16px;cursor:pointer"/></th><th>Código</th><th>Nombre del centro</th><th>Director</th><th>Zona</th><th>Acciones</th></tr></thead>
       <tbody id="tb-centros"></tbody>
@@ -777,17 +888,17 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem">
     <div class="card">
       <div class="chdr">👤 Beneficiarios</div>
-      <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-beneficiario')">+ Agregar</button></div>
+      <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-beneficiario')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-beneficiarios" style="display:none" onclick="eliminarSeleccionados('beneficiarios','chk-ben')">🗑️ Eliminar</button></div>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-ben',this)" style="width:16px;height:16px"/></th><th>Nombre</th><th>RNC/Cédula</th><th>Dirección</th><th>Acciones</th></tr></thead><tbody id="tb-beneficiarios"></tbody></table></div>
     </div>
     <div class="card">
       <div class="chdr">🏷️ Rubros de gasto (SIGEF)</div>
-      <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-rubro')">+ Agregar</button></div>
+      <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-rubro')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-rubros" style="display:none" onclick="eliminarSeleccionados('rubros','chk-rub')">🗑️ Eliminar</button></div>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-rub',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="tb-rubros"></tbody></table></div>
     </div>
     <div class="card">
       <div class="chdr">💰 Fuentes de ingreso</div>
-      <div class="ttbar"><button class="btn btn-success btn-sm" onclick="openMod('m-fuente')">+ Agregar</button></div>
+      <div class="ttbar"><button class="btn btn-success btn-sm" onclick="openMod('m-fuente')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-fuentes" style="display:none" onclick="eliminarSeleccionados('fuentes','chk-fue')">🗑️ Eliminar</button></div>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-fue',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="tb-fuentes"></tbody></table></div>
     </div>
   </div>
@@ -795,7 +906,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 
 <!-- USUARIOS -->
 <div id="page-usuarios" class="page">
-  <div class="page-hdr"><h2>👥 Usuarios del sistema</h2><div class="phd-act"><button class="btn btn-primary" onclick="nuevoUsuario()">+ Agregar usuario</button></div></div>
+  <div class="page-hdr"><h2>👥 Usuarios del sistema</h2><div class="phd-act"><button class="btn btn-primary" onclick="nuevoUsuario()">+ Agregar usuario</button><button class="btn btn-danger btn-xs" id="btn-del-usuarios" style="display:none" onclick="eliminarSeleccionados('usuarios','chk-usr')">🗑️ Eliminar seleccionados</button></div></div>
   <div class="card"><div id="usr-list"></div></div>
 </div>
 
@@ -942,6 +1053,35 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     </div>
   </div>
 
+  <div class="card" style="border-left:4px solid #0ea5e9">
+    <div class="chdr">🔟 Módulo de Visitas Técnicas</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+      <p style="margin-bottom:.75rem">Controla las visitas de acompañamiento pedagógico de los técnicos distritales a los centros educativos, calcula sus dietas y genera los cheques de pago. Los técnicos tienen su propio manual simplificado dentro de su sesión.</p>
+
+      <p style="margin-bottom:.5rem"><strong style="color:var(--navy)">🪪 Técnicos Distritales — crear un técnico nuevo</strong></p>
+      <ol style="padding-left:1.25rem;margin-bottom:1rem;line-height:2">
+        <li>Ir a <strong>Visitas técnicas ▸ Técnicos distritales</strong></li>
+        <li>Clic en <strong>"+ Agregar técnico"</strong> — completar nombre, cédula y cargo</li>
+        <li>El técnico entra al sistema con su <strong>cédula</strong> (pestaña "Técnico distrital" en el login). La primera vez, él mismo crea su contraseña directamente ahí — tú no la asignas</li>
+        <li>Para muchos técnicos a la vez, usa <strong>"⬆️ Importar Excel/CSV"</strong> con columnas Nombre, Cédula y Cargo</li>
+      </ol>
+
+      <p style="margin-bottom:.5rem"><strong style="color:var(--navy)">🗓️ Cronograma semanal</strong></p>
+      <p style="margin-bottom:.75rem">Cada técnico planifica sus visitas antes de salir. El <strong>acompañamiento pedagógico</strong> solo se puede planificar martes, miércoles o jueves, máximo 3 por semana. Para supervisión u otro trabajo, cualquier día, pero debe describir la actividad. Tú ves la planificación de todos en <strong>Cronogramas (todos)</strong>.</p>
+
+      <p style="margin-bottom:.5rem"><strong style="color:var(--navy)">📋 Fichas de visita y aprobación</strong></p>
+      <p style="margin-bottom:.75rem">El técnico sube la foto de la ficha firmada y sellada por el director. Si la fecha real no coincide con lo planificado, el sistema le exige una observación explicando el cambio (se marca con ⚠️). Tú revisas la foto en <strong>Aprobaciones</strong> y apruebas o rechazas.</p>
+
+      <p style="margin-bottom:.5rem"><strong style="color:var(--navy)">💰 Dietas y generación de cheques</strong></p>
+      <p style="margin-bottom:.5rem">El monto de la dieta depende del centro visitado (configurable en <strong>Centros Auxiliares</strong> → campo "Monto de dieta"). En <strong>Dietas técnicos</strong> tienes dos formas de pagar:</p>
+      <ul style="padding-left:1.25rem;margin-bottom:.75rem">
+        <li><strong>Cheque individual</strong> — un cheque por técnico, con el total de sus fichas aprobadas</li>
+        <li><strong>Cheque consolidado</strong> — marca con checkbox a varios técnicos, clic en "Generar cheque consolidado", y se crea un solo cheque por el total de todos. El sistema guarda internamente cuánto le corresponde a cada uno, para cuando lleguen los comprobantes bancarios y se archiven en los expedientes individuales</li>
+      </ul>
+      <p>En ambos casos, el cheque se genera dentro del módulo oficial de <strong>Emisión de Cheques</strong> — no se crea por fuera. Al guardar, las fichas correspondientes quedan marcadas automáticamente como "pagadas".</p>
+    </div>
+  </div>
+
   <div class="card" style="background:var(--navy);color:#fff;border-color:var(--navy)">
     <p style="font-size:12px;color:#7fa8d4;text-align:center">
       Sistema Financiero — Distrito Educativo 16-06 Bonao Nordeste<br>
@@ -1051,9 +1191,14 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div style="padding:8px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#3d6a9a;text-transform:uppercase">Principal</div>
       <button class="drawer-btn-fin active" onclick="nav('dashboard',null);cerrarDrawerFin();setDAFin(this)"><span>📊</span>Dashboard</button>
       <div style="padding:8px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#3d6a9a;text-transform:uppercase">Transacciones</div>
-      <button class="drawer-btn-fin" onclick="nav('cheques',null);cerrarDrawerFin();setDAFin(this)"><span>🧾</span>Emisión de Cheques</button>
-      <button class="drawer-btn-fin" onclick="nav('ingresos',null);cerrarDrawerFin();setDAFin(this)"><span>💵</span>Registro de Ingresos</button>
-      <button class="drawer-btn-fin" onclick="nav('libro',null);cerrarDrawerFin();setDAFin(this)"><span>📒</span>Libro Banco</button>
+      <button class="drawer-grupo" id="dgrupo-trans-btn" onclick="toggleDrawerGrupo('trans')">
+        <span>🧾</span>Transacciones<span class="chev">▸</span>
+      </button>
+      <div class="drawer-sub" id="dgrupo-trans-sub">
+        <button class="drawer-btn-fin" onclick="nav('cheques',null);cerrarDrawerFin();setDAFin(this)"><span>🧾</span>Emisión de Cheques</button>
+        <button class="drawer-btn-fin" onclick="nav('ingresos',null);cerrarDrawerFin();setDAFin(this)"><span>💵</span>Registro de Ingresos</button>
+        <button class="drawer-btn-fin" onclick="nav('libro',null);cerrarDrawerFin();setDAFin(this)"><span>📒</span>Libro Banco</button>
+      </div>
       <div style="padding:8px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#3d6a9a;text-transform:uppercase" class="sec-vt">Visitas Técnicas</div>
       <button class="drawer-grupo dr-vt" id="dgrupo-vt-btn" onclick="toggleDrawerGrupo('vt')">
         <span>📋</span>Visitas técnicas<span class="chev">▸</span>
@@ -1061,6 +1206,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div class="drawer-sub" id="dgrupo-vt-sub">
         <button class="drawer-btn-fin dr-vt" onclick="nav('cronograma-vt',null);cerrarDrawerFin();setDAFin(this)"><span>🗓️</span>Mi cronograma</button>
         <button class="drawer-btn-fin dr-vt" onclick="nav('visitas-tecnicas',null);cerrarDrawerFin();setDAFin(this)"><span>📋</span>Fichas de visita</button>
+        <button class="drawer-btn-fin dr-vt" onclick="nav('manual-tecnico-vt',null);cerrarDrawerFin();setDAFin(this)"><span>📖</span>Cómo usar el sistema</button>
         <button class="drawer-btn-fin drawer-admin-fin" onclick="nav('cronograma-vt-admin',null);cerrarDrawerFin();setDAFin(this)"><span>🗓️</span>Cronogramas (todos)</button>
         <button class="drawer-btn-fin drawer-admin-fin" onclick="nav('aprobaciones-vt',null);cerrarDrawerFin();setDAFin(this)"><span>✅</span>Aprobaciones</button>
         <button class="drawer-btn-fin drawer-admin-fin" onclick="nav('dietas-vt',null);cerrarDrawerFin();setDAFin(this)"><span>💰</span>Dietas técnicos</button>
@@ -1077,8 +1223,13 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
         <button class="drawer-btn-fin" onclick="nav('centros',null);cerrarDrawerFin();setDAFin(this)"><span>🏫</span>Centros Auxiliares</button>
       </div>
       <div style="padding:8px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#3d6a9a;text-transform:uppercase">Reportes</div>
-      <button class="drawer-btn-fin" onclick="nav('reportes',null);cerrarDrawerFin();setDAFin(this)"><span>📈</span>Reportes Oficiales</button>
-      <button class="drawer-btn-fin" onclick="nav('catalogos',null);cerrarDrawerFin();setDAFin(this)"><span>📋</span>Catálogos</button>
+      <button class="drawer-grupo" id="dgrupo-reportes-btn" onclick="toggleDrawerGrupo('reportes')">
+        <span>📈</span>Reportes y catálogos<span class="chev">▸</span>
+      </button>
+      <div class="drawer-sub" id="dgrupo-reportes-sub">
+        <button class="drawer-btn-fin" onclick="nav('reportes',null);cerrarDrawerFin();setDAFin(this)"><span>📈</span>Reportes Oficiales</button>
+        <button class="drawer-btn-fin" onclick="nav('catalogos',null);cerrarDrawerFin();setDAFin(this)"><span>📋</span>Catálogos</button>
+      </div>
       <div style="padding:8px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#3d6a9a;text-transform:uppercase" class="drawer-admin-fin">Admin</div>
       <button class="drawer-grupo drawer-admin-fin" id="dgrupo-admin-btn" onclick="toggleDrawerGrupo('admin')">
         <span>⚙️</span>Administración<span class="chev">▸</span>
@@ -1721,8 +1872,10 @@ async function nav(id,btn){
 // GRUPOS DESPLEGABLES DEL SIDEBAR
 // ═══════════════════════════════════════════════
 const GRUPOS_SIDEBAR={
-  vt:['cronograma-vt','visitas-tecnicas','cronograma-vt-admin','aprobaciones-vt','dietas-vt','tecnicos-vt-admin'],
+  trans:['cheques','ingresos','libro'],
+  vt:['cronograma-vt','visitas-tecnicas','manual-tecnico-vt','cronograma-vt-admin','aprobaciones-vt','dietas-vt','tecnicos-vt-admin'],
   gestion:['transferencias','conciliacion','ajustes','centros'],
+  reportes:['reportes','catalogos'],
   admin:['usuarios','manual-fin','config-fin']
 };
 function toggleGrupoSidebar(nombre){
@@ -1772,7 +1925,13 @@ function toggleDrawerGrupo(nombre){
 function selTodo(cls,chk){
   document.querySelectorAll('.'+cls).forEach(c=>c.checked=chk.checked);
   // Actualizar botones bulk según la clase
-  const mapa={'chk-cheq':'btn-del-cheques','chk-ing':'btn-del-ingresos'};
+  const mapa={
+    'chk-cheq':'btn-del-cheques','chk-ing':'btn-del-ingresos',
+    'chk-fic':'btn-del-fichas','chk-cron':'btn-del-cronograma','chk-tecvt':'btn-del-tecnicos',
+    'chk-aj':'btn-del-ajustes','chk-cen':'btn-del-centros',
+    'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
+    'chk-usr':'btn-del-usuarios'
+  };
   if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls]);
 }
 async function actualizarBtnBulk(cls,btnId){
@@ -1784,10 +1943,25 @@ async function eliminarSeleccionados(tabla,cls){
   const ids=[...document.querySelectorAll('.'+cls+':checked')].map(c=>c.value);
   if(!ids.length) return;
   if(!confirm('¿Eliminar '+ids.length+' registros seleccionados? Esta acción no se puede deshacer.')) return;
-  const tablaMap={cheques:'cheques_fin',ingresos:'ingresos_fin'};
+  const tablaMap={
+    cheques:'cheques_fin',ingresos:'ingresos_fin',
+    fichas:'visitas_vt',cronograma:'cronograma_vt',tecnicos:'tecnicos_vt',
+    ajustes:'ajustes_fin',centros:'centros_fin',
+    beneficiarios:'beneficiarios_fin',rubros:'rubros_fin',fuentes:'fuentes_fin',
+    usuarios:'usuarios_fin'
+  };
   for(const id of ids) await sb.from(tablaMap[tabla]).delete().eq('id',id);
   if(tabla==='cheques'){ await cargarChequesFin(); renderCheques(); }
   if(tabla==='ingresos'){ await cargarIngresosFin(); renderIngresos(); }
+  if(tabla==='fichas'){ await cargarVisitasVT(); renderFichasVT(); }
+  if(tabla==='cronograma'){ await cargarCronogramaVT(); renderCronogramaVT(); }
+  if(tabla==='tecnicos'){ await cargarTecnicosVT(); renderTecnicosVTAdmin(); }
+  if(tabla==='ajustes'){ await cargarAjustesFin(); renderAjustes(); }
+  if(tabla==='centros'){ await cargarCentrosFin(); renderCentros(); }
+  if(tabla==='beneficiarios'){ await cargarBeneficiarios(); renderCatalogos(); }
+  if(tabla==='rubros'){ await cargarRubros(); renderCatalogos(); }
+  if(tabla==='fuentes'){ await cargarFuentes(); renderCatalogos(); }
+  if(tabla==='usuarios'){ await cargarUsuariosFin(); renderUsuarios(); }
   cargarDashboard();
 }
 
@@ -2465,6 +2639,7 @@ function filtrarCronogramaVT(){
   if(!tbody) return;
   tbody.innerHTML=lista.map(c=>`
     <tr>
+      <td>${c.estado==='planificada'?`<input type="checkbox" class="chk-cron" value="${c.id}" onclick="actualizarBtnBulk('chk-cron','btn-del-cronograma')" style="width:16px;height:16px"/>`:''}</td>
       <td>${fechaHVT(c.fecha)}</td>
       <td>${nombreDiaVT(c.fecha)}</td>
       <td>${nombreCentroVT(c.centro_id)}</td>
@@ -2473,7 +2648,7 @@ function filtrarCronogramaVT(){
       <td>${badgeEstadoCronoVT(c.estado)}</td>
       <td>${c.estado==='planificada'?`<button class="btn btn-danger btn-sm" onclick="eliminarCronogramaVT('${c.id}')">✕</button>`:'—'}</td>
     </tr>
-  `).join('') || `<tr><td colspan="7" class="erow">No hay visitas planificadas. Usa "+ Planificar visita" para agregar.</td></tr>`;
+  `).join('') || `<tr><td colspan="8" class="erow">No hay visitas planificadas. Usa "+ Planificar visita" para agregar.</td></tr>`;
 }
 
 function renderCronogramaAdminVT(){
@@ -2548,16 +2723,17 @@ function filtrarFichasVT(){
   if(!tbody) return;
   tbody.innerHTML=lista.map(v=>`
     <tr>
+      <td class="admin-only"><input type="checkbox" class="chk-fic" value="${v.id}" onclick="actualizarBtnBulk('chk-fic','btn-del-fichas')" style="width:16px;height:16px"/></td>
       <td>${fechaHVT(v.fecha)}</td>
       <td>${nombreTecnicoVT(v.tecnico_id)}</td>
       <td>${nombreCentroVT(v.centro_id)}</td>
       <td>${v.tipo||'—'}${v.fuera_de_cronograma?' <span title="No coincide con el cronograma planificado" style="color:var(--amber2)">⚠️</span>':''}</td>
       <td>${v.foto_url?'📷':'<span style="color:var(--text3)">Sin foto</span>'}</td>
       <td>${badgeVT(v.estado)}</td>
-      <td>${v.estado==='pendiente'?'—':RD(MONTO_DIETA_VT)}</td>
+      <td>${v.estado==='pendiente'?'—':RD(montoDietaCentro(v.centro_id))}</td>
       <td><button class="btn btn-sm" onclick="verFichaVT('${v.id}')">Ver</button></td>
     </tr>
-  `).join('') || `<tr><td colspan="8" class="erow">No hay fichas registradas con estos filtros.</td></tr>`;
+  `).join('') || `<tr><td colspan="9" class="erow">No hay fichas registradas con estos filtros.</td></tr>`;
 }
 
 function openNuevaFichaVT(){
@@ -3578,18 +3754,6 @@ function nuevoUsuario(){
   document.getElementById('m-usr-hdr').childNodes[0].textContent='👤 Nuevo Usuario';
   hide('usr-err'); openMod('m-usuario');
 }
-function renderUsuarios(){
-  const el=document.getElementById('usr-list');
-  el.innerHTML=USERS_FIN.map(u=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
-    <div style="width:42px;height:42px;border-radius:50%;background:${u.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${u.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
-    <div style="flex:1"><strong style="color:var(--navy)">${u.nombre}</strong><div style="font-size:12px;color:var(--text2)">@${u.user}</div></div>
-    <span class="badge ${u.rol==='admin'?'b-con':u.rol==='supervisor'?'b-act':u.rol==='tecnico'?'b-act':'b-pen'}">${u.rol==='admin'?'👑 Admin':u.rol==='supervisor'?'👤 Supervisor':u.rol==='tecnico'?'📋 Técnico':'👁️ Auxiliar'}</span>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-sm" onclick="editarUsuario('${u.id}')">✏️</button>
-      ${u.id!==CU.id?`<button class="btn btn-danger btn-sm" onclick="eliminarUsuario('${u.id}')">✕</button>`:''}
-    </div>
-  </div>`).join('');
-}
 function nuevoUsuario(){
   sv('usr-eid',''); sv('usr-nombre',''); sv('usr-user',''); sv('usr-pass','');
   ssv('usr-rol','auxiliar'); ssv('usr-color','#1976d2');
@@ -3599,6 +3763,7 @@ function nuevoUsuario(){
 function renderUsuarios(){
   const el=document.getElementById('usr-list');
   el.innerHTML=USERS_FIN.map(u=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
+    ${u.id!==CU.id?`<input type="checkbox" class="chk-usr" value="${u.id}" onclick="actualizarBtnBulk('chk-usr','btn-del-usuarios')" style="width:16px;height:16px;flex-shrink:0"/>`:'<span style="width:16px;flex-shrink:0"></span>'}
     <div style="width:42px;height:42px;border-radius:50%;background:${u.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${u.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
     <div style="flex:1"><strong style="color:var(--navy)">${u.nombre}</strong><div style="font-size:12px;color:var(--text2)">@${u.user}</div></div>
     <span class="badge ${u.rol==='admin'?'b-con':u.rol==='supervisor'?'b-act':'b-pen'}">${u.rol==='admin'?'👑 Admin':u.rol==='supervisor'?'👤 Supervisor':'👁️ Auxiliar'}</span>
@@ -3682,6 +3847,7 @@ function renderTecnicosVTAdmin(){
   const el=document.getElementById('tecvt-list');
   if(!el) return;
   el.innerHTML=TECNICOS_VT.map(t=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
+    <input type="checkbox" class="chk-tecvt" value="${t.id}" onclick="actualizarBtnBulk('chk-tecvt','btn-del-tecnicos')" style="width:16px;height:16px;flex-shrink:0"/>
     <div style="width:42px;height:42px;border-radius:50%;background:#0ea5e9;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
     <div style="flex:1"><strong style="color:var(--navy)">${t.nombre}</strong><div style="font-size:12px;color:var(--text2)">${t.cedula||'—'} · ${t.cargo||'—'}</div></div>
     <span class="badge ${t.activo!==false?'b-act':'b-anu'}">${t.activo!==false?'Activo':'Inactivo'}</span>
