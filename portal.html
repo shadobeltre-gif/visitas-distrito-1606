@@ -371,7 +371,13 @@ input{font-family:inherit}
       <div class="lf"><label>Usuario</label><input type="text" id="up-usuario" placeholder="ej. mperez"></div>
       <div class="lf"><label>Contraseña</label><input type="password" id="up-pass" placeholder="Mínimo 4 caracteres"></div>
       <div class="lf"><label>Nombre completo</label><input type="text" id="up-nombre"></div>
-      <div class="lf"><label>Rol / cargo</label><input type="text" id="up-rol" value="Administrativo"></div>
+      <div class="lf"><label>Rol / cargo</label>
+        <select id="up-rol-select" onchange="togglerolPersonalizadoPortal()" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);background:var(--surface2);">
+          <option>Administrativo</option><option>Director Distrital</option><option>Analista RRHH</option>
+          <option>Secretaria</option><option>Contable</option><option>Supervisor</option><option value="__otro__">Otro (especificar)</option>
+        </select>
+        <input type="text" id="up-rol" style="display:none;margin-top:8px;" placeholder="Escribe el rol">
+      </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;font-weight:600;">
         <input type="checkbox" id="up-acceso-total" onchange="toggleAccesoTotalPortal()"> Acceso a todos los módulos del portal
       </label>
@@ -696,7 +702,19 @@ function abrirModalUsuarioPortal(u){
   document.getElementById('up-pass').value = '';
   document.getElementById('up-pass').placeholder = u ? 'Dejar en blanco para no cambiarla' : 'Mínimo 4 caracteres';
   document.getElementById('up-nombre').value = u?.nombre || '';
-  document.getElementById('up-rol').value = u?.rol || 'Administrativo';
+
+  const rolesPredefinidos = ['Administrativo','Director Distrital','Analista RRHH','Secretaria','Contable','Supervisor'];
+  const rolActual = u?.rol || 'Administrativo';
+  const selectRol = document.getElementById('up-rol-select');
+  if(rolesPredefinidos.includes(rolActual)){
+    selectRol.value = rolActual;
+    document.getElementById('up-rol').style.display = 'none';
+    document.getElementById('up-rol').value = rolActual;
+  } else {
+    selectRol.value = '__otro__';
+    document.getElementById('up-rol').style.display = 'block';
+    document.getElementById('up-rol').value = rolActual;
+  }
 
   const lista = document.getElementById('up-lista-modulos');
   lista.innerHTML = MODULOS.map(m=>`
@@ -725,14 +743,24 @@ function toggleAccesoTotalPortal(){
   document.querySelectorAll('.chk-permiso-portal').forEach(c=>{ c.disabled = total; if(total) c.checked = false; });
 }
 
+function togglerolPersonalizadoPortal(){
+  const esOtro = document.getElementById('up-rol-select').value === '__otro__';
+  const input = document.getElementById('up-rol');
+  input.style.display = esOtro ? 'block' : 'none';
+  if(!esOtro) input.value = document.getElementById('up-rol-select').value;
+  else input.value = '';
+}
+
 async function guardarUsuarioPortal(){
   const id = gv('up-id');
   const usuario = gv('up-usuario').trim().toLowerCase();
   const pass = gv('up-pass');
   const nombre = gv('up-nombre').trim();
-  const rol = gv('up-rol').trim() || 'Administrativo';
+  const rolSelect = gv('up-rol-select');
+  const rol = (rolSelect === '__otro__' ? gv('up-rol').trim() : rolSelect) || 'Administrativo';
 
   if(!usuario || !nombre){ alert('Usuario y nombre son obligatorios.'); return; }
+  if(rolSelect === '__otro__' && !gv('up-rol').trim()){ alert('Escribe el rol personalizado.'); return; }
   if(!id && !pass){ alert('La contraseña es obligatoria para un usuario nuevo.'); return; }
   if(pass && pass.length < 4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
   if(usuario === USUARIO_CREADOR_PORTAL){ alert('Ese nombre de usuario está reservado.'); return; }
