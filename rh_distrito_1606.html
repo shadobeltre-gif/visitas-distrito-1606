@@ -99,7 +99,6 @@ input,select,textarea{font-family:inherit;font-size:14px;}
 .btn-secundario{background:var(--gris-100);color:var(--gris-700);border:1px solid var(--gris-300);}
 .btn-secundario:hover{filter:brightness(.97);}
 .btn-rojo{background:var(--rojo-600);color:var(--blanco);}
-.btn-verde{background:var(--verde-600);color:var(--blanco);}
 .btn-chico{padding:6px 10px;font-size:12.5px;}
 .error-login{
   background:#fde9e9;color:var(--rojo-600);padding:10px 12px;border-radius:var(--radio);
@@ -219,7 +218,6 @@ tbody tr:hover{background:var(--gris-100);}
   background:#fbfbf9;border:1px solid var(--gris-300);padding:30px;border-radius:6px;font-family:'Times New Roman',Times,serif;
   font-size:14px;line-height:1.7;color:#1a1a1a;
 }
-.preview-telegrama .firma-img{font-style:italic;font-size:22px;color:#163f78;margin:6px 0;}
 
 .spinner{
   width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
@@ -287,6 +285,7 @@ tbody tr:hover{background:var(--gris-100);}
       <div class="sidebar-footer">
         <div class="nombre-usuario" id="nombre-usuario-sidebar">—</div>
         <div class="rol-usuario" id="rol-usuario-sidebar">—</div>
+        <button class="btn btn-secundario btn-chico" id="btn-compartir-sistema" style="width:100%;margin-bottom:8px;display:none;" onclick="abrirModalCompartir()">📤 Compartir sistema</button>
         <button class="btn btn-secundario btn-chico" style="width:100%;" onclick="cerrarSesion()">Cerrar sesión</button>
       </div>
     </aside>
@@ -308,6 +307,27 @@ tbody tr:hover{background:var(--gris-100);}
 
 <div class="toast-cont" id="toast-cont"></div>
 
+<div class="modal-fondo" id="modal-compartir">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header"><h3>Compartir sistema</h3>
+      <button class="modal-cerrar" onclick="cerrarModal('modal-compartir')">×</button></div>
+    <div class="modal-body">
+      <p class="texto-ayuda" style="margin-bottom:14px;">Comparte el acceso al Sistema de Recursos Humanos del Distrito 16-06.</p>
+      <div class="campo" style="margin-bottom:16px;">
+        <label>Link del sistema</label>
+        <input type="text" id="compartir-link" readonly style="background:var(--gris-100);">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-secundario" style="justify-content:flex-start;gap:10px;" onclick="compartirPor('whatsapp')">💬 WhatsApp</button>
+        <button class="btn btn-secundario" style="justify-content:flex-start;gap:10px;" onclick="compartirPor('facebook')">📘 Facebook</button>
+        <button class="btn btn-secundario" style="justify-content:flex-start;gap:10px;" onclick="compartirPor('telegram')">✈ Telegram</button>
+        <button class="btn btn-secundario" style="justify-content:flex-start;gap:10px;" onclick="compartirPor('email')">✉ Correo electrónico</button>
+        <button class="btn btn-primario" style="justify-content:flex-start;gap:10px;" onclick="compartirPor('copiar')">🔗 Copiar link</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ====================== CONFIG SUPABASE ====================== */
 const SUPABASE_URL = 'https://ejkvehnzjkxbymuvejoh.supabase.co';
@@ -315,7 +335,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let sesion = { tipo:null, usuario:null }; // tipo: 'admin' | 'tecnico'
-let vistaActual = 'panel';
+// Usuario administrativo autorizado a ver el botón "Compartir sistema" (en minúsculas).
+const USUARIO_CREADOR = 'admin';
 
 /* ====================== TOAST ====================== */
 function toast(msg, tipo=''){
@@ -395,6 +416,39 @@ function cerrarSesion(){
   document.getElementById('admin-clave').value = '';
 }
 
+/* ====================== COMPARTIR SISTEMA (solo usuario creador) ====================== */
+function abrirModalCompartir(){
+  document.getElementById('compartir-link').value = window.location.href;
+  abrirModal('modal-compartir');
+}
+
+function compartirPor(medio){
+  const url = window.location.href;
+  const mensaje = 'Sistema de Recursos Humanos — Distrito Educativo 16-06, Bonao Nordeste';
+  const textoCompleto = `${mensaje}\n${url}`;
+
+  if(medio === 'whatsapp'){
+    window.open(`https://wa.me/?text=${encodeURIComponent(textoCompleto)}`, '_blank');
+  } else if(medio === 'facebook'){
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+  } else if(medio === 'telegram'){
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(mensaje)}`, '_blank');
+  } else if(medio === 'email'){
+    window.location.href = `mailto:?subject=${encodeURIComponent(mensaje)}&body=${encodeURIComponent(textoCompleto)}`;
+  } else if(medio === 'copiar'){
+    navigator.clipboard.writeText(url).then(()=>{
+      toast('Link copiado al portapapeles.','exito');
+    }).catch(()=>{
+      const input = document.getElementById('compartir-link');
+      input.removeAttribute('readonly');
+      input.select();
+      document.execCommand('copy');
+      input.setAttribute('readonly', true);
+      toast('Link copiado al portapapeles.','exito');
+    });
+  }
+}
+
 /* ====================== SIDEBAR / MENU ====================== */
 const MENU_ADMIN = [
   { grupo:'General', items:[
@@ -426,6 +480,12 @@ const MENU_ADMIN = [
   { grupo:'Nómina MINERD', items:[
     { id:'nominas', icono:'💵', label:'Nóminas' },
   ]},
+  { grupo:'Ayuda', items:[
+    { id:'manual', icono:'📖', label:'Manual del sistema' },
+  ]},
+  { grupo:'Administración', soloCreador:true, items:[
+    { id:'usuarios', icono:'🔐', label:'Usuarios y permisos' },
+  ]},
 ];
 
 const MENU_TECNICO = [
@@ -436,7 +496,22 @@ const MENU_TECNICO = [
 
 function construirMenu(){
   const nav = document.getElementById('sidebar-nav');
-  const menu = sesion.tipo === 'admin' ? MENU_ADMIN : MENU_TECNICO;
+  const esCreador = sesion.tipo === 'admin' && (sesion.usuario.usuario||'').toLowerCase() === USUARIO_CREADOR;
+  const permisos = sesion.tipo === 'admin' ? sesion.usuario.permisos_rh : null; // null/[] = acceso a todo
+  const tieneRestriccion = Array.isArray(permisos) && permisos.length > 0;
+
+  let menu = sesion.tipo === 'admin' ? MENU_ADMIN : MENU_TECNICO;
+
+  // Filtrar grupos exclusivos del creador
+  menu = menu.filter(g => !g.soloCreador || esCreador);
+
+  // Filtrar ítems según permisos_rh del usuario (el creador siempre ve todo)
+  if(tieneRestriccion && !esCreador){
+    menu = menu
+      .map(g => ({ ...g, items: g.items.filter(it => permisos.includes(it.id)) }))
+      .filter(g => g.items.length > 0);
+  }
+
   nav.innerHTML = menu.map((g,gi)=>`
     <div class="grupo-nav" data-grupo="${gi}">
       <div class="grupo-nav-titulo" onclick="toggleGrupoNav(${gi})">
@@ -455,9 +530,11 @@ function construirMenu(){
   if(sesion.tipo === 'admin'){
     document.getElementById('nombre-usuario-sidebar').textContent = sesion.usuario.nombre || sesion.usuario.usuario;
     document.getElementById('rol-usuario-sidebar').textContent = sesion.usuario.rol || 'Administrativo';
+    document.getElementById('btn-compartir-sistema').style.display = esCreador ? 'block' : 'none';
   } else {
     document.getElementById('nombre-usuario-sidebar').textContent = (sesion.usuario.nombres+' '+sesion.usuario.apellidos);
     document.getElementById('rol-usuario-sidebar').textContent = sesion.usuario.cargo_actual || 'Personal';
+    document.getElementById('btn-compartir-sistema').style.display = 'none';
   }
 }
 
@@ -490,10 +567,23 @@ const TITULOS = {
   centros:['Centros educativos','Catálogo de centros del distrito'],
   relacioncentros:['Relación de centros','Listado de centros con personal de contacto'],
   nominas:['Nóminas MINERD','Control de nómina recibida de Contraloría'],
+  manual:['Manual del sistema','Guía completa de uso para el usuario'],
+  usuarios:['Usuarios y permisos','Crear usuarios y controlar el acceso a cada módulo'],
 };
 
 async function irAVista(id){
-  vistaActual = id;
+  // Verificación de permisos: si el usuario admin tiene módulos restringidos
+  // y la vista solicitada no está en su lista, lo regresamos al panel.
+  if(sesion.tipo === 'admin'){
+    const esCreador = (sesion.usuario.usuario||'').toLowerCase() === USUARIO_CREADOR;
+    const permisos = sesion.usuario.permisos_rh;
+    const tieneRestriccion = Array.isArray(permisos) && permisos.length > 0;
+    if(!esCreador && tieneRestriccion && id !== 'panel' && !permisos.includes(id)){
+      toast('No tienes acceso a ese módulo.','error');
+      id = 'panel';
+    }
+  }
+
   document.querySelectorAll('.item-nav').forEach(el=>{
     el.classList.toggle('activo', el.dataset.vista === id);
   });
@@ -521,6 +611,12 @@ async function irAVista(id){
     else if(id === 'centros') await renderCentros();
     else if(id === 'relacioncentros') await renderRelacionCentros();
     else if(id === 'nominas') await renderNominas();
+    else if(id === 'manual') await renderManual();
+    else if(id === 'usuarios'){
+      const esCreador = sesion.tipo === 'admin' && (sesion.usuario.usuario||'').toLowerCase() === USUARIO_CREADOR;
+      if(!esCreador){ main.innerHTML = `<div class="vacio"><div class="icono-vacio">🔒</div>No tienes permiso para acceder a este módulo.</div>`; return; }
+      await renderUsuarios();
+    }
   }catch(err){
     console.error(err);
     main.innerHTML = `<div class="tarjeta"><div class="tarjeta-body"><div class="vacio">
@@ -530,6 +626,166 @@ async function irAVista(id){
 }
 
 /* ====================== UTILIDADES ====================== */
+
+/* ---- Exportación genérica reutilizable en todos los módulos ----
+   columnas: [{ key:'campo', label:'Encabezado', get:(fila)=>valor (opcional) }]
+   filas: array de objetos (ya filtrados, lo que se ve en pantalla) */
+function obtenerValorColumna(fila, col){
+  if(col.get) return col.get(fila);
+  return fila[col.key];
+}
+
+function exportarDatosCSV(filas, columnas, nombreArchivo){
+  if(!filas || !filas.length){ toast('No hay datos para exportar.','error'); return; }
+  const encabezado = columnas.map(c=>c.label);
+  const lineas = filas.map(f=>columnas.map(c=>{
+    const v = obtenerValorColumna(f, c);
+    return `"${String(v??'').replace(/"/g,'""')}"`;
+  }).join(','));
+  const csv = [encabezado.join(','), ...lineas].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${nombreArchivo}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportarDatosExcel(filas, columnas, nombreArchivo){
+  if(!filas || !filas.length){ toast('No hay datos para exportar.','error'); return; }
+  if(typeof XLSX === 'undefined'){ toast('No se pudo cargar el generador de Excel.','error'); return; }
+  const datos = filas.map(f=>{
+    const obj = {};
+    columnas.forEach(c=>{ obj[c.label] = obtenerValorColumna(f, c) ?? ''; });
+    return obj;
+  });
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+  XLSX.writeFile(wb, `${nombreArchivo}.xlsx`);
+}
+
+function exportarDatosPDF(filas, columnas, nombreArchivo, titulo){
+  if(!filas || !filas.length){ toast('No hay datos para exportar.','error'); return; }
+  const filasHtml = filas.map(f=>`<tr>${columnas.map(c=>`<td>${escapeHtml(obtenerValorColumna(f,c)??'—')}</td>`).join('')}</tr>`).join('');
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>${escapeHtml(titulo||nombreArchivo)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:11px;padding:24px;}
+      h2{font-size:14px;margin-bottom:14px;}
+      table{width:100%;border-collapse:collapse;}
+      th,td{border:1px solid #999;padding:4px 7px;text-align:left;}
+      th{background:#eef2f7;}
+    </style></head><body>
+    <h2>${escapeHtml(titulo||nombreArchivo)}</h2>
+    <table><thead><tr>${columnas.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+    <tbody>${filasHtml}</tbody></table>
+    </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+// Imprime directamente (abre el diálogo de impresión del navegador) la lista
+// completa filtrada, o solo las filas cuyo checkbox (claseCheckbox) esté marcado.
+function imprimirDatosLista(filas, columnas, titulo, claseCheckbox){
+  let filasAImprimir = filas;
+  if(claseCheckbox){
+    const marcados = [...document.querySelectorAll(`.${claseCheckbox}:checked`)].map(c=>c.value);
+    if(marcados.length){
+      filasAImprimir = filas.filter(f=>marcados.includes(String(f.id)));
+    }
+  }
+  if(!filasAImprimir || !filasAImprimir.length){ toast('No hay datos para imprimir.','error'); return; }
+  const filasHtml = filasAImprimir.map(f=>`<tr>${columnas.map(c=>`<td>${escapeHtml(obtenerValorColumna(f,c)??'—')}</td>`).join('')}</tr>`).join('');
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>${escapeHtml(titulo)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:11px;padding:24px;}
+      h2{font-size:14px;margin-bottom:4px;}
+      .subt{font-size:10px;color:#666;margin-bottom:14px;}
+      table{width:100%;border-collapse:collapse;}
+      th,td{border:1px solid #999;padding:4px 7px;text-align:left;}
+      th{background:#eef2f7;}
+      @media print{ button{display:none;} }
+    </style></head><body>
+    <h2>${escapeHtml(titulo)}</h2>
+    <div class="subt">Distrito Educativo 16-06, Bonao Nordeste · ${filasAImprimir.length} registro(s)</div>
+    <table><thead><tr>${columnas.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+    <tbody>${filasHtml}</tbody></table>
+    </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+// Genera el bloque de 4 botones (CSV, Excel, PDF, Imprimir), reutilizable en cualquier header de módulo.
+function botonesExportar(prefijo){
+  return `
+    <button class="btn btn-secundario btn-chico" onclick="window._exportHandlers['${prefijo}'].csv()">⬇ CSV</button>
+    <button class="btn btn-secundario btn-chico" onclick="window._exportHandlers['${prefijo}'].xlsx()">⬇ Excel</button>
+    <button class="btn btn-secundario btn-chico" onclick="window._exportHandlers['${prefijo}'].pdf()">⬇ PDF</button>
+    <button class="btn btn-secundario btn-chico" onclick="window._exportHandlers['${prefijo}'].imprimir()">🖨 Imprimir</button>
+  `;
+}
+window._exportHandlers = window._exportHandlers || {};
+function registrarExportadores(prefijo, getFilasActuales, columnas, nombreArchivo, titulo, claseCheckbox){
+  window._exportHandlers[prefijo] = {
+    csv: ()=>exportarDatosCSV(getFilasActuales(), columnas, nombreArchivo),
+    xlsx: ()=>exportarDatosExcel(getFilasActuales(), columnas, nombreArchivo),
+    pdf: ()=>exportarDatosPDF(getFilasActuales(), columnas, nombreArchivo, titulo),
+    imprimir: ()=>imprimirDatosLista(getFilasActuales(), columnas, titulo, claseCheckbox),
+  };
+}
+
+/* ---- Importación genérica con UPSERT (reutilizable en módulos con tabla simple) ----
+   Lee el archivo, detecta columnas por patrones regex, y hace upsert por una
+   clave única (ej. cédula, código). Reutiliza leerArchivoNomina ya existente. */
+async function importarConUpsert({ archivo, tabla, patrones, claveUnica, transformarFila }){
+  const filas = await leerArchivoNomina(archivo);
+  if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+  const headers = filas[0];
+
+  const norm = h => h.toString().toLowerCase().trim()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  const mapa = {};
+  headers.forEach((h,i)=>{
+    const n = norm(h);
+    for(const [campo, regex] of Object.entries(patrones)){
+      if(regex.test(n) && mapa[campo]===undefined) mapa[campo] = i;
+    }
+  });
+  if(mapa[claveUnica] === undefined) throw new Error(`No se pudo detectar la columna "${claveUnica}" en el archivo.`);
+
+  const registros = filas.slice(1)
+    .filter(f=>f[mapa[claveUnica]] && String(f[mapa[claveUnica]]).trim())
+    .map(f=>{
+      const base = {};
+      Object.keys(mapa).forEach(campo=>{ base[campo] = String(f[mapa[campo]]??'').trim() || null; });
+      return transformarFila ? transformarFila(base, f) : base;
+    });
+
+  if(!registros.length) throw new Error('No se encontraron filas válidas.');
+
+  const { data: existentes } = await sb.from(tabla).select(`id,${claveUnica}`);
+  const mapaExistente = {};
+  (existentes||[]).forEach(e=>{ if(e[claveUnica]) mapaExistente[e[claveUnica]] = e.id; });
+
+  let creados = 0, actualizados = 0;
+  for(const r of registros){
+    const clave = r[claveUnica];
+    if(clave && mapaExistente[clave]){
+      const { error } = await sb.from(tabla).update(r).eq('id', mapaExistente[clave]);
+      if(error) throw error;
+      actualizados++;
+    } else {
+      const { data: nuevo, error } = await sb.from(tabla).insert(r).select(`id,${claveUnica}`).single();
+      if(error) throw error;
+      if(nuevo[claveUnica]) mapaExistente[nuevo[claveUnica]] = nuevo.id;
+      creados++;
+    }
+  }
+  return { total: registros.length, creados, actualizados };
+}
+
 function escapeHtml(str){
   if(str===null||str===undefined) return '';
   return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -548,7 +804,7 @@ function badgeEstado(estado){
     pendiente:['gris','Pendiente'],
     generado:['gris','Generado'], enviado_tel:['azul','Enviado'], entregado:['verde','Entregado'],
     activo:['verde','Activo'], inactivo:['gris','Inactivo'], sustituido:['amarillo','Sustituido'],
-    renunciado:['rojo','Renunciado'], fallecido:['rojo','Fallecido'],
+    renunciado:['rojo','Renunciado'], fallecido:['rojo','Fallecido'], cancelado:['rojo','Cancelado'],
     encontrado:['verde','Encontrado'], no_encontrado:['rojo','No encontrado'], revision_manual:['amarillo','Revisar'],
     aceptado:['verde','Aceptado'],
     solicitado:['azul','Solicitado'], firmado_supervisor:['amarillo','Firmado supervisor'],
@@ -643,7 +899,7 @@ async function renderPanel(){
   const nombradosAP = (sol.data||[]).filter(s=>s.estado==='nombrado').length;
 
   const personalActivo = (per.data||[]).filter(p=>p.estatus==='activo').length;
-  const personalInactivo = (per.data||[]).filter(p=>p.estatus==='inactivo'||p.estatus==='sustituido'||p.estatus==='renunciado'||p.estatus==='fallecido').length;
+  const personalInactivo = (per.data||[]).filter(p=>['inactivo','sustituido','renunciado','fallecido','cancelado'].includes(p.estatus)).length;
 
   const vacPendientes = (vac.data||[]).filter(v=>['solicitado','firmado_supervisor'].includes(v.estado)).length;
   const licPendientes = (lp.data||[]).filter(l=>l.estado==='solicitado').length;
@@ -662,7 +918,7 @@ async function renderPanel(){
   const movCancelados = movUltimaNomina.filter(m=>m.tipo_movimiento==='cancelado').length;
 
   // ---- Datos agrupados para las gráficas ----
-  const ESTATUS_PERSONAL_LABELS = {activo:'Activo',inactivo:'Inactivo',sustituido:'Sustituido',renunciado:'Renunciado',fallecido:'Fallecido'};
+  const ESTATUS_PERSONAL_LABELS = {activo:'Activo',inactivo:'Inactivo',sustituido:'Sustituido',renunciado:'Renunciado',fallecido:'Fallecido',cancelado:'Cancelado'};
   const conteoPorEstatus = {};
   (per.data||[]).forEach(p=>{ conteoPorEstatus[p.estatus] = (conteoPorEstatus[p.estatus]||0)+1; });
   const labelsPersonal = Object.keys(conteoPorEstatus).map(k=>ESTATUS_PERSONAL_LABELS[k]||k);
@@ -781,7 +1037,7 @@ function renderGraficosPanel({ labelsPersonal, valoresPersonal, labelsAP, valore
   window._chartsPanel = {};
 
   const coloresEstatus = {
-    Activo:'#1f7a4d', Inactivo:'#6b7280', Sustituido:'#a8730a', Renunciado:'#b3242c', Fallecido:'#3d4450',
+    Activo:'#1f7a4d', Inactivo:'#6b7280', Sustituido:'#a8730a', Renunciado:'#b3242c', Fallecido:'#3d4450', Cancelado:'#7c2d12',
   };
   const ctxPersonal = document.getElementById('chart-personal-estatus');
   if(ctxPersonal && labelsPersonal.length){
@@ -835,13 +1091,16 @@ async function renderCentros(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('centros_rh').select('*').order('nombre_centro');
   if(error){ toast(error.message,'error'); }
+  window._centrosData = data || [];
 
   main.innerHTML = `
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Centros educativos (${data?.length||0})</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('centros')}
           <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarCentros()">⬆ Importar Excel</button>
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCentros()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalCentro()">+ Agregar centro</button>
         </div>
       </div>
@@ -849,11 +1108,13 @@ async function renderCentros(){
         ${ (data && data.length) ? `
         <table>
           <thead><tr>
+            <th><input type="checkbox" onchange="toggleTodosCheckCentros(this)"></th>
             <th>Centro</th><th>SIGERD</th><th>Matrícula</th><th>Nivel</th><th>Tanda</th><th>Dependencia</th><th>Director/a</th><th></th>
           </tr></thead>
           <tbody>
             ${data.map(c=>`
               <tr>
+                <td><input type="checkbox" class="chk-centros" value="${c.id}"></td>
                 <td><strong>${escapeHtml(c.nombre_centro)}</strong></td>
                 <td>${escapeHtml(c.codigo_sigerd||'—')}</td>
                 <td>${c.matricula??'—'}</td>
@@ -902,6 +1163,7 @@ async function renderCentros(){
     </div>
 
     <div class="modal-fondo" id="modal-importar-centros">
+
       <div class="modal">
         <div class="modal-header"><h3>Importar centros desde Excel</h3>
           <button class="modal-cerrar" onclick="cerrarModal('modal-importar-centros')">×</button></div>
@@ -923,6 +1185,28 @@ async function renderCentros(){
       </div>
     </div>
   `;
+
+  registrarExportadores('centros', ()=>window._centrosData||[], [
+    { label:'Nombre del Centro', key:'nombre_centro' },
+    { label:'SIGERD', key:'codigo_sigerd' },
+    { label:'Matrícula', key:'matricula' },
+    { label:'Nivel', key:'nivel' },
+    { label:'Tanda', key:'tanda' },
+    { label:'Dependencia', key:'numero_dependencia_nomina' },
+    { label:'Director/a', key:'director_nombre' },
+  ], 'centros_1606', 'Centros Educativos - Distrito 16-06', 'chk-centros');
+}
+
+function toggleTodosCheckCentros(master){ document.querySelectorAll('.chk-centros').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionCentros(){
+  const ids = [...document.querySelectorAll('.chk-centros:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} centro(s) seleccionado(s)? Si hay personal o solicitudes vinculadas a estos centros, podría fallar o dejarlas sin centro asignado.`)) return;
+  const { error } = await sb.from('centros_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderCentros();
 }
 
 function abrirModalImportarCentros(){
@@ -1067,7 +1351,12 @@ async function renderPersonal(){
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Personal (${data?.length||0})</h3>
-        <button class="btn btn-primario btn-chico" onclick="abrirModalPersonal()">+ Agregar empleado</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('personal')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarPersonal()">⬆ Importar</button>
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPersonal()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalPersonal()">+ Agregar empleado</button>
+        </div>
       </div>
       <div class="tarjeta-body">
         <div class="grid-3" style="margin-bottom:14px;">
@@ -1081,13 +1370,14 @@ async function renderPersonal(){
               <option value="">Todos</option>
               <option value="activo">Activo</option><option value="inactivo">Inactivo</option>
               <option value="sustituido">Sustituido</option><option value="renunciado">Renunciado</option>
-              <option value="fallecido">Fallecido</option>
+              <option value="fallecido">Fallecido</option><option value="cancelado">Cancelado</option>
             </select>
           </div>
         </div>
         <div class="tabla-wrap">
           <table>
             <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckPersonal(this)"></th>
               <th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Centro</th><th>Estatus</th><th></th>
             </tr></thead>
             <tbody id="tbody-personal"></tbody>
@@ -1120,7 +1410,7 @@ async function renderPersonal(){
               <select id="personal-estatus">
                 <option value="activo">Activo</option><option value="inactivo">Inactivo</option>
                 <option value="sustituido">Sustituido</option><option value="renunciado">Renunciado</option>
-                <option value="fallecido">Fallecido</option>
+                <option value="fallecido">Fallecido</option><option value="cancelado">Cancelado</option>
               </select>
             </div>
           </div>
@@ -1131,19 +1421,53 @@ async function renderPersonal(){
         </div>
       </div>
     </div>
+
+    <div class="modal-fondo" id="modal-importar-personal">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar personal desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-personal')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="personal-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula, nombres, apellidos, sexo, cargo, teléfono, dirección, nivel académico, dependencia, estatus. Si la cédula ya existe, se actualiza ese empleado.
+            </div>
+          </div>
+          <div id="personal-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-personal')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-personal" onclick="procesarImportacionPersonal()">Importar</button>
+        </div>
+      </div>
+    </div>
   `;
   await cargarCentrosSelect(document.getElementById('personal-centro'));
   pintarTablaPersonal(window._personalTodos);
+
+  registrarExportadores('personal', ()=>window._personalFiltrado||window._personalTodos||[], [
+    { label:'Cédula', key:'cedula' },
+    { label:'Nombres', key:'nombres' },
+    { label:'Apellidos', key:'apellidos' },
+    { label:'Sexo', key:'sexo' },
+    { label:'Cargo', key:'cargo_actual' },
+    { label:'Centro', get:p=>p.centros_rh?.nombre_centro||'' },
+    { label:'Teléfono', key:'telefono' },
+    { label:'Estatus', key:'estatus' },
+  ], 'personal_1606', 'Personal - Distrito 16-06', 'chk-personal');
 }
 
 function pintarTablaPersonal(lista){
+  window._personalFiltrado = lista;
   const tbody = document.getElementById('tbody-personal');
   if(!lista || !lista.length){
-    tbody.innerHTML = `<tr><td colspan="6"><div class="vacio"><div class="icono-vacio">👤</div>No se encontró personal con ese criterio.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="vacio"><div class="icono-vacio">👤</div>No se encontró personal con ese criterio.</div></td></tr>`;
     return;
   }
   tbody.innerHTML = lista.map(p=>`
     <tr>
+      <td><input type="checkbox" class="chk-personal" value="${p.id}"></td>
       <td><strong>${escapeHtml(p.nombres)} ${escapeHtml(p.apellidos)}</strong></td>
       <td>${escapeHtml(p.cedula)}</td>
       <td>${escapeHtml(p.cargo_actual||'—')}</td>
@@ -1155,11 +1479,79 @@ function pintarTablaPersonal(lista){
           <option value="sustituido" ${p.estatus==='sustituido'?'selected':''}>Sustituido</option>
           <option value="renunciado" ${p.estatus==='renunciado'?'selected':''}>Renunciado</option>
           <option value="fallecido" ${p.estatus==='fallecido'?'selected':''}>Fallecido</option>
+          <option value="cancelado" ${p.estatus==='cancelado'?'selected':''}>Cancelado</option>
         </select>
       </td>
       <td><button class="btn btn-secundario btn-chico" onclick='abrirModalPersonal(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Editar</button></td>
     </tr>
   `).join('');
+}
+
+function toggleTodosCheckPersonal(master){ document.querySelectorAll('.chk-personal').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionPersonal(){
+  const ids = [...document.querySelectorAll('.chk-personal:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} empleado(s) seleccionado(s)? Esto puede afectar registros relacionados (AP, vacaciones, licencias, etc.).`)) return;
+  const { error } = await sb.from('personal_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderPersonal();
+}
+
+function abrirModalImportarPersonal(){
+  document.getElementById('personal-archivo').value = '';
+  document.getElementById('personal-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-personal');
+}
+
+async function procesarImportacionPersonal(){
+  const archivo = document.getElementById('personal-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-personal');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const resultado = await importarConUpsert({
+      archivo, tabla:'personal_rh', claveUnica:'cedula',
+      patrones: {
+        cedula: /cedula/,
+        nombres: /^nombres?$/,
+        apellidos: /apellido/,
+        sexo: /^sexo$/,
+        cargo_actual: /cargo/,
+        telefono: /telefono/,
+        direccion: /direccion/,
+        nivel_academico: /nivel/,
+        numero_dependencia_nomina: /dependencia/,
+        estatus: /estatus|estado/,
+      },
+      transformarFila: (base)=>{
+        if(base.sexo) base.sexo = base.sexo.toUpperCase().startsWith('F') ? 'F' : 'M';
+        if(base.estatus) base.estatus = base.estatus.toLowerCase();
+        if(!base.estatus) base.estatus = 'activo';
+        if(!base.sexo) base.sexo = 'M';
+        if(!base.nombres) base.nombres = 'Sin nombre';
+        if(!base.apellidos) base.apellidos = '';
+        return base;
+      },
+    });
+    document.getElementById('personal-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${resultado.total}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${resultado.creados} creados</span> ·
+        <span style="color:var(--azul-600);font-weight:600;">${resultado.actualizados} actualizados</span>
+      </div>`;
+    toast('Personal importado correctamente.','exito');
+    renderPersonal();
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
 }
 
 function filtrarPersonal(){
@@ -1238,22 +1630,30 @@ async function renderSolicitudes(){
     .select('*, centros_rh(nombre_centro), candidatos_ap(id,nombres,apellidos,cargo_propuesto,sexo,estado)')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
+  window._solicitudesData = data || [];
 
   main.innerHTML = `
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Solicitudes AP (${data?.length||0})</h3>
-        <button class="btn btn-primario btn-chico" onclick="abrirModalSolicitud()">+ Nueva solicitud AP</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('ap')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarAP()">⬆ Importar</button>
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionAP()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalSolicitud()">+ Nueva solicitud AP</button>
+        </div>
       </div>
       <div class="tarjeta-body tabla-wrap">
         ${ (data && data.length) ? `
         <table>
           <thead><tr>
+            <th><input type="checkbox" onchange="toggleTodosCheckAP(this)"></th>
             <th>No. Solicitud</th><th>Fecha</th><th>Centro</th><th>Motivo</th><th>Candidatos</th><th>Estado</th><th></th>
           </tr></thead>
           <tbody>
             ${data.map(s=>`
               <tr>
+                <td><input type="checkbox" class="chk-ap" value="${s.id}"></td>
                 <td><strong>${escapeHtml(s.no_solicitud||'(sin número)')}</strong></td>
                 <td>${fechaCorta(s.fecha_solicitud)}</td>
                 <td>${escapeHtml(s.centros_rh?.nombre_centro||'—')}</td>
@@ -1268,6 +1668,29 @@ async function renderSolicitudes(){
             `).join('')}
           </tbody>
         </table>` : `<div class="vacio"><div class="icono-vacio">📋</div>No hay solicitudes AP todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-ap">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar solicitudes AP desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-ap')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="ap-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: no. de solicitud, fecha, motivo, observaciones, estado. El centro debe seleccionarse para todas las filas del archivo (se asigna el mismo centro a cada solicitud importada). Si el no. de solicitud ya existe, se actualiza esa solicitud.
+            </div>
+          </div>
+          <div class="campo"><label>Centro educativo para todas las filas <span class="requerido">*</span></label>
+            <select id="ap-import-centro"></select></div>
+          <div id="ap-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-ap')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-ap" onclick="procesarImportacionAP()">Importar</button>
+        </div>
       </div>
     </div>
 
@@ -1316,6 +1739,78 @@ async function renderSolicitudes(){
       </div>
     </div>
   `;
+
+  registrarExportadores('ap', ()=>window._solicitudesData||[], [
+    { label:'No. Solicitud', key:'no_solicitud' },
+    { label:'Fecha', get:s=>fechaCorta(s.fecha_solicitud) },
+    { label:'Centro', get:s=>s.centros_rh?.nombre_centro||'' },
+    { label:'Motivo', get:s=>labelMotivo(s.motivo_solicitud) },
+    { label:'Candidatos', get:s=>(s.candidatos_ap||[]).map(c=>c.nombres+' '+c.apellidos).join(', ') },
+    { label:'Estado', key:'estado' },
+  ], 'solicitudes_ap_1606', 'Solicitudes AP - Distrito 16-06', 'chk-ap');
+}
+
+function toggleTodosCheckAP(master){ document.querySelectorAll('.chk-ap').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionAP(){
+  const ids = [...document.querySelectorAll('.chk-ap:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} solicitud(es) seleccionada(s)? Esto también elimina sus candidatos y telegramas asociados.`)) return;
+  const { error } = await sb.from('solicitudes_ap').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderSolicitudes();
+}
+
+async function abrirModalImportarAP(){
+  document.getElementById('ap-archivo').value = '';
+  document.getElementById('ap-resumen-preview').innerHTML = '';
+  await cargarCentrosSelect(document.getElementById('ap-import-centro'));
+  abrirModal('modal-importar-ap');
+}
+
+async function procesarImportacionAP(){
+  const archivo = document.getElementById('ap-archivo').files[0];
+  const centroId = document.getElementById('ap-import-centro').value;
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+  if(!centroId){ toast('Selecciona el centro para las filas importadas.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-ap');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const resultado = await importarConUpsert({
+      archivo, tabla:'solicitudes_ap', claveUnica:'no_solicitud',
+      patrones: {
+        no_solicitud: /solicitud|no\.?\s*ap/,
+        fecha_solicitud: /fecha/,
+        motivo_solicitud: /motivo/,
+        observaciones: /observ/,
+        estado: /estado/,
+      },
+      transformarFila: (base)=>{
+        base.centro_id = centroId;
+        if(base.motivo_solicitud) base.motivo_solicitud = base.motivo_solicitud.toUpperCase().replace(/\s+/g,'_');
+        if(base.estado) base.estado = base.estado.toLowerCase().replace(/\s+/g,'_');
+        if(!base.fecha_solicitud) delete base.fecha_solicitud;
+        return base;
+      },
+    });
+    document.getElementById('ap-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${resultado.total}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${resultado.creados} creadas</span> ·
+        <span style="color:var(--azul-600);font-weight:600;">${resultado.actualizados} actualizadas</span>
+      </div>`;
+    toast('Solicitudes AP importadas correctamente.','exito');
+    renderSolicitudes();
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
 }
 
 function plantillaCandidatoHTML(idx, c){
@@ -1567,15 +2062,20 @@ async function renderTelegramas(){
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Telegramas (${data?.length||0})</h3>
-        <button class="btn btn-primario btn-chico" onclick="abrirModalTelegrama()">+ Generar telegrama</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('telegramas')}
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionTelegramas()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalTelegrama()">+ Generar telegrama</button>
+        </div>
       </div>
       <div class="tarjeta-body tabla-wrap">
         ${ (data && data.length) ? `
         <table>
-          <thead><tr><th>No.</th><th>Fecha</th><th>Candidato</th><th>Centro</th><th>Cargo</th><th>Jornada</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckTelegramas(this)"></th><th>No.</th><th>Fecha</th><th>Candidato</th><th>Centro</th><th>Cargo</th><th>Jornada</th><th>Estado</th><th></th></tr></thead>
           <tbody>
             ${data.map(t=>`
               <tr>
+                <td><input type="checkbox" class="chk-telegramas" value="${t.id}"></td>
                 <td>${escapeHtml(t.no_telegrama||'—')}</td>
                 <td>${fechaCorta(t.fecha_telegrama)}</td>
                 <td>${escapeHtml((t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||''))}</td>
@@ -1645,6 +2145,28 @@ async function renderTelegramas(){
   `;
   window._candidatosNombrables = candidatosNombrables || [];
   window._telegramasData = data || [];
+
+  registrarExportadores('telegramas', ()=>window._telegramasData||[], [
+    { label:'No. Telegrama', key:'no_telegrama' },
+    { label:'Fecha', get:t=>fechaCorta(t.fecha_telegrama) },
+    { label:'Candidato', get:t=>(t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||'') },
+    { label:'Centro', get:t=>t.centros_rh?.nombre_centro||'' },
+    { label:'Cargo', key:'cargo_designado' },
+    { label:'Jornada', key:'jornada' },
+    { label:'Estado', key:'estado_envio' },
+  ], 'telegramas_1606', 'Telegramas - Distrito 16-06', 'chk-telegramas');
+}
+
+function toggleTodosCheckTelegramas(master){ document.querySelectorAll('.chk-telegramas').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionTelegramas(){
+  const ids = [...document.querySelectorAll('.chk-telegramas:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} telegrama(s) seleccionado(s)?`)) return;
+  const { error } = await sb.from('telegramas_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderTelegramas();
 }
 
 function abrirModalTelegrama(){
@@ -1798,6 +2320,7 @@ async function renderPuestasDisposicion(){
       <div class="tarjeta-header">
         <h3>Puestas a disposición</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('pd')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPuestasDisp()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalPuestaDisp()">+ Nuevo oficio</button>
         </div>
@@ -1872,9 +2395,19 @@ async function renderPuestasDisposicion(){
     </div>
   `;
   pintarTablaPuestasDisp(window._puestasDisposicionData);
+
+  registrarExportadores('pd', ()=>window._puestasDispFiltrado||window._puestasDisposicionData||[], [
+    { label:'Fecha', get:p=>fechaCorta(p.fecha_oficio) },
+    { label:'Empleado', get:p=>(p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'') },
+    { label:'Cargo', key:'cargo_designado' },
+    { label:'Destinatario', key:'destinatario_nombre' },
+    { label:'Distrito destino', key:'distrito_destino' },
+    { label:'Estado', key:'estado' },
+  ], 'puestas_disposicion_1606', 'Puestas a Disposición - Distrito 16-06', 'chk-pd');
 }
 
 function pintarTablaPuestasDisp(lista){
+  window._puestasDispFiltrado = lista;
   const tbody = document.getElementById('tbody-puestas-disp');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">📤</div>No hay oficios registrados.</div></td></tr>`;
@@ -2057,6 +2590,7 @@ async function renderCartasAceptacion(){
       <div class="tarjeta-header">
         <h3>Cartas de aceptación de personal</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('ca')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCA()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalCA()">+ Nueva carta</button>
         </div>
@@ -2131,9 +2665,19 @@ async function renderCartasAceptacion(){
   await cargarPersonalSelect(document.getElementById('ca-personal'));
   await cargarCentrosSelect(document.getElementById('ca-centro'));
   pintarTablaCA(window._cartasAceptacionData);
+
+  registrarExportadores('ca', ()=>window._caFiltrado||window._cartasAceptacionData||[], [
+    { label:'Fecha', get:c=>fechaCorta(c.fecha_oficio) },
+    { label:'Empleado', get:c=>(c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'') },
+    { label:'Cargo', key:'cargo_designado' },
+    { label:'Procedencia', key:'destinatario_nombre' },
+    { label:'Centro destino', get:c=>c.centros_rh?.nombre_centro||'' },
+    { label:'Estado', key:'estado' },
+  ], 'cartas_aceptacion_1606', 'Cartas de Aceptación - Distrito 16-06', 'chk-ca');
 }
 
 function pintarTablaCA(lista){
+  window._caFiltrado = lista;
   const tbody = document.getElementById('tbody-cartas-aceptacion');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">📥</div>No hay cartas de aceptación registradas.</div></td></tr>`;
@@ -2301,6 +2845,7 @@ async function renderVacaciones(){
       <div class="tarjeta-header">
         <h3>Solicitudes de vacaciones</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('vac')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionVacaciones()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalVacacion()">+ Nueva solicitud</button>
         </div>
@@ -2376,9 +2921,22 @@ async function renderVacaciones(){
   `;
   await cargarPersonalSelect(document.getElementById('vac-personal'));
   pintarTablaVacaciones(window._vacacionesData);
+
+  registrarExportadores('vac', ()=>window._vacacionesFiltrado||window._vacacionesData||[], [
+    { label:'Empleado', get:v=>(v.personal_rh?.nombres||'')+' '+(v.personal_rh?.apellidos||'') },
+    { label:'Centro', get:v=>v.personal_rh?.centros_rh?.nombre_centro||'' },
+    { label:'Días Año 1', key:'dias_solicitados_anio1' },
+    { label:'Año 1', key:'anio1' },
+    { label:'Días Año 2', key:'dias_solicitados_anio2' },
+    { label:'Año 2', key:'anio2' },
+    { label:'Desde', get:v=>fechaCorta(v.fecha_inicio_disfrute) },
+    { label:'Hasta', get:v=>fechaCorta(v.fecha_fin_disfrute) },
+    { label:'Estado', key:'estado' },
+  ], 'vacaciones_1606', 'Vacaciones - Distrito 16-06', 'chk-vac');
 }
 
 function pintarTablaVacaciones(lista){
+  window._vacacionesFiltrado = lista;
   const tbody = document.getElementById('tbody-vacaciones');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">🏖</div>No hay solicitudes de vacaciones registradas.</div></td></tr>`;
@@ -2550,6 +3108,7 @@ async function renderLicenciasPermisos(){
       <div class="tarjeta-header">
         <h3>Licencias y permisos</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('lp')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionLP()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalLP()">+ Nueva solicitud</button>
         </div>
@@ -2630,9 +3189,21 @@ async function renderLicenciasPermisos(){
   `;
   await cargarPersonalSelect(document.getElementById('lp-personal'));
   pintarTablaLP(window._licenciasPermisosData);
+
+  registrarExportadores('lp', ()=>window._lpFiltrado||window._licenciasPermisosData||[], [
+    { label:'Empleado', get:x=>(x.personal_rh?.nombres||'')+' '+(x.personal_rh?.apellidos||'') },
+    { label:'Categoría', get:x=>x.categoria==='licencia'?'Licencia':'Permiso' },
+    { label:'Subtipo', get:x=>labelSubtipoLP(x.subtipo)+(x.subtipo_detalle?': '+x.subtipo_detalle:'') },
+    { label:'Duración', get:x=>`${x.duracion_dias||0}d ${x.duracion_meses||0}m ${x.duracion_anios||0}a` },
+    { label:'Desde', get:x=>fechaCorta(x.fecha_inicio) },
+    { label:'Hasta', get:x=>fechaCorta(x.fecha_fin) },
+    { label:'Evidencia', get:x=>x.evidencia_requerida ? (x.evidencia_presentada?'Presentada':'Pendiente') : 'N/A' },
+    { label:'Estado', key:'estado' },
+  ], 'licencias_permisos_1606', 'Licencias y Permisos - Distrito 16-06', 'chk-lp');
 }
 
 function pintarTablaLP(lista){
+  window._lpFiltrado = lista;
   const tbody = document.getElementById('tbody-lp');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="10"><div class="vacio"><div class="icono-vacio">🗂</div>No hay licencias ni permisos registrados.</div></td></tr>`;
@@ -2800,8 +3371,7 @@ async function renderRelacionCentros(){
       <div class="tarjeta-header">
         <h3>Relación de centros educativos (${window._relacionCentrosData.length})</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-secundario btn-chico" onclick="exportarRelacionCentrosCSV()">⬇ Exportar CSV</button>
-          <button class="btn btn-secundario btn-chico" onclick="imprimirRelacionCentros()">🖨 Imprimir</button>
+          ${botonesExportar('rc')}
         </div>
       </div>
       <div class="tarjeta-body">
@@ -2824,9 +3394,19 @@ async function renderRelacionCentros(){
     </div>
   `;
   pintarTablaRelacionCentros(window._relacionCentrosData);
+
+  registrarExportadores('rc', ()=>window._relacionCentrosFiltrado||window._relacionCentrosData||[], [
+    { label:'Nombre del Centro', key:'centro' },
+    { label:'SIGERD', key:'sigerd' },
+    { label:'Cédula Contacto', key:'cedula_contacto' },
+    { label:'Nombre de Contacto', key:'nombre_contacto' },
+    { label:'Teléfono', key:'telefono' },
+    { label:'Dirección', key:'direccion' },
+  ], 'relacion_centros_1606', 'Relación de Centros Educativos - Distrito 16-06');
 }
 
 function pintarTablaRelacionCentros(lista){
+  window._relacionCentrosFiltrado = lista;
   const tbody = document.getElementById('tbody-relacion-centros');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="5"><div class="vacio"><div class="icono-vacio">📊</div>No hay centros registrados.</div></td></tr>`;
@@ -2850,44 +3430,6 @@ function filtrarRelacionCentros(){
     return !texto || todo.includes(texto);
   });
   pintarTablaRelacionCentros(filtrado);
-}
-
-function exportarRelacionCentrosCSV(){
-  const lista = window._relacionCentrosData || [];
-  if(!lista.length){ toast('No hay datos para exportar.','error'); return; }
-  const encabezado = ['Nombre del Centro','Cédula Contacto','Nombre de Contacto','Teléfono','Dirección'];
-  const filas = lista.map(r=>[r.centro, r.cedula_contacto, r.nombre_contacto, r.telefono, r.direccion]
-    .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
-  const csv = [encabezado.join(','), ...filas].join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'relacion_centros_1606.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function imprimirRelacionCentros(){
-  const lista = window._relacionCentrosData || [];
-  const filas = lista.map(r=>`
-    <tr><td>${escapeHtml(r.centro)}</td><td>${escapeHtml(r.cedula_contacto)}</td>
-    <td>${escapeHtml(r.nombre_contacto)}</td><td>${escapeHtml(r.telefono)}</td><td>${escapeHtml(r.direccion)}</td></tr>
-  `).join('');
-  const w = window.open('', '_blank');
-  w.document.write(`<html><head><meta charset="UTF-8"><title>Relación de Centros</title>
-    <style>
-      body{font-family:Arial,sans-serif;font-size:12px;padding:30px;}
-      h2{font-size:15px;margin-bottom:14px;}
-      table{width:100%;border-collapse:collapse;}
-      th,td{border:1px solid #999;padding:5px 8px;text-align:left;}
-      th{background:#eef2f7;}
-    </style></head><body>
-    <h2>Distrito Educativo 16-06, Bonao Nordeste — Relación de Centros Educativos</h2>
-    <table><thead><tr><th>Centro</th><th>Cédula</th><th>Contacto</th><th>Teléfono</th><th>Dirección</th></tr></thead>
-    <tbody>${filas}</tbody></table>
-    </body></html>`);
-  w.document.close();
-  setTimeout(()=>w.print(), 400);
 }
 
 /* ====================== RIESGO LABORAL (ATR-2 / EPR-1) ====================== */
@@ -2917,6 +3459,7 @@ async function renderRiesgosLaborales(){
       <div class="tarjeta-header">
         <h3>Avisos de riesgo laboral</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('rl')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionRiesgos()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalRiesgo()">+ Nuevo aviso</button>
         </div>
@@ -2990,9 +3533,19 @@ async function renderRiesgosLaborales(){
     document.getElementById(id).addEventListener('change', validarPlazoRiesgo);
   });
   pintarTablaRiesgos(window._riesgosData);
+
+  registrarExportadores('rl', ()=>window._riesgosFiltrado||window._riesgosData||[], [
+    { label:'Tipo', key:'tipo_formulario' },
+    { label:'Empleado', get:r=>(r.personal_rh?.nombres||'')+' '+(r.personal_rh?.apellidos||'') },
+    { label:'Fecha evento', get:r=>fechaCorta(r.fecha_evento) },
+    { label:'Fecha aviso', get:r=>fechaCorta(r.fecha_aviso) },
+    { label:'Descripción', key:'descripcion_evento' },
+    { label:'Estado', key:'estado' },
+  ], 'riesgos_laborales_1606', 'Riesgos Laborales (ATR-2/EPR-1) - Distrito 16-06', 'chk-rl');
 }
 
 function pintarTablaRiesgos(lista){
+  window._riesgosFiltrado = lista;
   const tbody = document.getElementById('tbody-riesgos');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">⚠</div>No hay avisos de riesgo laboral registrados.</div></td></tr>`;
@@ -3134,6 +3687,7 @@ async function renderPensiones(){
       <div class="tarjeta-header">
         <h3>Expedientes de pensión / jubilación</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('pen')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPensiones()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalPension()">+ Nuevo expediente</button>
         </div>
@@ -3206,9 +3760,18 @@ async function renderPensiones(){
   `;
   await cargarPersonalSelect(document.getElementById('pen-personal'));
   pintarTablaPensiones(window._pensionesData);
+
+  registrarExportadores('pen', ()=>window._pensionesFiltrado||window._pensionesData||[], [
+    { label:'Empleado', get:p=>(p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'') },
+    { label:'Tipo personal', get:p=>p.tipo_personal==='docente'?'Docente':'Administrativo' },
+    { label:'Tipo pensión', key:'tipo_pension' },
+    { label:'Años servicio', key:'anios_servicio' },
+    { label:'Estado', key:'estado' },
+  ], 'pensiones_1606', 'Pensiones y Jubilaciones - Distrito 16-06', 'chk-pen');
 }
 
 function pintarTablaPensiones(lista){
+  window._pensionesFiltrado = lista;
   const tbody = document.getElementById('tbody-pensiones');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">🎓</div>No hay expedientes de pensión registrados.</div></td></tr>`;
@@ -3334,6 +3897,7 @@ async function renderSegurosSalud(){
       <div class="tarjeta-header">
         <h3>Afiliaciones de seguro de salud</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('seg')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionSeguros()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalSeguro()">+ Nueva solicitud</button>
         </div>
@@ -3403,6 +3967,14 @@ async function renderSegurosSalud(){
   await cargarPersonalSelect(document.getElementById('seg-personal'));
   actualizarAyudaSeguro();
   pintarTablaSeguros(window._segurosData);
+
+  registrarExportadores('seg', ()=>window._segurosFiltrado||window._segurosData||[], [
+    { label:'Titular', get:s=>(s.personal_rh?.nombres||'')+' '+(s.personal_rh?.apellidos||'') },
+    { label:'Tipo', key:'tipo_formulario' },
+    { label:'Dependiente', key:'nombre_dependiente' },
+    { label:'Parentesco', get:s=>s.parentesco?(LABEL_PARENTESCO[s.parentesco]||s.parentesco):'' },
+    { label:'Estado', key:'estado' },
+  ], 'seguros_salud_1606', 'Seguros de Salud (SeNaSa) - Distrito 16-06', 'chk-seg');
 }
 
 function actualizarAyudaSeguro(){
@@ -3413,6 +3985,7 @@ function actualizarAyudaSeguro(){
 }
 
 function pintarTablaSeguros(lista){
+  window._segurosFiltrado = lista;
   const tbody = document.getElementById('tbody-seguros');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="7"><div class="vacio"><div class="icono-vacio">➕</div>No hay solicitudes de seguro registradas.</div></td></tr>`;
@@ -3543,6 +4116,7 @@ async function renderCertificacionesLaborales(){
       <div class="tarjeta-header">
         <h3>Certificaciones laborales</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('cl')}
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCertLab()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalCertLab()">+ Nueva certificación</button>
         </div>
@@ -3622,9 +4196,19 @@ async function renderCertificacionesLaborales(){
   `;
   await cargarPersonalSelect(document.getElementById('cl-personal'));
   pintarTablaCertLab(window._certLaboralData);
+
+  registrarExportadores('cl', ()=>window._clFiltrado||window._certLaboralData||[], [
+    { label:'Empleado', get:c=>(c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'') },
+    { label:'Período desde', get:c=>fechaCorta(c.periodo_desde) },
+    { label:'Período hasta', get:c=>c.periodo_hasta?fechaCorta(c.periodo_hasta):'Actual' },
+    { label:'Motivo', key:'motivo' },
+    { label:'Terceros', get:c=>c.solicitado_por_terceros?'Sí':'No' },
+    { label:'Estado', key:'estado' },
+  ], 'certificaciones_laborales_1606', 'Certificaciones Laborales - Distrito 16-06', 'chk-cl');
 }
 
 function pintarTablaCertLab(lista){
+  window._clFiltrado = lista;
   const tbody = document.getElementById('tbody-cert-laboral');
   if(!lista || !lista.length){
     tbody.innerHTML = `<tr><td colspan="7"><div class="vacio"><div class="icono-vacio">📜</div>No hay certificaciones laborales registradas.</div></td></tr>`;
@@ -3758,20 +4342,26 @@ async function renderNominas(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('nominas_rh').select('*').order('anio',{ascending:false}).order('mes',{ascending:false});
   if(error){ toast(error.message,'error'); }
+  window._nominasData = data || [];
 
   main.innerHTML = `
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Nóminas registradas (${data?.length||0})</h3>
-        <button class="btn btn-primario btn-chico" onclick="abrirModalNomina()">+ Importar nómina</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('nominas')}
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionNominas()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalNomina()">+ Importar nómina</button>
+        </div>
       </div>
       <div class="tarjeta-body tabla-wrap">
         ${ (data && data.length) ? `
         <table>
-          <thead><tr><th>Período</th><th>Fecha de pago</th><th>Archivo origen</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckNominas(this)"></th><th>Período</th><th>Fecha de pago</th><th>Archivo origen</th><th></th></tr></thead>
           <tbody>
             ${data.map(n=>`
               <tr>
+                <td><input type="checkbox" class="chk-nominas" value="${n.id}"></td>
                 <td><strong>${MESES_NOMINA[n.mes]} ${n.anio}</strong></td>
                 <td>${fechaCorta(n.fecha_pago)}</td>
                 <td>${escapeHtml(n.archivo_origen||'—')}</td>
@@ -3819,7 +4409,10 @@ async function renderNominas(){
         <div class="modal-header"><h3 id="titulo-detalle-nomina">Detalle de nómina</h3>
           <button class="modal-cerrar" onclick="cerrarModal('modal-detalle-nomina')">×</button></div>
         <div class="modal-body tabla-wrap" id="cuerpo-detalle-nomina"></div>
-        <div class="modal-footer"><button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button></div>
+        <div class="modal-footer">
+          ${botonesExportar('detnom')}
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button>
+        </div>
       </div>
     </div>
 
@@ -3842,12 +4435,30 @@ async function renderNominas(){
           <div class="tabla-wrap" id="cuerpo-movimientos-nomina"></div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secundario" onclick="exportarMovimientosCSV()">⬇ Exportar CSV</button>
+          ${botonesExportar('mov')}
           <button class="btn btn-secundario" onclick="cerrarModal('modal-movimientos-nomina')">Cerrar</button>
         </div>
       </div>
     </div>
   `;
+
+  registrarExportadores('nominas', ()=>window._nominasData||[], [
+    { label:'Período', get:n=>`${MESES_NOMINA[n.mes]} ${n.anio}` },
+    { label:'Fecha de pago', get:n=>fechaCorta(n.fecha_pago) },
+    { label:'Archivo origen', key:'archivo_origen' },
+  ], 'nominas_1606', 'Nóminas Registradas - Distrito 16-06', 'chk-nominas');
+}
+
+function toggleTodosCheckNominas(master){ document.querySelectorAll('.chk-nominas').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionNominas(){
+  const ids = [...document.querySelectorAll('.chk-nominas:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} nómina(s) seleccionada(s)? Esto también elimina su detalle y movimientos asociados.`)) return;
+  const { error } = await sb.from('nominas_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderNominas();
 }
 
 function abrirModalNomina(){
@@ -4250,6 +4861,8 @@ async function verDetalleNomina(nominaId, periodo){
     .select('*, personal_rh(nombres,apellidos)').eq('nomina_id', nominaId).order('cedula_archivo');
   if(error){ toast(error.message,'error'); return; }
 
+  window._detalleNominaActual = data || [];
+
   document.getElementById('cuerpo-detalle-nomina').innerHTML = (data && data.length) ? `
     <table>
       <thead><tr><th>Cédula</th><th>Nombre (archivo)</th><th>Centro (archivo)</th><th>Bruto</th><th>Descuentos</th><th>Neto</th><th>Cruce</th></tr></thead>
@@ -4269,6 +4882,16 @@ async function verDetalleNomina(nominaId, periodo){
     </table>
   ` : `<div class="vacio">Sin registros en esta nómina.</div>`;
   abrirModal('modal-detalle-nomina');
+
+  registrarExportadores('detnom', ()=>window._detalleNominaActual||[], [
+    { label:'Cédula', key:'cedula_archivo' },
+    { label:'Nombre', get:d=>d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'') },
+    { label:'Centro', key:'centro_archivo' },
+    { label:'Salario Bruto', key:'salario_bruto' },
+    { label:'Descuentos', key:'descuentos' },
+    { label:'Salario Neto', key:'salario_neto' },
+    { label:'Cruce', key:'match_estado' },
+  ], `detalle_nomina_${periodo.replace(/\s+/g,'_')}`, `Detalle de Nómina — ${periodo} - Distrito 16-06`);
 }
 
 /* ---- Reporte de movimientos (nuevos / reingresos / cancelados) ---- */
@@ -4306,6 +4929,13 @@ async function verMovimientosNomina(nominaId, periodo){
     </table>
   ` : `<div class="vacio"><div class="icono-vacio">📊</div>No hay movimientos detectados para esta nómina.<br><span class="texto-ayuda">Esto puede significar que no hubo cambios respecto a la nómina anterior, o que la comparación no estaba activada al importar.</span></div>`;
   abrirModal('modal-movimientos-nomina');
+
+  registrarExportadores('mov', ()=>window._movimientosActuales||[], [
+    { label:'Cédula', key:'cedula' },
+    { label:'Nombre', get:m=>m.personal_rh ? m.personal_rh.nombres+' '+m.personal_rh.apellidos : (m.nombre||'') },
+    { label:'Cargo', get:m=>m.personal_rh?.cargo_actual||'' },
+    { label:'Movimiento', get:m=>({nuevo:'Nuevo nombramiento',reingreso:'Reingreso',cancelado:'Cancelado/bloqueado'})[m.tipo_movimiento]||m.tipo_movimiento },
+  ], `movimientos_nomina_${periodo.replace(/\s+/g,'_')}`, `Movimientos de Personal — ${periodo} - Distrito 16-06`);
 }
 
 async function marcarMovimientoRevisado(id, valor){
@@ -4313,22 +4943,319 @@ async function marcarMovimientoRevisado(id, valor){
   if(error){ toast(error.message,'error'); }
 }
 
-function exportarMovimientosCSV(){
-  const lista = window._movimientosActuales || [];
-  if(!lista.length){ toast('No hay movimientos para exportar.','error'); return; }
-  const labelTipo = {nuevo:'Nuevo nombramiento',reingreso:'Reingreso',cancelado:'Cancelado/bloqueado'};
-  const encabezado = ['Cédula','Nombre','Cargo','Movimiento'];
-  const filas = lista.map(m=>[
-    m.cedula,
-    m.personal_rh ? m.personal_rh.nombres+' '+m.personal_rh.apellidos : (m.nombre||''),
-    m.personal_rh?.cargo_actual||'',
-    labelTipo[m.tipo_movimiento],
-  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
-  const csv = [encabezado.join(','), ...filas].join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+/* ====================== USUARIOS Y PERMISOS (solo usuario creador) ====================== */
+// Lista plana de todos los módulos disponibles, derivada del menú real,
+// para que los checkboxes de permisos siempre estén sincronizados con el menú.
+function obtenerTodosLosModulos(){
+  const lista = [];
+  MENU_ADMIN.forEach(g=>{
+    if(g.soloCreador) return; // la gestión de usuarios nunca es un permiso asignable
+    g.items.forEach(it=>lista.push({ id: it.id, label: it.label, grupo: g.grupo }));
+  });
+  return lista;
+}
+
+async function renderUsuarios(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('usuarios_fin').select('*').order('usuario');
+  if(error){ toast(error.message,'error'); }
+  window._usuariosData = data || [];
+
+  const modulos = obtenerTodosLosModulos();
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Usuarios del sistema (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalUsuario()">+ Crear usuario</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Acceso a módulos</th><th></th></tr></thead>
+          <tbody>
+            ${data.map(u=>{
+              const esteEsCreador = (u.usuario||'').toLowerCase() === USUARIO_CREADOR;
+              const permisos = Array.isArray(u.permisos_rh) ? u.permisos_rh : [];
+              const resumenAcceso = esteEsCreador ? 'Acceso total (creador)' : (permisos.length ? `${permisos.length} módulo(s)` : 'Acceso total');
+              return `
+              <tr>
+                <td><strong>${escapeHtml(u.usuario)}</strong></td>
+                <td>${escapeHtml(u.nombre||'—')}</td>
+                <td>${escapeHtml(u.rol||'—')}</td>
+                <td>${escapeHtml(resumenAcceso)}</td>
+                <td>${esteEsCreador ? '<span class="texto-ayuda">No editable</span>' : `<button class="btn btn-secundario btn-chico" onclick='abrirModalUsuario(${JSON.stringify(u).replace(/'/g,"&apos;")})'>Editar</button>`}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">🔐</div>No hay usuarios registrados todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-usuario">
+      <div class="modal" style="max-width:640px;">
+        <div class="modal-header"><h3 id="titulo-modal-usuario">Crear usuario</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-usuario')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="usuario-id">
+          <div class="grid-2">
+            <div class="campo"><label>Usuario <span class="requerido">*</span></label><input type="text" id="usuario-usuario" placeholder="ej. mperez"></div>
+            <div class="campo"><label>Contraseña <span class="requerido">*</span></label><input type="password" id="usuario-pass" placeholder="Mínimo 4 caracteres"></div>
+            <div class="campo"><label>Nombre completo <span class="requerido">*</span></label><input type="text" id="usuario-nombre"></div>
+            <div class="campo"><label>Rol / cargo</label><input type="text" id="usuario-rol" value="Administrativo"></div>
+          </div>
+          <fieldset class="fieldset-doc" style="margin-top:14px;">
+            <legend>Acceso a módulos</legend>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;font-weight:600;">
+              <input type="checkbox" id="usuario-acceso-total" onchange="toggleAccesoTotal()"> Acceso total (todos los módulos, incluidos los que se agreguen después)
+            </label>
+            <div id="usuario-lista-modulos" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              ${modulos.map(m=>`
+                <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
+                  <input type="checkbox" class="chk-permiso-modulo" value="${m.id}"> ${escapeHtml(m.label)}
+                </label>
+              `).join('')}
+            </div>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-usuario')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarUsuario()">Guardar usuario</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleAccesoTotal(){
+  const total = document.getElementById('usuario-acceso-total').checked;
+  document.querySelectorAll('.chk-permiso-modulo').forEach(c=>{ c.disabled = total; if(total) c.checked = false; });
+}
+
+function abrirModalUsuario(u){
+  document.getElementById('titulo-modal-usuario').textContent = u ? 'Editar usuario' : 'Crear usuario';
+  document.getElementById('usuario-id').value = u?.id || '';
+  document.getElementById('usuario-usuario').value = u?.usuario || '';
+  document.getElementById('usuario-usuario').disabled = !!u; // el nombre de usuario no se cambia una vez creado
+  document.getElementById('usuario-pass').value = '';
+  document.getElementById('usuario-pass').placeholder = u ? 'Dejar en blanco para no cambiarla' : 'Mínimo 4 caracteres';
+  document.getElementById('usuario-nombre').value = u?.nombre || '';
+  document.getElementById('usuario-rol').value = u?.rol || 'Administrativo';
+
+  const permisos = Array.isArray(u?.permisos_rh) ? u.permisos_rh : [];
+  const accesoTotal = !u || permisos.length === 0;
+  document.getElementById('usuario-acceso-total').checked = accesoTotal;
+  document.querySelectorAll('.chk-permiso-modulo').forEach(c=>{
+    c.disabled = accesoTotal;
+    c.checked = permisos.includes(c.value);
+  });
+
+  abrirModal('modal-usuario');
+}
+
+async function guardarUsuario(){
+  const id = document.getElementById('usuario-id').value;
+  const usuario = document.getElementById('usuario-usuario').value.trim().toLowerCase();
+  const pass = document.getElementById('usuario-pass').value;
+  const nombre = document.getElementById('usuario-nombre').value.trim();
+  const rol = document.getElementById('usuario-rol').value.trim() || 'Administrativo';
+
+  if(!usuario || !nombre){ toast('Usuario y nombre son obligatorios.','error'); return; }
+  if(!id && !pass){ toast('La contraseña es obligatoria para un usuario nuevo.','error'); return; }
+  if(pass && pass.length < 4){ toast('La contraseña debe tener al menos 4 caracteres.','error'); return; }
+  if(usuario === USUARIO_CREADOR){ toast('Ese nombre de usuario está reservado.','error'); return; }
+
+  const accesoTotal = document.getElementById('usuario-acceso-total').checked;
+  const permisos = accesoTotal ? null : [...document.querySelectorAll('.chk-permiso-modulo:checked')].map(c=>c.value);
+  if(!accesoTotal && (!permisos || !permisos.length)){
+    toast('Selecciona al menos un módulo, o marca "Acceso total".','error'); return;
+  }
+
+  const payload = { nombre, rol, permisos_rh: permisos };
+  if(pass) payload.pass = pass;
+
+  if(id){
+    const { error } = await sb.from('usuarios_fin').update(payload).eq('id', id);
+    if(error){ toast(error.message,'error'); return; }
+  } else {
+    const { data: existente } = await sb.from('usuarios_fin').select('id').eq('usuario', usuario).maybeSingle();
+    if(existente){ toast('Ya existe un usuario con ese nombre.','error'); return; }
+    const { error } = await sb.from('usuarios_fin').insert({ usuario, pass, ...payload });
+    if(error){ toast(error.message,'error'); return; }
+  }
+
+  toast('Usuario guardado correctamente.','exito');
+  cerrarModal('modal-usuario');
+  renderUsuarios();
+}
+
+/* ====================== MANUAL DEL SISTEMA ====================== */
+const MANUAL_SECCIONES = [
+  { id:'intro', titulo:'1. Introducción', contenido: `
+    <p>Este manual describe el uso del <strong>Sistema de Recursos Humanos del Distrito Educativo 16-06, Bonao Nordeste</strong>. El sistema centraliza la gestión de personal, las acciones de personal ante el MINERD, las ausencias, la seguridad social y la nómina recibida de Contraloría.</p>
+    <p>El acceso es por dos vías: <strong>Administrativo</strong> (usuario y contraseña, para el personal de Recursos Humanos y dirección distrital) y <strong>Personal por cédula</strong> (para que cada empleado consulte únicamente sus propios datos).</p>
+    <p>El menú lateral agrupa los módulos en: General, Acciones de Personal, Ausencias, Seguridad Social, Certificaciones, Personal y Centros, Nómina MINERD, y Ayuda.</p>
+  `},
+  { id:'panel', titulo:'2. Panel general', contenido: `
+    <p>Es la primera pantalla que se muestra al iniciar sesión como administrativo. Resume en tarjetas y gráficas el estado de todo el sistema: personal y centros, acciones de personal, ausencias, seguridad social y la última nómina importada, incluyendo los movimientos detectados (nuevos, reingresos, cancelados).</p>
+    <p>Incluye accesos rápidos a los módulos de uso más frecuente: nueva solicitud AP, generar telegrama, vacaciones, licencias y permisos, e importar nómina.</p>
+  `},
+  { id:'ap', titulo:'3. Solicitudes AP', contenido: `
+    <p>Aquí se registran los Requerimientos de Acción de Personal que el distrito envía al MINERD, replicando el formato oficial (Regional, Distrito, No. de Solicitud, datos del centro, propuesta a designar, propuesta a sustituir, motivo de la solicitud).</p>
+    <p><strong>Para crear una solicitud:</strong> tocar "+ Nueva solicitud AP", seleccionar el centro, el motivo (plaza vacante, sustitución por fallecimiento/renuncia/abandono/decisión administrativa, cambio de designación o completación de tanda), y agregar uno o varios candidatos con sus datos completos.</p>
+    <p>Cada solicitud puede generarse como documento (botón "📄 AP") con el formato exacto que exige el MINERD. El estado de la solicitud se actualiza manualmente conforme avanza el trámite (borrador, enviado, expediente incompleto, incidencias, aprobado, nombrado, rechazado).</p>
+    <p>También se puede importar un lote de solicitudes desde un archivo Excel/CSV (botón "⬆ Importar"), asignando el mismo centro a todas las filas del archivo.</p>
+  `},
+  { id:'telegramas', titulo:'4. Telegramas', contenido: `
+    <p>Genera el telegrama oficial de notificación de nombramiento, con el mismo formato y redacción que usa el Distrito 16-06, ajustando automáticamente la concordancia de género (el/la, designado/a, portador/a) según el sexo del candidato.</p>
+    <p>Se genera a partir de un candidato de una solicitud AP ya registrada. Al seleccionar el candidato, el sistema precarga el cargo y el director del centro; se debe indicar la jornada (Matutina, Vespertina, Nocturna o Extendida) y el destinatario.</p>
+    <p>El telegrama puede verse e imprimirse en cualquier momento desde el listado.</p>
+  `},
+  { id:'pd', titulo:'5. Puesta a disposición', contenido: `
+    <p>Genera el oficio de liberación de personal con el formato Al/De/Vía/Asunto usado por el distrito, para poner a un empleado a disposición de otro distrito o instancia.</p>
+    <p>Se indica el empleado, el cargo a designar en el oficio, el destinatario y su cargo, el distrito de destino, y opcionalmente el analista de RRHH que tramita ("Vía"). El texto se ajusta automáticamente según el sexo del empleado.</p>
+  `},
+  { id:'ca', titulo:'6. Carta de aceptación', contenido: `
+    <p>Es el documento inverso a la puesta a disposición: notifica a otro distrito que el Distrito 16-06 acepta recibir a un empleado proveniente de su jurisdicción.</p>
+    <p>Se indica el empleado, el cargo con el que se acepta, el distrito de procedencia (destinatario "A la"/"Al"), y opcionalmente el centro educativo donde será ubicado.</p>
+  `},
+  { id:'vacaciones', titulo:'7. Vacaciones', contenido: `
+    <p>Registra las solicitudes de disfrute de vacaciones siguiendo el formulario oficial de la Dirección General de Gestión Humana: años de servicio en el MINERD y en otras instituciones del Estado, días solicitados (pudiendo repartirse entre dos años distintos), días pendientes, y fechas de inicio y fin del disfrute.</p>
+    <p>El sistema muestra alertas automáticas cuando: los días solicitados superan 20 (recordando que pueden fraccionarse en dos fechas calendario), el rango de fechas no coincide con los días indicados, o la empleada está en licencia pre o post natal (caso en que la autorización es obligatoria por normativa).</p>
+    <p>El estado avanza de Solicitado → Firmado por el supervisor → Autorizado por Relaciones Laborales (o Rechazado).</p>
+  `},
+  { id:'lp', titulo:'8. Licencias y permisos', contenido: `
+    <p>Cubre el Formulario Reporte de Licencias y Solicitud de Permisos del MINERD, con dos categorías:</p>
+    <p><strong>Licencias:</strong> sin disfrute de sueldo, matrimonio, para estudios, cuidado de familiar directo, por enfermedad, pre y post natal, u otra (especificando el detalle).</p>
+    <p><strong>Permisos:</strong> fallecimiento de familiar directo, nacimiento de hijos (padre), requerimiento legal, estudio, u otros.</p>
+    <p>El sistema avisa automáticamente cuándo un subtipo requiere evidencia documental y en qué plazo: matrimonio y fallecimiento (72 horas posteriores), estudios (solicitar con 60 días de anticipación), enfermedad y pre/post natal (original y copia). El listado marca con un indicador rojo cuando la evidencia sigue pendiente de presentar.</p>
+  `},
+  { id:'riesgo', titulo:'9. Riesgo laboral (ATR-2 / EPR-1)', contenido: `
+    <p>Registra los avisos de riesgo laboral según los formularios oficiales de SISALRIL: <strong>ATR-2</strong> (Aviso de Accidente de Trabajo) y <strong>EPR-1</strong> (Aviso de Enfermedad Profesional).</p>
+    <p>Se indica el empleado, el tipo de formulario, la fecha del evento y la fecha en que se notifica, la descripción y lugar del suceso, y un checklist de documentación (certificado médico, acta policial si aplica, formulario firmado por RRHH).</p>
+    <p>El sistema calcula automáticamente si el aviso se está registrando dentro o fuera del plazo de 72 horas posteriores al evento, mostrando una alerta visual cuando se excede ese plazo.</p>
+  `},
+  { id:'pensiones', titulo:'10. Pensiones', contenido: `
+    <p>Permite armar y dar seguimiento al expediente de jubilación o pensión, diferenciando entre personal docente (tramitado vía INABIMA) y administrativo.</p>
+    <p>Incluye un checklist de los documentos requeridos: certificación de trabajo del MINERD, certificación de cargos de la Contraloría, comunicación dirigida al Ministro, copia de cédula y fotos 2x2.</p>
+    <p>El estado avanza desde "Armando expediente" hasta "Enviado al MINERD", "Enviado a INABIMA" y finalmente "Decreto promulgado" (o Rechazado).</p>
+  `},
+  { id:'seguro', titulo:'11. Seguro de salud', contenido: `
+    <p>Gestiona las solicitudes de afiliación al seguro de salud (SeNaSa), distinguiendo:</p>
+    <p><strong>F1:</strong> afiliación del titular y dependientes directos (cónyuge e hijos menores).</p>
+    <p><strong>F2:</strong> dependientes adicionales (hijos mayores de 21, padres o suegros), que requieren además un formulario de autorización de descuento mensual.</p>
+    <p>El checklist de cada solicitud incluye copia de cédula, acta de nacimiento, certificación de estudio (para hijos de 18 a 21 años) y el formulario de descuento cuando aplica.</p>
+  `},
+  { id:'certlab', titulo:'12. Certificación laboral', contenido: `
+    <p>Genera la carta "A quien pueda interesar" que certifica el período y cargo en que un empleado ha prestado servicios en el distrito, para trámites como constancias laborales, préstamos o procesos migratorios.</p>
+    <p>Si la certificación es solicitada por un tercero, el sistema marca la condición y exige confirmar si se cuenta con el poder notarial correspondiente, siguiendo la norma del MINERD de no entregar certificaciones a terceros sin ese respaldo.</p>
+  `},
+  { id:'personal', titulo:'13. Personal', contenido: `
+    <p>Catálogo completo del personal del distrito: docentes, administrativos y personal de apoyo. Cada registro incluye cédula, datos personales, cargo, centro asignado, número de dependencia de nómina y estatus.</p>
+    <p>Los estatus disponibles son: Activo, Inactivo, Sustituido, Renunciado, Fallecido y Cancelado. El estatus puede cambiarse rápidamente desde el listado, sin necesidad de abrir el formulario completo de edición.</p>
+    <p>Se puede buscar por nombre, cédula o cargo, filtrar por estatus, e importar personal en lote desde un archivo Excel/CSV (que actualiza automáticamente a quienes ya existan, identificándolos por cédula).</p>
+  `},
+  { id:'centros', titulo:'14. Centros educativos', contenido: `
+    <p>Catálogo de los centros educativos del distrito: nombre, código SIGERD, matrícula, nivel, tanda, número de dependencia de nómina y director/a.</p>
+    <p>Permite importación masiva desde Excel: si el código SIGERD de una fila ya existe en el sistema, ese centro se actualiza; si no existe, se crea uno nuevo, evitando duplicados.</p>
+  `},
+  { id:'relacioncentros', titulo:'15. Relación de centros', contenido: `
+    <p>Reporte que cruza el catálogo de centros con el personal que tiene cargo de "Director" asignado a cada uno, mostrando nombre del centro, nombre y cédula del contacto, teléfono y dirección.</p>
+    <p>Si ningún empleado con cargo de director está vinculado al centro, se usa el nombre de director capturado directamente en la ficha del centro como respaldo.</p>
+  `},
+  { id:'nominas', titulo:'16. Nóminas MINERD', contenido: `
+    <p>Permite importar la nómina que envía el MINERD a través de Contraloría, en formato Excel, CSV o PDF (con texto seleccionable, no escaneado).</p>
+    <p>Al importar una nómina, el sistema: (1) crea automáticamente los centros que aún no existan en el catálogo, identificándolos por código de dependencia o SIGERD; (2) crea o actualiza al personal por cédula, ajustando su cargo y centro si cambiaron, y reactivándolo a "Activo" si estaba inactivo; (3) compara la nómina contra todo el historial acumulado para detectar <strong>Nuevos</strong> nombramientos (cédulas que nunca habían aparecido), <strong>Reingresos</strong> (habían aparecido antes, salieron, y vuelven), y <strong>Cancelados</strong> (estaban en la nómina inmediatamente anterior y ya no aparecen, a quienes se les marca automáticamente el estatus "Inactivo" en Personal).</p>
+    <p>Cada nómina importada puede revisarse en detalle (cruce por cédula contra el personal registrado) o por el reporte de movimientos, donde cada caso puede marcarse como "revisado" conforme se gestiona.</p>
+  `},
+  { id:'exportar', titulo:'17. Exportar, imprimir e importar', contenido: `
+    <p>Todos los módulos del sistema comparten las mismas herramientas:</p>
+    <p><strong>Checkbox de selección:</strong> cada fila tiene una casilla, y el encabezado de la tabla tiene una casilla para seleccionar todo el listado visible de una vez.</p>
+    <p><strong>Exportar:</strong> los botones ⬇ CSV, ⬇ Excel y ⬇ PDF descargan la lista actualmente filtrada en pantalla, en el formato elegido.</p>
+    <p><strong>Imprimir:</strong> el botón 🖨 abre el diálogo de impresión del navegador. Si se marcaron casillas antes de imprimir, solo se imprimen esos registros seleccionados; si no se marcó ninguna, se imprime toda la lista filtrada.</p>
+    <p><strong>Eliminar selección:</strong> borra de la base de datos todos los registros marcados con casilla, previa confirmación.</p>
+    <p><strong>Importar:</strong> disponible en Personal, Centros, Solicitudes AP y Nóminas. Se sube un archivo Excel o CSV; el sistema detecta automáticamente las columnas (aunque varíen los nombres de encabezado) y crea o actualiza los registros usando la cédula, el código SIGERD o el número de solicitud como identificador único, según el módulo.</p>
+  `},
+  { id:'login', titulo:'18. Acceso al sistema', contenido: `
+    <p>El acceso administrativo usa el mismo usuario y contraseña del Sistema Financiero del Distrito 16-06 (tabla compartida de usuarios).</p>
+    <p>El acceso de personal (pestaña "Personal (Cédula)") permite que cualquier empleado registrado consulte únicamente sus propios datos: nombre, cédula, cargo, centro y estatus, ingresando solo su número de cédula.</p>
+  `},
+];
+
+async function renderManual(){
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Manual del Sistema de Recursos Humanos</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secundario btn-chico" onclick="exportarManualWord()">⬇ Word</button>
+          <button class="btn btn-secundario btn-chico" onclick="exportarManualPDF()">⬇ PDF</button>
+          <button class="btn btn-secundario btn-chico" onclick="imprimirManual()">🖨 Imprimir</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <p class="texto-ayuda" style="margin-bottom:14px;">Distrito Educativo 16-06, Bonao Nordeste · Guía de uso completa, con todas las secciones del sistema.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+          ${MANUAL_SECCIONES.map(s=>`<a href="#manual-${s.id}" class="badge badge-azul" style="text-decoration:none;cursor:pointer;">${escapeHtml(s.titulo)}</a>`).join('')}
+        </div>
+        <div id="manual-contenido">
+          ${MANUAL_SECCIONES.map(s=>`
+            <div id="manual-${s.id}" style="margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--gris-300);">
+              <h3 style="color:var(--azul-900);margin-bottom:8px;">${escapeHtml(s.titulo)}</h3>
+              <div style="font-size:13.5px;line-height:1.7;color:var(--gris-900);">${s.contenido}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generarHTMLManualCompleto(){
+  const cuerpo = MANUAL_SECCIONES.map(s=>`
+    <h2 style="color:#0d2340;margin-top:26px;">${escapeHtml(s.titulo)}</h2>
+    <div>${s.contenido}</div>
+  `).join('');
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+    <title>Manual del Sistema de RH - Distrito 16-06</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6;padding:40px;max-width:880px;margin:0 auto;}
+      h1{color:#0d2340;font-size:22px;border-bottom:3px solid #b3242c;padding-bottom:10px;}
+      h2{font-size:15px;border-top:1px solid #ccc;padding-top:14px;}
+      p{margin:6px 0;}
+      .portada-sub{color:#555;font-size:13px;margin-bottom:30px;}
+      @media print{ h2{page-break-before:auto;} }
+    </style></head><body>
+    <h1>Manual del Sistema de Recursos Humanos</h1>
+    <div class="portada-sub">Distrito Educativo 16-06, Bonao Nordeste · MINERD</div>
+    ${cuerpo}
+  </body></html>`;
+}
+
+function imprimirManual(){
+  const w = window.open('', '_blank');
+  w.document.write(generarHTMLManualCompleto());
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+function exportarManualPDF(){
+  // Reutiliza el mismo HTML imprimible; el usuario elige "Guardar como PDF" en el diálogo de impresión.
+  imprimirManual();
+}
+
+// Exporta como documento .doc compatible con Word (HTML con cabecera de Word),
+// ya que generar un .docx real requeriría una librería adicional no cargada en este sistema.
+function exportarManualWord(){
+  const html = generarHTMLManualCompleto();
+  const htmlWord = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--></head>
+    <body>${html.replace(/<!DOCTYPE.*?>/,'').replace(/<html.*?>|<\/html>/g,'').replace(/<head>.*?<\/head>/s,'')}</body></html>`;
+  const blob = new Blob(['\ufeff', htmlWord], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'movimientos_nomina_1606.csv';
+  a.href = url; a.download = 'manual_sistema_rh_1606.doc';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
