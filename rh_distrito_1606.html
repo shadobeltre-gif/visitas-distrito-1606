@@ -1,0 +1,3639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH 16-06 | Distrito Educativo 16-06 Bonao Nordeste</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --azul-900:#0d2340;
+  --azul-800:#11315c;
+  --azul-700:#163f78;
+  --azul-600:#1d4f93;
+  --azul-500:#2563ab;
+  --azul-100:#e7eef8;
+  --rojo-600:#b3242c;
+  --gris-900:#1b1f24;
+  --gris-700:#3d4450;
+  --gris-500:#6b7280;
+  --gris-300:#d6dae1;
+  --gris-100:#f4f6f9;
+  --blanco:#ffffff;
+  --verde-600:#1f7a4d;
+  --amarillo-600:#a8730a;
+  --radio:8px;
+  --sombra: 0 1px 3px rgba(13,35,64,.08), 0 1px 2px rgba(13,35,64,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:'Segoe UI',Arial,'Helvetica Neue',sans-serif;
+  background:var(--gris-100);
+  color:var(--gris-900);
+  font-size:14px;
+}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:14px;}
+
+/* ============ LOGIN ============ */
+#pantalla-login{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(160deg,var(--azul-900) 0%,var(--azul-700) 55%,var(--azul-600) 100%);
+  padding:20px;
+}
+.tarjeta-login{
+  background:var(--blanco);
+  border-radius:12px;
+  width:100%;
+  max-width:420px;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+  overflow:hidden;
+}
+.encabezado-login{
+  background:var(--azul-900);
+  color:var(--blanco);
+  padding:28px 28px 22px;
+  text-align:center;
+  border-bottom:4px solid var(--rojo-600);
+}
+.encabezado-login .escudo{
+  width:54px;height:54px;
+  margin:0 auto 10px;
+  border-radius:50%;
+  background:var(--blanco);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:var(--azul-900);font-size:20px;
+}
+.encabezado-login h1{
+  font-size:15px;margin:0 0 4px;letter-spacing:.5px;font-weight:700;
+  text-transform:uppercase;
+}
+.encabezado-login p{margin:0;font-size:13px;opacity:.85;}
+.cuerpo-login{padding:26px 28px 30px;}
+.tabs-login{display:flex;border:1px solid var(--gris-300);border-radius:var(--radio);overflow:hidden;margin-bottom:20px;}
+.tab-login{flex:1;text-align:center;padding:10px;background:var(--gris-100);font-weight:600;font-size:13px;color:var(--gris-700);border:none;}
+.tab-login.activo{background:var(--azul-700);color:var(--blanco);}
+.campo{margin-bottom:14px;}
+.campo label{display:block;font-size:12.5px;font-weight:600;color:var(--gris-700);margin-bottom:5px;}
+.campo input,.campo select{
+  width:100%;padding:10px 12px;border:1px solid var(--gris-300);border-radius:var(--radio);
+  outline:none;transition:border .15s;
+}
+.campo input:focus,.campo select:focus{border-color:var(--azul-500);}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 16px;border-radius:var(--radio);border:none;font-weight:600;font-size:13.5px;
+  transition:filter .15s, transform .05s;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primario{background:var(--azul-700);color:var(--blanco);width:100%;padding:11px;}
+.btn-primario:hover{filter:brightness(1.08);}
+.btn-secundario{background:var(--gris-100);color:var(--gris-700);border:1px solid var(--gris-300);}
+.btn-secundario:hover{filter:brightness(.97);}
+.btn-rojo{background:var(--rojo-600);color:var(--blanco);}
+.btn-verde{background:var(--verde-600);color:var(--blanco);}
+.btn-chico{padding:6px 10px;font-size:12.5px;}
+.error-login{
+  background:#fde9e9;color:var(--rojo-600);padding:10px 12px;border-radius:var(--radio);
+  font-size:12.5px;margin-bottom:14px;display:none;
+}
+.pie-login{margin-top:18px;text-align:center;font-size:11.5px;color:var(--gris-500);}
+
+/* ============ LAYOUT APP ============ */
+#app{display:none;min-height:100vh;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{
+  width:250px;flex-shrink:0;background:var(--azul-900);color:var(--blanco);
+  display:flex;flex-direction:column;
+  min-height:0;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-header{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.12);}
+.sidebar-header .escudo-mini{
+  width:36px;height:36px;border-radius:50%;background:var(--blanco);color:var(--azul-900);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;margin-bottom:8px;
+}
+.sidebar-header h2{font-size:13.5px;margin:0 0 2px;font-weight:700;line-height:1.3;}
+.sidebar-header p{font-size:11px;margin:0;opacity:.7;}
+.sidebar-nav{flex:1;padding:10px 0;}
+.grupo-nav{margin-bottom:4px;}
+.grupo-nav-titulo{
+  padding:10px 18px 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
+  color:rgba(255,255,255,.5);font-weight:700;cursor:pointer;display:flex;justify-content:space-between;
+  align-items:center;user-select:none;
+}
+.grupo-nav-titulo .flecha{transition:transform .15s;font-size:10px;}
+.grupo-nav.colapsado .flecha{transform:rotate(-90deg);}
+.grupo-nav.colapsado .items-nav{display:none;}
+.item-nav{
+  display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.85);
+  cursor:pointer;border-left:3px solid transparent;
+}
+.item-nav:hover{background:rgba(255,255,255,.06);}
+.item-nav.activo{background:rgba(255,255,255,.1);border-left-color:var(--rojo-600);font-weight:600;color:var(--blanco);}
+.item-nav .icono{width:18px;text-align:center;}
+.sidebar-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;}
+.sidebar-footer .nombre-usuario{font-weight:600;margin-bottom:2px;}
+.sidebar-footer .rol-usuario{opacity:.65;font-size:11px;margin-bottom:10px;}
+
+.contenido{flex:1;min-height:0;display:flex;flex-direction:column;min-width:0;}
+.topbar{
+  background:var(--blanco);border-bottom:1px solid var(--gris-300);padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;
+}
+.topbar h1{font-size:17px;margin:0;color:var(--azul-900);}
+.topbar .subtitulo{font-size:12px;color:var(--gris-500);margin-top:2px;}
+.main{padding:22px 24px;flex:1;}
+
+.tarjeta{background:var(--blanco);border-radius:10px;box-shadow:var(--sombra);border:1px solid var(--gris-300);margin-bottom:18px;}
+.tarjeta-header{padding:14px 18px;border-bottom:1px solid var(--gris-300);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.tarjeta-header h3{margin:0;font-size:14.5px;color:var(--azul-900);}
+.tarjeta-body{padding:18px;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media (max-width:760px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  text-align:left;background:var(--azul-100);color:var(--azul-900);padding:9px 10px;
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;
+  position:sticky;top:0;
+}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--gris-300);vertical-align:middle;}
+tbody tr:hover{background:var(--gris-100);}
+.tabla-wrap{overflow-x:auto;}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-azul{background:var(--azul-100);color:var(--azul-700);}
+.badge-verde{background:#e3f4ea;color:var(--verde-600);}
+.badge-rojo{background:#fde9e9;color:var(--rojo-600);}
+.badge-amarillo{background:#fdf1de;color:var(--amarillo-600);}
+.badge-gris{background:var(--gris-100);color:var(--gris-700);}
+
+.kpi{display:flex;flex-direction:column;gap:4px;}
+.kpi .valor{font-size:26px;font-weight:800;color:var(--azul-900);}
+.kpi .etiqueta{font-size:12px;color:var(--gris-500);}
+
+.modal-fondo{
+  display:none;position:fixed;inset:0;background:rgba(13,35,64,.55);z-index:100;
+  align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;
+}
+.modal-fondo.abierto{display:flex;}
+.modal{background:var(--blanco);border-radius:10px;width:100%;max-width:640px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--gris-300);display:flex;justify-content:space-between;align-items:center;}
+.modal-header h3{margin:0;font-size:15px;color:var(--azul-900);}
+.modal-cerrar{background:none;border:none;font-size:20px;color:var(--gris-500);line-height:1;}
+.modal-body{padding:18px 20px;max-height:70vh;overflow-y:auto;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--gris-300);display:flex;justify-content:flex-end;gap:8px;}
+
+.vacio{text-align:center;padding:40px 20px;color:var(--gris-500);}
+.vacio .icono-vacio{font-size:34px;margin-bottom:10px;opacity:.5;}
+
+.toast-cont{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--azul-900);color:var(--blanco);padding:12px 16px;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.25);font-size:13px;max-width:320px;}
+.toast.exito{background:var(--verde-600);}
+.toast.error{background:var(--rojo-600);}
+
+.fieldset-doc{border:1px dashed var(--gris-300);border-radius:8px;padding:14px;margin-bottom:14px;}
+.fieldset-doc legend{font-size:12px;font-weight:700;color:var(--azul-700);padding:0 6px;}
+
+.menu-hamburguesa{display:none;background:none;border:none;font-size:22px;color:var(--azul-900);}
+@media (max-width:880px){
+  .sidebar{position:fixed;left:-260px;top:0;height:100vh;z-index:60;transition:left .2s;}
+  .sidebar.abierta{left:0;}
+  .menu-hamburguesa{display:block;}
+  .overlay-sidebar{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55;}
+  .overlay-sidebar.activo{display:block;}
+}
+
+.preview-telegrama{
+  background:#fbfbf9;border:1px solid var(--gris-300);padding:30px;border-radius:6px;font-family:'Times New Roman',Times,serif;
+  font-size:14px;line-height:1.7;color:#1a1a1a;
+}
+.preview-telegrama .firma-img{font-style:italic;font-size:22px;color:#163f78;margin:6px 0;}
+
+.spinner{
+  width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+  display:inline-block;animation:girar .6s linear infinite;
+}
+@keyframes girar{to{transform:rotate(360deg);}}
+
+.texto-ayuda{font-size:11.5px;color:var(--gris-500);margin-top:4px;}
+.requerido{color:var(--rojo-600);}
+</style>
+</head>
+<body>
+
+<!-- ============ PANTALLA LOGIN ============ -->
+<div id="pantalla-login">
+  <div class="tarjeta-login">
+    <div class="encabezado-login">
+      <div class="escudo">16</div>
+      <h1>Distrito Educativo 16-06</h1>
+      <p>Sistema de Recursos Humanos · Bonao Nordeste</p>
+    </div>
+    <div class="cuerpo-login">
+      <div class="tabs-login">
+        <button class="tab-login activo" id="tab-admin" onclick="cambiarTabLogin('admin')">Administrativo</button>
+        <button class="tab-login" id="tab-tecnico" onclick="cambiarTabLogin('tecnico')">Personal (Cédula)</button>
+      </div>
+
+      <div id="error-login" class="error-login"></div>
+
+      <div id="form-admin">
+        <div class="campo">
+          <label>Usuario</label>
+          <input type="text" id="admin-usuario" placeholder="Ej. admin.rh">
+        </div>
+        <div class="campo">
+          <label>Contraseña</label>
+          <input type="password" id="admin-clave" placeholder="••••••••">
+        </div>
+      </div>
+
+      <div id="form-tecnico" style="display:none;">
+        <div class="campo">
+          <label>Cédula</label>
+          <input type="text" id="tecnico-cedula" placeholder="000-0000000-0">
+        </div>
+      </div>
+
+      <button class="btn btn-primario" id="btn-login" onclick="iniciarSesion()">Iniciar sesión</button>
+      <div class="pie-login">MINERD · Regional 16 · Distrito 06</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="layout">
+    <div class="overlay-sidebar" id="overlay-sidebar" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="escudo-mini">16</div>
+        <h2>RH Distrito 16-06</h2>
+        <p>Bonao Nordeste</p>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="nombre-usuario" id="nombre-usuario-sidebar">—</div>
+        <div class="rol-usuario" id="rol-usuario-sidebar">—</div>
+        <button class="btn btn-secundario btn-chico" style="width:100%;" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <div class="contenido">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="menu-hamburguesa" onclick="toggleSidebar()">☰</button>
+          <div>
+            <h1 id="titulo-vista">Panel general</h1>
+            <div class="subtitulo" id="subtitulo-vista">Resumen del módulo de Recursos Humanos</div>
+          </div>
+        </div>
+      </div>
+      <div class="main" id="main-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-cont" id="toast-cont"></div>
+
+<script>
+/* ====================== CONFIG SUPABASE ====================== */
+const SUPABASE_URL = 'https://ejkvehnzjkxbymuvejoh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa3ZlaG56amt4YnltdXZlam9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc4MDIsImV4cCI6MjA5NTk0MzgwMn0.FI0Z_Mx1FQ4hpA6JYkYJ4X9CoVDHgK_bDq_qiak3WOU';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let sesion = { tipo:null, usuario:null }; // tipo: 'admin' | 'tecnico'
+let vistaActual = 'panel';
+
+/* ====================== TOAST ====================== */
+function toast(msg, tipo=''){
+  const cont = document.getElementById('toast-cont');
+  const el = document.createElement('div');
+  el.className = 'toast ' + tipo;
+  el.textContent = msg;
+  cont.appendChild(el);
+  setTimeout(()=>el.remove(), 4000);
+}
+
+/* ====================== LOGIN ====================== */
+function cambiarTabLogin(tipo){
+  document.getElementById('tab-admin').classList.toggle('activo', tipo==='admin');
+  document.getElementById('tab-tecnico').classList.toggle('activo', tipo==='tecnico');
+  document.getElementById('form-admin').style.display = tipo==='admin' ? 'block' : 'none';
+  document.getElementById('form-tecnico').style.display = tipo==='tecnico' ? 'block' : 'none';
+  document.getElementById('error-login').style.display = 'none';
+}
+
+async function iniciarSesion(){
+  const esAdmin = document.getElementById('tab-admin').classList.contains('activo');
+  const errEl = document.getElementById('error-login');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.innerHTML = '<span class="spinner"></span> Verificando...';
+
+  try{
+    if(esAdmin){
+      const usuario = document.getElementById('admin-usuario').value.trim().toLowerCase();
+      const clave = document.getElementById('admin-clave').value;
+      if(!usuario || !clave){ throw new Error('Completa usuario y contraseña.'); }
+
+      const { data, error } = await sb.from('usuarios_fin')
+        .select('*');
+
+      if(error) throw error;
+      const encontrado = (data||[]).find(u => (u.usuario||'').toLowerCase() === usuario && u.pass === clave);
+      if(!encontrado) throw new Error('Usuario o contraseña incorrectos.');
+
+      sesion = { tipo:'admin', usuario:encontrado };
+    } else {
+      const cedula = document.getElementById('tecnico-cedula').value.trim();
+      if(!cedula){ throw new Error('Ingresa tu número de cédula.'); }
+
+      const { data, error } = await sb.from('personal_rh')
+        .select('*, centros_rh(nombre_centro)')
+        .eq('cedula', cedula)
+        .maybeSingle();
+
+      if(error) throw error;
+      if(!data) throw new Error('No se encontró personal con esa cédula.');
+
+      sesion = { tipo:'tecnico', usuario:data };
+    }
+
+    document.getElementById('pantalla-login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    construirMenu();
+    irAVista('panel');
+
+  }catch(err){
+    errEl.textContent = err.message || 'Error al iniciar sesión.';
+    errEl.style.display = 'block';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+function cerrarSesion(){
+  sesion = { tipo:null, usuario:null };
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pantalla-login').style.display = 'flex';
+  document.getElementById('admin-clave').value = '';
+}
+
+/* ====================== SIDEBAR / MENU ====================== */
+const MENU_ADMIN = [
+  { grupo:'General', items:[
+    { id:'panel', icono:'▦', label:'Panel general' },
+  ]},
+  { grupo:'Acciones de Personal', items:[
+    { id:'solicitudes', icono:'📋', label:'Solicitudes AP' },
+    { id:'telegramas', icono:'✉', label:'Telegramas' },
+    { id:'puestasdisposicion', icono:'📤', label:'Puesta a disposición' },
+    { id:'cartasaceptacion', icono:'📥', label:'Carta de aceptación' },
+  ]},
+  { grupo:'Ausencias', items:[
+    { id:'vacaciones', icono:'🏖', label:'Vacaciones' },
+    { id:'licenciaspermisos', icono:'🗂', label:'Licencias y permisos' },
+  ]},
+  { grupo:'Seguridad Social', items:[
+    { id:'riesgoslaborales', icono:'⚠', label:'Riesgo laboral (ATR-2/EPR-1)' },
+    { id:'pensiones', icono:'🎓', label:'Pensiones' },
+    { id:'segurossalud', icono:'➕', label:'Seguro de salud' },
+  ]},
+  { grupo:'Certificaciones', items:[
+    { id:'certificacioneslaborales', icono:'📜', label:'Certificación laboral' },
+  ]},
+  { grupo:'Personal y Centros', items:[
+    { id:'personal', icono:'👤', label:'Personal' },
+    { id:'centros', icono:'🏫', label:'Centros educativos' },
+    { id:'relacioncentros', icono:'📊', label:'Relación de centros' },
+  ]},
+  { grupo:'Nómina MINERD', items:[
+    { id:'nominas', icono:'💵', label:'Nóminas' },
+  ]},
+];
+
+const MENU_TECNICO = [
+  { grupo:'General', items:[
+    { id:'panel', icono:'▦', label:'Mi panel' },
+  ]},
+];
+
+function construirMenu(){
+  const nav = document.getElementById('sidebar-nav');
+  const menu = sesion.tipo === 'admin' ? MENU_ADMIN : MENU_TECNICO;
+  nav.innerHTML = menu.map((g,gi)=>`
+    <div class="grupo-nav" data-grupo="${gi}">
+      <div class="grupo-nav-titulo" onclick="toggleGrupoNav(${gi})">
+        <span>${g.grupo}</span><span class="flecha">▾</span>
+      </div>
+      <div class="items-nav">
+        ${g.items.map(it=>`
+          <div class="item-nav" data-vista="${it.id}" onclick="irAVista('${it.id}')">
+            <span class="icono">${it.icono}</span><span>${it.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  if(sesion.tipo === 'admin'){
+    document.getElementById('nombre-usuario-sidebar').textContent = sesion.usuario.nombre || sesion.usuario.usuario;
+    document.getElementById('rol-usuario-sidebar').textContent = sesion.usuario.rol || 'Administrativo';
+  } else {
+    document.getElementById('nombre-usuario-sidebar').textContent = (sesion.usuario.nombres+' '+sesion.usuario.apellidos);
+    document.getElementById('rol-usuario-sidebar').textContent = sesion.usuario.cargo_actual || 'Personal';
+  }
+}
+
+function toggleGrupoNav(i){
+  document.querySelector(`.grupo-nav[data-grupo="${i}"]`).classList.toggle('colapsado');
+}
+
+function toggleSidebar(forzar){
+  const sb_ = document.getElementById('sidebar');
+  const ov = document.getElementById('overlay-sidebar');
+  const abrir = forzar !== undefined ? forzar : !sb_.classList.contains('abierta');
+  sb_.classList.toggle('abierta', abrir);
+  ov.classList.toggle('activo', abrir);
+}
+
+/* ====================== ROUTER DE VISTAS ====================== */
+const TITULOS = {
+  panel:['Panel general','Resumen del módulo de Recursos Humanos'],
+  solicitudes:['Solicitudes AP','Requerimientos de Acción de Personal'],
+  telegramas:['Telegramas','Notificaciones oficiales de nombramiento'],
+  puestasdisposicion:['Puesta a disposición','Oficios de liberación de personal'],
+  cartasaceptacion:['Carta de aceptación','Oficios de aceptación de personal recibido'],
+  vacaciones:['Vacaciones','Solicitudes de disfrute de vacaciones'],
+  licenciaspermisos:['Licencias y permisos','Reporte de licencias y solicitud de permisos'],
+  riesgoslaborales:['Riesgo laboral','Aviso de Accidente de Trabajo (ATR-2) y Enfermedad Profesional (EPR-1)'],
+  pensiones:['Pensiones','Expedientes de jubilación y pensión'],
+  segurossalud:['Seguro de salud','Afiliación SeNaSa: titulares y dependientes'],
+  certificacioneslaborales:['Certificación laboral','Cartas y oficios de certificación de servicios'],
+  personal:['Personal','Empleados del Distrito 16-06'],
+  centros:['Centros educativos','Catálogo de centros del distrito'],
+  relacioncentros:['Relación de centros','Listado de centros con personal de contacto'],
+  nominas:['Nóminas MINERD','Control de nómina recibida de Contraloría'],
+};
+
+async function irAVista(id){
+  vistaActual = id;
+  document.querySelectorAll('.item-nav').forEach(el=>{
+    el.classList.toggle('activo', el.dataset.vista === id);
+  });
+  const [t,s] = TITULOS[id] || [id,''];
+  document.getElementById('titulo-vista').textContent = t;
+  document.getElementById('subtitulo-vista').textContent = s;
+  toggleSidebar(false);
+
+  const main = document.getElementById('main-content');
+  main.innerHTML = '<div class="vacio">Cargando…</div>';
+
+  try{
+    if(id === 'panel') await renderPanel();
+    else if(id === 'solicitudes') await renderSolicitudes();
+    else if(id === 'telegramas') await renderTelegramas();
+    else if(id === 'puestasdisposicion') await renderPuestasDisposicion();
+    else if(id === 'cartasaceptacion') await renderCartasAceptacion();
+    else if(id === 'vacaciones') await renderVacaciones();
+    else if(id === 'licenciaspermisos') await renderLicenciasPermisos();
+    else if(id === 'riesgoslaborales') await renderRiesgosLaborales();
+    else if(id === 'pensiones') await renderPensiones();
+    else if(id === 'segurossalud') await renderSegurosSalud();
+    else if(id === 'certificacioneslaborales') await renderCertificacionesLaborales();
+    else if(id === 'personal') await renderPersonal();
+    else if(id === 'centros') await renderCentros();
+    else if(id === 'relacioncentros') await renderRelacionCentros();
+    else if(id === 'nominas') await renderNominas();
+  }catch(err){
+    console.error(err);
+    main.innerHTML = `<div class="tarjeta"><div class="tarjeta-body"><div class="vacio">
+      <div class="icono-vacio">⚠</div>Error al cargar: ${err.message}
+    </div></div></div>`;
+  }
+}
+
+/* ====================== UTILIDADES ====================== */
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fechaCorta(f){
+  if(!f) return '—';
+  const d = new Date(f);
+  if(isNaN(d)) return f;
+  return d.toLocaleDateString('es-DO',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function badgeEstado(estado){
+  const mapa = {
+    borrador:['gris','Borrador'], enviado:['azul','Enviado'],
+    expediente_incompleto:['amarillo','Expediente incompleto'], incidencias:['rojo','Incidencias'],
+    aprobado:['verde','Aprobado'], nombrado:['verde','Nombrado'], rechazado:['rojo','Rechazado'],
+    pendiente:['gris','Pendiente'],
+    generado:['gris','Generado'], enviado_tel:['azul','Enviado'], entregado:['verde','Entregado'],
+    activo:['verde','Activo'], inactivo:['gris','Inactivo'], sustituido:['amarillo','Sustituido'],
+    renunciado:['rojo','Renunciado'], fallecido:['rojo','Fallecido'],
+    encontrado:['verde','Encontrado'], no_encontrado:['rojo','No encontrado'], revision_manual:['amarillo','Revisar'],
+    aceptado:['verde','Aceptado'],
+    solicitado:['azul','Solicitado'], firmado_supervisor:['amarillo','Firmado supervisor'],
+    autorizado_rrll:['verde','Autorizado RRLL'], aprobado_supervisor:['verde','Aprobado supervisor'],
+    confirmado:['verde','Confirmado'],
+    notificado:['azul','Notificado'], enviado_sisalril:['amarillo','Enviado SISALRIL'],
+    calificado_AT_EP:['verde','Calificado'],
+    armando_expediente:['gris','Armando expediente'], enviado_minerd:['azul','Enviado MINERD'],
+    enviado_inabima:['amarillo','Enviado INABIMA'], decreto_promulgado:['verde','Decreto promulgado'],
+    en_proceso:['amarillo','En proceso'], emitida:['verde','Emitida'], entregada:['verde','Entregada'],
+    rechazada:['rojo','Rechazada'],
+    depositado_nomina:['amarillo','Depositado en nómina'],
+  };
+  const [color,texto] = mapa[estado] || ['gris', estado];
+  return `<span class="badge badge-${color}">${texto}</span>`;
+}
+const MOTIVOS_AP = [
+  ['SUSTITUCION_FALLECIMIENTO','Sustitución por fallecimiento'],
+  ['SUSTITUCION_DECISION_ADMINISTRATIVA','Sustitución por decisión administrativa'],
+  ['SUSTITUCION_ABANDONO','Sustitución por abandono'],
+  ['SUSTITUCION_RENUNCIA','Sustitución por renuncia'],
+  ['CAMBIO_DESIGNACION','Cambio de designación'],
+  ['COMPLETACION_TANDA','Completación de tanda'],
+  ['PLAZA_VACANTE','Plaza vacante'],
+];
+function labelMotivo(codigo){
+  const m = MOTIVOS_AP.find(x=>x[0]===codigo);
+  return m ? m[1] : codigo;
+}
+function esSustitucion(codigo){ return codigo && codigo.startsWith('SUSTITUCION_'); }
+
+async function cargarCentrosSelect(selectEl, valorSeleccionado){
+  const { data, error } = await sb.from('centros_rh').select('id,nombre_centro,codigo_sigerd').order('nombre_centro');
+  if(error){ toast('Error cargando centros: '+error.message,'error'); return; }
+  selectEl.innerHTML = '<option value="">Seleccione un centro…</option>' +
+    (data||[]).map(c=>`<option value="${c.id}" ${String(c.id)===String(valorSeleccionado)?'selected':''}>${escapeHtml(c.nombre_centro)}${c.codigo_sigerd?' — SIGERD '+escapeHtml(c.codigo_sigerd):''}</option>`).join('');
+}
+
+async function cargarPersonalSelect(selectEl, valorSeleccionado){
+  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo').order('apellidos');
+  if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
+  window._personalCache = data || [];
+  selectEl.innerHTML = '<option value="">Seleccione un empleado…</option>' +
+    (data||[]).map(p=>`<option value="${p.id}" ${String(p.id)===String(valorSeleccionado)?'selected':''}>${escapeHtml(p.nombres+' '+p.apellidos)} — ${escapeHtml(p.cedula)}</option>`).join('');
+}
+
+function abrirModal(id){ document.getElementById(id).classList.add('abierto'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('abierto'); }
+
+/* ====================== PANEL GENERAL ====================== */
+async function renderPanel(){
+  const main = document.getElementById('main-content');
+
+  if(sesion.tipo === 'tecnico'){
+    const u = sesion.usuario;
+    main.innerHTML = `
+      <div class="tarjeta">
+        <div class="tarjeta-header"><h3>Mis datos</h3></div>
+        <div class="tarjeta-body">
+          <div class="grid-2">
+            <div><strong>Nombre:</strong> ${escapeHtml(u.nombres)} ${escapeHtml(u.apellidos)}</div>
+            <div><strong>Cédula:</strong> ${escapeHtml(u.cedula)}</div>
+            <div><strong>Cargo:</strong> ${escapeHtml(u.cargo_actual||'—')}</div>
+            <div><strong>Centro:</strong> ${escapeHtml(u.centros_rh?.nombre_centro||'—')}</div>
+            <div><strong>Estatus:</strong> ${badgeEstado(u.estatus)}</div>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const [sol, tel, per, nom] = await Promise.all([
+    sb.from('solicitudes_ap').select('id,estado', {count:'exact'}),
+    sb.from('telegramas_rh').select('id', {count:'exact'}),
+    sb.from('personal_rh').select('id', {count:'exact'}).eq('estatus','activo'),
+    sb.from('nominas_rh').select('id,mes,anio').order('anio',{ascending:false}).order('mes',{ascending:false}).limit(1),
+  ]);
+
+  const pendientes = (sol.data||[]).filter(s=>['enviado','expediente_incompleto','incidencias'].includes(s.estado)).length;
+  const nombrados = (sol.data||[]).filter(s=>s.estado==='nombrado').length;
+  const ultimaNomina = nom.data && nom.data[0] ? `${nom.data[0].mes}/${nom.data[0].anio}` : 'Sin registrar';
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor">${sol.count ?? 0}</div><div class="etiqueta">Solicitudes AP totales</div>
+      </div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor">${pendientes}</div><div class="etiqueta">AP pendientes de respuesta MINERD</div>
+      </div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor">${nombrados}</div><div class="etiqueta">Nombramientos confirmados</div>
+      </div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor">${tel.count ?? 0}</div><div class="etiqueta">Telegramas generados</div>
+      </div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor">${per.count ?? 0}</div><div class="etiqueta">Personal activo</div>
+      </div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi">
+        <div class="valor" style="font-size:20px;">${ultimaNomina}</div><div class="etiqueta">Última nómina registrada</div>
+      </div></div>
+    </div>
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Accesos rápidos</h3></div>
+      <div class="tarjeta-body" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primario" onclick="irAVista('solicitudes')">+ Nueva solicitud AP</button>
+        <button class="btn btn-secundario" onclick="irAVista('telegramas')">Generar telegrama</button>
+        <button class="btn btn-secundario" onclick="irAVista('nominas')">Importar nómina</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ====================== CENTROS EDUCATIVOS ====================== */
+async function renderCentros(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('centros_rh').select('*').order('nombre_centro');
+  if(error){ toast(error.message,'error'); }
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Centros educativos (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalCentro()">+ Agregar centro</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr>
+            <th>Centro</th><th>SIGERD</th><th>Matrícula</th><th>Nivel</th><th>Tanda</th><th>Dependencia</th><th>Director/a</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${data.map(c=>`
+              <tr>
+                <td><strong>${escapeHtml(c.nombre_centro)}</strong></td>
+                <td>${escapeHtml(c.codigo_sigerd||'—')}</td>
+                <td>${c.matricula??'—'}</td>
+                <td>${escapeHtml(c.nivel||'—')}</td>
+                <td>${escapeHtml(c.tanda||'—')}</td>
+                <td>${escapeHtml(c.numero_dependencia_nomina||'—')}</td>
+                <td>${escapeHtml(c.director_nombre||'—')}</td>
+                <td><button class="btn btn-secundario btn-chico" onclick='abrirModalCentro(${JSON.stringify(c).replace(/'/g,"&apos;")})'>Editar</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">🏫</div>No hay centros registrados todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-centro">
+      <div class="modal">
+        <div class="modal-header"><h3 id="titulo-modal-centro">Agregar centro</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-centro')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="centro-id">
+          <div class="campo"><label>Nombre completo del centro <span class="requerido">*</span></label>
+            <input type="text" id="centro-nombre"></div>
+          <div class="grid-2">
+            <div class="campo"><label>Código SIGERD</label><input type="text" id="centro-sigerd"></div>
+            <div class="campo"><label>Matrícula</label><input type="number" id="centro-matricula"></div>
+            <div class="campo"><label>Nivel(es)</label><input type="text" id="centro-nivel" placeholder="Ej. Primario"></div>
+            <div class="campo"><label>Tanda</label>
+              <select id="centro-tanda">
+                <option value="">—</option>
+                <option>Matutina</option><option>Vespertina</option><option>Nocturna</option><option>Extendida</option>
+              </select>
+            </div>
+            <div class="campo"><label>No. dependencia nómina</label><input type="text" id="centro-dependencia"></div>
+            <div class="campo"><label>Director/a</label><input type="text" id="centro-director"></div>
+            <div class="campo"><label>Sexo del director/a</label>
+              <select id="centro-director-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-centro')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarCentro()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function abrirModalCentro(c){
+  document.getElementById('titulo-modal-centro').textContent = c ? 'Editar centro' : 'Agregar centro';
+  document.getElementById('centro-id').value = c?.id || '';
+  document.getElementById('centro-nombre').value = c?.nombre_centro || '';
+  document.getElementById('centro-sigerd').value = c?.codigo_sigerd || '';
+  document.getElementById('centro-matricula').value = c?.matricula || '';
+  document.getElementById('centro-nivel').value = c?.nivel || '';
+  document.getElementById('centro-tanda').value = c?.tanda || '';
+  document.getElementById('centro-dependencia').value = c?.numero_dependencia_nomina || '';
+  document.getElementById('centro-director').value = c?.director_nombre || '';
+  document.getElementById('centro-director-sexo').value = c?.director_sexo || '';
+  abrirModal('modal-centro');
+}
+
+async function guardarCentro(){
+  const id = document.getElementById('centro-id').value;
+  const payload = {
+    nombre_centro: document.getElementById('centro-nombre').value.trim(),
+    codigo_sigerd: document.getElementById('centro-sigerd').value.trim() || null,
+    matricula: document.getElementById('centro-matricula').value || null,
+    nivel: document.getElementById('centro-nivel').value.trim() || null,
+    tanda: document.getElementById('centro-tanda').value || null,
+    numero_dependencia_nomina: document.getElementById('centro-dependencia').value.trim() || null,
+    director_nombre: document.getElementById('centro-director').value.trim() || null,
+    director_sexo: document.getElementById('centro-director-sexo').value || null,
+  };
+  if(!payload.nombre_centro){ toast('El nombre del centro es obligatorio.','error'); return; }
+
+  const q = id ? sb.from('centros_rh').update(payload).eq('id', id) : sb.from('centros_rh').insert(payload);
+  const { error } = await q;
+  if(error){ toast(error.message,'error'); return; }
+  toast('Centro guardado correctamente.','exito');
+  cerrarModal('modal-centro');
+  renderCentros();
+}
+
+/* ====================== PERSONAL ====================== */
+async function renderPersonal(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('personal_rh').select('*, centros_rh(nombre_centro)').order('apellidos');
+  if(error){ toast(error.message,'error'); }
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Personal (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalPersonal()">+ Agregar empleado</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr>
+            <th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Centro</th><th>Estatus</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${data.map(p=>`
+              <tr>
+                <td><strong>${escapeHtml(p.nombres)} ${escapeHtml(p.apellidos)}</strong></td>
+                <td>${escapeHtml(p.cedula)}</td>
+                <td>${escapeHtml(p.cargo_actual||'—')}</td>
+                <td>${escapeHtml(p.centros_rh?.nombre_centro||'—')}</td>
+                <td>${badgeEstado(p.estatus)}</td>
+                <td><button class="btn btn-secundario btn-chico" onclick='abrirModalPersonal(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Editar</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">👤</div>No hay personal registrado todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-personal">
+      <div class="modal">
+        <div class="modal-header"><h3 id="titulo-modal-personal">Agregar empleado</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-personal')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="personal-id">
+          <div class="grid-2">
+            <div class="campo"><label>Cédula <span class="requerido">*</span></label><input type="text" id="personal-cedula" placeholder="000-0000000-0"></div>
+            <div class="campo"><label>Sexo <span class="requerido">*</span></label>
+              <select id="personal-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
+            <div class="campo"><label>Nombres <span class="requerido">*</span></label><input type="text" id="personal-nombres"></div>
+            <div class="campo"><label>Apellidos <span class="requerido">*</span></label><input type="text" id="personal-apellidos"></div>
+            <div class="campo"><label>Fecha de nacimiento</label><input type="date" id="personal-nacimiento"></div>
+            <div class="campo"><label>Teléfono</label><input type="text" id="personal-telefono"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Dirección</label><input type="text" id="personal-direccion"></div>
+            <div class="campo"><label>Nivel académico</label><input type="text" id="personal-nivel"></div>
+            <div class="campo"><label>Cargo actual</label><input type="text" id="personal-cargo"></div>
+            <div class="campo"><label>Centro</label><select id="personal-centro"></select></div>
+            <div class="campo"><label>No. dependencia nómina</label><input type="text" id="personal-dependencia"></div>
+            <div class="campo"><label>Fecha de ingreso</label><input type="date" id="personal-ingreso"></div>
+            <div class="campo"><label>Estatus</label>
+              <select id="personal-estatus">
+                <option value="activo">Activo</option><option value="inactivo">Inactivo</option>
+                <option value="sustituido">Sustituido</option><option value="renunciado">Renunciado</option>
+                <option value="fallecido">Fallecido</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-personal')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarPersonal()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarCentrosSelect(document.getElementById('personal-centro'));
+}
+
+async function abrirModalPersonal(p){
+  document.getElementById('titulo-modal-personal').textContent = p ? 'Editar empleado' : 'Agregar empleado';
+  document.getElementById('personal-id').value = p?.id || '';
+  document.getElementById('personal-cedula').value = p?.cedula || '';
+  document.getElementById('personal-sexo').value = p?.sexo || '';
+  document.getElementById('personal-nombres').value = p?.nombres || '';
+  document.getElementById('personal-apellidos').value = p?.apellidos || '';
+  document.getElementById('personal-nacimiento').value = p?.fecha_nacimiento || '';
+  document.getElementById('personal-telefono').value = p?.telefono || '';
+  document.getElementById('personal-direccion').value = p?.direccion || '';
+  document.getElementById('personal-nivel').value = p?.nivel_academico || '';
+  document.getElementById('personal-cargo').value = p?.cargo_actual || '';
+  document.getElementById('personal-dependencia').value = p?.numero_dependencia_nomina || '';
+  document.getElementById('personal-ingreso').value = p?.fecha_ingreso || '';
+  document.getElementById('personal-estatus').value = p?.estatus || 'activo';
+  await cargarCentrosSelect(document.getElementById('personal-centro'), p?.centro_id);
+  abrirModal('modal-personal');
+}
+
+async function guardarPersonal(){
+  const id = document.getElementById('personal-id').value;
+  const payload = {
+    cedula: document.getElementById('personal-cedula').value.trim(),
+    sexo: document.getElementById('personal-sexo').value,
+    nombres: document.getElementById('personal-nombres').value.trim(),
+    apellidos: document.getElementById('personal-apellidos').value.trim(),
+    fecha_nacimiento: document.getElementById('personal-nacimiento').value || null,
+    telefono: document.getElementById('personal-telefono').value.trim() || null,
+    direccion: document.getElementById('personal-direccion').value.trim() || null,
+    nivel_academico: document.getElementById('personal-nivel').value.trim() || null,
+    cargo_actual: document.getElementById('personal-cargo').value.trim() || null,
+    centro_id: document.getElementById('personal-centro').value || null,
+    numero_dependencia_nomina: document.getElementById('personal-dependencia').value.trim() || null,
+    fecha_ingreso: document.getElementById('personal-ingreso').value || null,
+    estatus: document.getElementById('personal-estatus').value,
+  };
+  if(!payload.cedula || !payload.sexo || !payload.nombres || !payload.apellidos){
+    toast('Cédula, sexo, nombres y apellidos son obligatorios.','error'); return;
+  }
+  const q = id ? sb.from('personal_rh').update(payload).eq('id', id) : sb.from('personal_rh').insert(payload);
+  const { error } = await q;
+  if(error){ toast(error.message,'error'); return; }
+  toast('Empleado guardado correctamente.','exito');
+  cerrarModal('modal-personal');
+  renderPersonal();
+}
+
+/* ====================== SOLICITUDES AP ====================== */
+let candidatosTemp = []; // candidatos en edición dentro del modal de solicitud
+
+async function renderSolicitudes(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('solicitudes_ap')
+    .select('*, centros_rh(nombre_centro), candidatos_ap(id,nombres,apellidos,cargo_propuesto,sexo,estado)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Solicitudes AP (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalSolicitud()">+ Nueva solicitud AP</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr>
+            <th>No. Solicitud</th><th>Fecha</th><th>Centro</th><th>Motivo</th><th>Candidatos</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${data.map(s=>`
+              <tr>
+                <td><strong>${escapeHtml(s.no_solicitud||'(sin número)')}</strong></td>
+                <td>${fechaCorta(s.fecha_solicitud)}</td>
+                <td>${escapeHtml(s.centros_rh?.nombre_centro||'—')}</td>
+                <td>${labelMotivo(s.motivo_solicitud)}</td>
+                <td>${(s.candidatos_ap||[]).map(c=>escapeHtml(c.nombres+' '+c.apellidos)).join(', ')||'—'}</td>
+                <td>${badgeEstado(s.estado)}</td>
+                <td style="display:flex;gap:6px;">
+                  <button class="btn btn-secundario btn-chico" onclick='verSolicitud(${s.id})'>Ver / Editar</button>
+                  <button class="btn btn-secundario btn-chico" onclick='descargarAP(${s.id})'>📄 AP</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">📋</div>No hay solicitudes AP todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-solicitud">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-header"><h3 id="titulo-modal-solicitud">Nueva solicitud AP</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-solicitud')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="sol-id">
+          <fieldset class="fieldset-doc">
+            <legend>Datos generales</legend>
+            <div class="grid-3">
+              <div class="campo"><label>No. de solicitud</label><input type="text" id="sol-numero" placeholder="2026-001"></div>
+              <div class="campo"><label>Fecha</label><input type="date" id="sol-fecha"></div>
+              <div class="campo"><label>Estado</label>
+                <select id="sol-estado">
+                  <option value="borrador">Borrador</option>
+                  <option value="enviado">Enviado</option>
+                  <option value="expediente_incompleto">Expediente incompleto</option>
+                  <option value="incidencias">Incidencias</option>
+                  <option value="aprobado">Aprobado</option>
+                  <option value="nombrado">Nombrado</option>
+                  <option value="rechazado">Rechazado</option>
+                </select>
+              </div>
+            </div>
+            <div class="campo"><label>Centro educativo <span class="requerido">*</span></label><select id="sol-centro"></select></div>
+            <div class="campo"><label>Motivo de solicitud <span class="requerido">*</span></label>
+              <select id="sol-motivo" onchange="actualizarVisibilidadSustituido()">
+                ${MOTIVOS_AP.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join('')}
+              </select>
+            </div>
+            <div class="campo"><label>Observaciones</label><textarea id="sol-observaciones" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          </fieldset>
+
+          <fieldset class="fieldset-doc">
+            <legend>Candidatos a designar</legend>
+            <div id="lista-candidatos"></div>
+            <button class="btn btn-secundario btn-chico" onclick="agregarCandidatoForm()">+ Agregar candidato</button>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-solicitud')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarSolicitud()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function plantillaCandidatoHTML(idx, c){
+  c = c || {};
+  const sust = esSustitucion(document.getElementById('sol-motivo')?.value);
+  return `
+  <div class="fieldset-doc" data-candidato="${idx}" style="position:relative;">
+    <button onclick="quitarCandidatoForm(${idx})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--rojo-600);font-size:16px;">✕</button>
+    <legend>Candidato ${idx+1}</legend>
+    <div class="grid-3">
+      <div class="campo"><label>Cédula</label><input type="text" class="cand-cedula" value="${escapeHtml(c.cedula||'')}"></div>
+      <div class="campo"><label>Sexo</label>
+        <select class="cand-sexo"><option value="M" ${c.sexo==='M'?'selected':''}>M</option><option value="F" ${c.sexo==='F'?'selected':''}>F</option></select></div>
+      <div class="campo"><label>Fecha nacimiento</label><input type="date" class="cand-nacimiento" value="${c.fecha_nacimiento||''}"></div>
+      <div class="campo"><label>Nombres</label><input type="text" class="cand-nombres" value="${escapeHtml(c.nombres||'')}"></div>
+      <div class="campo"><label>Apellidos</label><input type="text" class="cand-apellidos" value="${escapeHtml(c.apellidos||'')}"></div>
+      <div class="campo"><label>Teléfono</label><input type="text" class="cand-telefono" value="${escapeHtml(c.telefono||'')}"></div>
+      <div class="campo"><label>Cargo propuesto</label><input type="text" class="cand-cargo" value="${escapeHtml(c.cargo_propuesto||'')}"></div>
+      <div class="campo"><label>Nivel académico</label><input type="text" class="cand-nivel" value="${escapeHtml(c.nivel_academico||'')}"></div>
+      <div class="campo" style="grid-column:span 1;"><label>Dirección</label><input type="text" class="cand-direccion" value="${escapeHtml(c.direccion||'')}"></div>
+    </div>
+    <div class="campo-sustituido" style="display:${sust?'block':'none'};border-top:1px dashed var(--gris-300);margin-top:10px;padding-top:10px;">
+      <div class="texto-ayuda" style="margin-bottom:6px;"><strong>Empleado a sustituir</strong></div>
+      <div class="grid-3">
+        <div class="campo"><label>Cédula</label><input type="text" class="cand-sus-cedula" value="${escapeHtml(c.sustituido_cedula||'')}"></div>
+        <div class="campo"><label>Nombres</label><input type="text" class="cand-sus-nombres" value="${escapeHtml(c.sustituido_nombres||'')}"></div>
+        <div class="campo"><label>Apellidos</label><input type="text" class="cand-sus-apellidos" value="${escapeHtml(c.sustituido_apellidos||'')}"></div>
+        <div class="campo"><label>Cargo</label><input type="text" class="cand-sus-cargo" value="${escapeHtml(c.sustituido_cargo||'')}"></div>
+        <div class="campo"><label>Nivel académico</label><input type="text" class="cand-sus-nivel" value="${escapeHtml(c.sustituido_nivel_academico||'')}"></div>
+        <div class="campo"><label>Fecha de ingreso</label><input type="date" class="cand-sus-ingreso" value="${c.sustituido_fecha_ingreso||''}"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function agregarCandidatoForm(c){
+  const idx = document.querySelectorAll('#lista-candidatos [data-candidato]').length;
+  document.getElementById('lista-candidatos').insertAdjacentHTML('beforeend', plantillaCandidatoHTML(idx, c));
+}
+function quitarCandidatoForm(idx){
+  const el = document.querySelector(`#lista-candidatos [data-candidato="${idx}"]`);
+  if(el) el.remove();
+}
+function actualizarVisibilidadSustituido(){
+  const sust = esSustitucion(document.getElementById('sol-motivo').value);
+  document.querySelectorAll('.campo-sustituido').forEach(el=>{ el.style.display = sust ? 'block':'none'; });
+}
+
+async function abrirModalSolicitud(){
+  document.getElementById('titulo-modal-solicitud').textContent = 'Nueva solicitud AP';
+  document.getElementById('sol-id').value = '';
+  document.getElementById('sol-numero').value = '';
+  document.getElementById('sol-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('sol-estado').value = 'borrador';
+  document.getElementById('sol-motivo').value = 'PLAZA_VACANTE';
+  document.getElementById('sol-observaciones').value = '';
+  document.getElementById('lista-candidatos').innerHTML = '';
+  await cargarCentrosSelect(document.getElementById('sol-centro'));
+  agregarCandidatoForm();
+  abrirModal('modal-solicitud');
+}
+
+async function verSolicitud(id){
+  const { data: s, error } = await sb.from('solicitudes_ap').select('*').eq('id', id).single();
+  if(error){ toast(error.message,'error'); return; }
+  const { data: cands } = await sb.from('candidatos_ap').select('*').eq('solicitud_ap_id', id).order('id');
+
+  document.getElementById('titulo-modal-solicitud').textContent = 'Editar solicitud AP';
+  document.getElementById('sol-id').value = s.id;
+  document.getElementById('sol-numero').value = s.no_solicitud || '';
+  document.getElementById('sol-fecha').value = s.fecha_solicitud || '';
+  document.getElementById('sol-estado').value = s.estado;
+  document.getElementById('sol-motivo').value = s.motivo_solicitud;
+  document.getElementById('sol-observaciones').value = s.observaciones || '';
+  await cargarCentrosSelect(document.getElementById('sol-centro'), s.centro_id);
+  document.getElementById('lista-candidatos').innerHTML = '';
+  if(cands && cands.length){ cands.forEach(c=>agregarCandidatoForm(c)); }
+  else { agregarCandidatoForm(); }
+  actualizarVisibilidadSustituido();
+  abrirModal('modal-solicitud');
+}
+
+function leerCandidatosDelForm(){
+  const bloques = document.querySelectorAll('#lista-candidatos [data-candidato]');
+  const lista = [];
+  bloques.forEach(b=>{
+    const val = sel => b.querySelector(sel)?.value?.trim() || null;
+    lista.push({
+      cedula: val('.cand-cedula'), sexo: b.querySelector('.cand-sexo').value,
+      fecha_nacimiento: val('.cand-nacimiento'), nombres: val('.cand-nombres'), apellidos: val('.cand-apellidos'),
+      telefono: val('.cand-telefono'), cargo_propuesto: val('.cand-cargo'), nivel_academico: val('.cand-nivel'),
+      direccion: val('.cand-direccion'),
+      sustituido_cedula: val('.cand-sus-cedula'), sustituido_nombres: val('.cand-sus-nombres'),
+      sustituido_apellidos: val('.cand-sus-apellidos'), sustituido_cargo: val('.cand-sus-cargo'),
+      sustituido_nivel_academico: val('.cand-sus-nivel'), sustituido_fecha_ingreso: val('.cand-sus-ingreso'),
+    });
+  });
+  return lista;
+}
+
+async function guardarSolicitud(){
+  const id = document.getElementById('sol-id').value;
+  const payload = {
+    no_solicitud: document.getElementById('sol-numero').value.trim() || null,
+    fecha_solicitud: document.getElementById('sol-fecha').value || new Date().toISOString().slice(0,10),
+    estado: document.getElementById('sol-estado').value,
+    centro_id: document.getElementById('sol-centro').value,
+    motivo_solicitud: document.getElementById('sol-motivo').value,
+    observaciones: document.getElementById('sol-observaciones').value.trim() || null,
+  };
+  if(!payload.centro_id){ toast('Selecciona el centro educativo.','error'); return; }
+
+  const candidatos = leerCandidatosDelForm();
+  if(!candidatos.length || !candidatos[0].nombres){ toast('Agrega al menos un candidato con nombre.','error'); return; }
+
+  let solicitudId = id;
+  if(id){
+    const { error } = await sb.from('solicitudes_ap').update(payload).eq('id', id);
+    if(error){ toast(error.message,'error'); return; }
+    // Reemplazar candidatos: borrar y reinsertar (simple y robusto para este volumen)
+    await sb.from('candidatos_ap').delete().eq('solicitud_ap_id', id);
+  } else {
+    const { data, error } = await sb.from('solicitudes_ap').insert(payload).select('id').single();
+    if(error){ toast(error.message,'error'); return; }
+    solicitudId = data.id;
+  }
+
+  const filasCandidatos = candidatos.map(c=>({ ...c, solicitud_ap_id: solicitudId }));
+  const { error: errCand } = await sb.from('candidatos_ap').insert(filasCandidatos);
+  if(errCand){ toast(errCand.message,'error'); return; }
+
+  toast('Solicitud AP guardada correctamente.','exito');
+  cerrarModal('modal-solicitud');
+  renderSolicitudes();
+}
+
+/* ---- Generación del documento AP (HTML imprimible, igual formato MINERD) ---- */
+async function descargarAP(solicitudId){
+  const { data: s, error } = await sb.from('solicitudes_ap').select('*, centros_rh(*)').eq('id', solicitudId).single();
+  if(error){ toast(error.message,'error'); return; }
+  const { data: cands } = await sb.from('candidatos_ap').select('*').eq('solicitud_ap_id', solicitudId).order('id');
+  if(!cands || !cands.length){ toast('Esta solicitud no tiene candidatos registrados.','error'); return; }
+
+  const c = cands[0]; // El formato MINERD es un documento por candidato
+  const centro = s.centros_rh || {};
+  const sust = esSustitucion(s.motivo_solicitud);
+
+  const html = `
+  <html><head><meta charset="UTF-8"><title>AP ${s.no_solicitud||''}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12.5px;color:#111;padding:30px;}
+    h2{font-size:14px;margin:0;}
+    table{width:100%;border-collapse:collapse;margin-top:14px;}
+    td{padding:4px 6px;vertical-align:top;}
+    .seccion{margin-top:16px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #888;padding-bottom:3px;}
+    .motivos{margin-top:10px;}
+    .motivos div{padding:2px 0;}
+    .marcado::before{content:"☑ ";} .nomarcado::before{content:"☐ ";}
+  </style></head><body>
+    <h2>DIRECCIÓN DE GESTIÓN HUMANA</h2>
+    <h2>REQUERIMIENTO DE ACCIÓN DE PERSONAL</h2>
+    <table>
+      <tr><td><strong>REGIONAL</strong></td><td>${escapeHtml(s.regional)}</td><td><strong>FECHA:</strong></td><td>${fechaCorta(s.fecha_solicitud)}</td></tr>
+      <tr><td><strong>DISTRITO</strong></td><td>${escapeHtml(s.distrito)}</td><td><strong>NO. DE SOLICITUD:</strong></td><td>${escapeHtml(s.no_solicitud||'')}</td></tr>
+    </table>
+
+    <div class="seccion">Datos de la dependencia</div>
+    <table>
+      <tr><td><strong>Nombre completo del centro:</strong></td><td>${escapeHtml(centro.nombre_centro||'')}</td><td><strong>Nivel(es):</strong></td><td>${escapeHtml(centro.nivel||'')}</td></tr>
+      <tr><td><strong>Matrícula:</strong></td><td>${centro.matricula??''}</td><td><strong>Tanda(s):</strong></td><td>${escapeHtml(centro.tanda||'')}</td></tr>
+      <tr><td><strong>Código SIGERD:</strong></td><td>${escapeHtml(centro.codigo_sigerd||'')}</td><td><strong>No. dependencia nómina:</strong></td><td>${escapeHtml(centro.numero_dependencia_nomina||'')}</td></tr>
+    </table>
+
+    <div class="seccion">Propuesta a designar</div>
+    <table>
+      <tr><td><strong>Cédula:</strong></td><td>${escapeHtml(c.cedula)}</td><td><strong>Cargo propuesto:</strong></td><td>${escapeHtml(c.cargo_propuesto)}</td></tr>
+      <tr><td><strong>Nombres:</strong></td><td>${escapeHtml(c.nombres)}</td><td><strong>Nivel académico:</strong></td><td>${escapeHtml(c.nivel_academico||'')}</td></tr>
+      <tr><td><strong>Apellidos:</strong></td><td>${escapeHtml(c.apellidos)}</td><td><strong>Teléfono:</strong></td><td>${escapeHtml(c.telefono||'')}</td></tr>
+      <tr><td><strong>Fecha nacimiento:</strong></td><td>${fechaCorta(c.fecha_nacimiento)}</td><td><strong>Dirección:</strong></td><td>${escapeHtml(c.direccion||'')}</td></tr>
+      <tr><td><strong>Sexo:</strong></td><td>${c.sexo}</td><td></td><td></td></tr>
+    </table>
+
+    <div class="seccion">Propuesta a sustituir</div>
+    <table>
+      <tr><td><strong>Cédula:</strong></td><td>${escapeHtml(c.sustituido_cedula||'')}</td><td><strong>Cargo:</strong></td><td>${escapeHtml(c.sustituido_cargo||'')}</td></tr>
+      <tr><td><strong>Nombres:</strong></td><td>${escapeHtml(c.sustituido_nombres||'')}</td><td><strong>Nivel académico:</strong></td><td>${escapeHtml(c.sustituido_nivel_academico||'')}</td></tr>
+      <tr><td><strong>Apellidos:</strong></td><td>${escapeHtml(c.sustituido_apellidos||'')}</td><td><strong>Fecha de ingreso:</strong></td><td>${fechaCorta(c.sustituido_fecha_ingreso)}</td></tr>
+    </table>
+
+    <div class="seccion">Motivo solicitud</div>
+    <div class="motivos">
+      ${MOTIVOS_AP.map(m=>`<div class="${m[0]===s.motivo_solicitud?'marcado':'nomarcado'}">${m[1]}</div>`).join('')}
+    </div>
+    ${s.observaciones ? `<p><strong>Observaciones:</strong> ${escapeHtml(s.observaciones)}</p>` : ''}
+
+    <div class="seccion">Notas y observaciones (uso del analista de la sede)</div>
+    <table>
+      <tr><td>☐ Expediente completo</td><td>☐ Expediente incompleto</td><td>☐ Incidencias</td></tr>
+    </table>
+    <br><br>
+    <table>
+      <tr><td style="text-align:center;border-top:1px solid #000;">${escapeHtml(s.nombre_director_distrital||'Nombre director distrital')}</td>
+          <td style="text-align:center;border-top:1px solid #000;">${escapeHtml(s.nombre_director_regional||'Nombre director regional')}</td></tr>
+    </table>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== TELEGRAMAS ====================== */
+
+// Genera el texto del telegrama con concordancia de género automática,
+// replicando el formato real usado por el Distrito 16-06.
+function generarTextoTelegrama({ destinatarioNombre, centroNombre, candidatoNombre, candidatoCedula,
+                                   candidatoSexo, cargoDesignado, jornada, fecha }){
+  const F = candidatoSexo === 'F';
+  const elLa = F ? 'la' : 'el';
+  const senorA = F ? 'señora' : 'señor';
+  const portadorA = F ? 'portadora' : 'portador';
+  const designadoA = F ? 'Designada' : 'Designado';
+  const poneloLa = F ? 'ponerla' : 'ponerlo';
+
+  const fechaTexto = new Date(fecha+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+
+  return `Bonao, Rep. Dom.\nDISTRITO EDUCATIVO 16-06\n${fechaTexto}\n\n`+
+`Señor/a: ${destinatarioNombre}\nDirector/a\nCentro Educativo: ${centroNombre}\n\n`+
+`Por este medio se le comunica que ${elLa}/la ${senorA} ${candidatoNombre} ${portadorA} de Cédula de identidad `+
+`electoral No. ${candidatoCedula}, ha sido ${designadoA} como ${cargoDesignado}, en este centro educativo de `+
+`Jornada Escolar ${jornada}, sírvase ${poneloLa} en la posición.\n\n`+
+`Atentamente,\n\nEmeterio Beltré Tineo M.A.\nDirector Distrito Educativo 16-06, Bonao`;
+}
+
+async function renderTelegramas(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('telegramas_rh')
+    .select('*, centros_rh(nombre_centro), candidatos_ap(nombres,apellidos,cedula,sexo)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+
+  // Candidatos ya nombrados, disponibles para generarles telegrama
+  const { data: candidatosNombrables } = await sb.from('candidatos_ap')
+    .select('id,nombres,apellidos,cedula,sexo,cargo_propuesto, solicitudes_ap(centro_id, centros_rh(nombre_centro,director_nombre,tanda))')
+    .order('id',{ascending:false});
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Telegramas (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalTelegrama()">+ Generar telegrama</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr><th>No.</th><th>Fecha</th><th>Candidato</th><th>Centro</th><th>Cargo</th><th>Jornada</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            ${data.map(t=>`
+              <tr>
+                <td>${escapeHtml(t.no_telegrama||'—')}</td>
+                <td>${fechaCorta(t.fecha_telegrama)}</td>
+                <td>${escapeHtml((t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||''))}</td>
+                <td>${escapeHtml(t.centros_rh?.nombre_centro||'—')}</td>
+                <td>${escapeHtml(t.cargo_designado)}</td>
+                <td>${escapeHtml(t.jornada)}</td>
+                <td>${badgeEstado(t.estado_envio)}</td>
+                <td><button class="btn btn-secundario btn-chico" onclick="verTelegrama(${t.id})">Ver / Imprimir</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">✉</div>No hay telegramas generados todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-telegrama">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Generar telegrama</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-telegrama')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;">
+              <label>Candidato (de una solicitud AP) <span class="requerido">*</span></label>
+              <select id="tel-candidato" onchange="precargarTelegrama()">
+                <option value="">Seleccione un candidato…</option>
+                ${(candidatosNombrables||[]).map(c=>`
+                  <option value="${c.id}">${escapeHtml(c.nombres+' '+c.apellidos)} — ${escapeHtml(c.cargo_propuesto||'')} (${escapeHtml(c.solicitudes_ap?.centros_rh?.nombre_centro||'sin centro')})</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="campo"><label>No. de telegrama</label><input type="text" id="tel-numero"></div>
+            <div class="campo"><label>Fecha</label><input type="date" id="tel-fecha"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Destinatario (Director/a) <span class="requerido">*</span></label>
+              <input type="text" id="tel-destinatario"></div>
+            <div class="campo"><label>Cargo en que se designa <span class="requerido">*</span></label>
+              <input type="text" id="tel-cargo"></div>
+            <div class="campo"><label>Jornada <span class="requerido">*</span></label>
+              <select id="tel-jornada">
+                <option>Matutina</option><option>Vespertina</option><option>Nocturna</option><option>Extendida</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa (se ajusta automáticamente el género del texto)</div>
+            <div class="preview-telegrama" id="preview-telegrama" style="white-space:pre-wrap;"></div>
+          </div>
+          <input type="hidden" id="tel-centro-id">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-telegrama')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarTelegrama()">Guardar y generar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-ver-telegrama">
+      <div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h3>Telegrama</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-ver-telegrama')">×</button></div>
+        <div class="modal-body"><div class="preview-telegrama" id="preview-ver-telegrama" style="white-space:pre-wrap;"></div></div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-telegrama')">Cerrar</button>
+          <button class="btn btn-primario" onclick="imprimirTelegramaActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+  `;
+  window._candidatosNombrables = candidatosNombrables || [];
+  window._telegramasData = data || [];
+}
+
+function abrirModalTelegrama(){
+  document.getElementById('tel-numero').value = '';
+  document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('tel-destinatario').value = '';
+  document.getElementById('tel-cargo').value = '';
+  document.getElementById('tel-jornada').value = 'Extendida';
+  document.getElementById('tel-candidato').value = '';
+  document.getElementById('preview-telegrama').textContent = '';
+  abrirModal('modal-telegrama');
+}
+
+function precargarTelegrama(){
+  const id = document.getElementById('tel-candidato').value;
+  const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
+  if(!c) return;
+  document.getElementById('tel-cargo').value = c.cargo_propuesto || '';
+  document.getElementById('tel-destinatario').value = c.solicitudes_ap?.centros_rh?.director_nombre || '';
+  document.getElementById('tel-jornada').value = c.solicitudes_ap?.centros_rh?.tanda || 'Extendida';
+  document.getElementById('tel-centro-id').value = c.solicitudes_ap?.centro_id || '';
+  actualizarPreviewTelegrama();
+}
+
+function actualizarPreviewTelegrama(){
+  const id = document.getElementById('tel-candidato').value;
+  const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
+  if(!c){ document.getElementById('preview-telegrama').textContent=''; return; }
+  const texto = generarTextoTelegrama({
+    destinatarioNombre: document.getElementById('tel-destinatario').value || '________',
+    centroNombre: c.solicitudes_ap?.centros_rh?.nombre_centro || '________',
+    candidatoNombre: c.nombres+' '+c.apellidos,
+    candidatoCedula: c.cedula,
+    candidatoSexo: c.sexo,
+    cargoDesignado: document.getElementById('tel-cargo').value || '________',
+    jornada: document.getElementById('tel-jornada').value,
+    fecha: document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10),
+  });
+  document.getElementById('preview-telegrama').textContent = texto;
+}
+['tel-destinatario','tel-cargo','tel-jornada','tel-fecha'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target && e.target.id===id) actualizarPreviewTelegrama(); });
+  document.addEventListener('change', e=>{ if(e.target && e.target.id===id) actualizarPreviewTelegrama(); });
+});
+
+async function guardarTelegrama(){
+  const candidatoId = document.getElementById('tel-candidato').value;
+  const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(candidatoId));
+  const destinatario = document.getElementById('tel-destinatario').value.trim();
+  const cargo = document.getElementById('tel-cargo').value.trim();
+  const centroId = document.getElementById('tel-centro-id').value;
+
+  if(!c || !destinatario || !cargo || !centroId){
+    toast('Selecciona el candidato y completa destinatario y cargo.','error'); return;
+  }
+
+  const fecha = document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10);
+  const texto = generarTextoTelegrama({
+    destinatarioNombre: destinatario,
+    centroNombre: c.solicitudes_ap?.centros_rh?.nombre_centro || '',
+    candidatoNombre: c.nombres+' '+c.apellidos,
+    candidatoCedula: c.cedula,
+    candidatoSexo: c.sexo,
+    cargoDesignado: cargo,
+    jornada: document.getElementById('tel-jornada').value,
+    fecha,
+  });
+
+  const payload = {
+    candidato_ap_id: candidatoId,
+    centro_id: centroId,
+    no_telegrama: document.getElementById('tel-numero').value.trim() || null,
+    fecha_telegrama: fecha,
+    destinatario_nombre: destinatario,
+    cargo_designado: cargo,
+    jornada: document.getElementById('tel-jornada').value,
+    texto_generado: texto,
+  };
+
+  const { error } = await sb.from('telegramas_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+
+  // Marcar candidato como nombrado
+  await sb.from('candidatos_ap').update({ estado:'nombrado' }).eq('id', candidatoId);
+
+  toast('Telegrama generado correctamente.','exito');
+  cerrarModal('modal-telegrama');
+  renderTelegramas();
+}
+
+function verTelegrama(id){
+  const t = (window._telegramasData||[]).find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('preview-ver-telegrama').textContent = t.texto_generado;
+  window._telegramaActual = t;
+  abrirModal('modal-ver-telegrama');
+}
+
+function imprimirTelegramaActual(){
+  const t = window._telegramaActual;
+  if(!t) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Telegrama</title>
+    <style>body{font-family:'Times New Roman',serif;font-size:14px;padding:50px;white-space:pre-wrap;line-height:1.7;}</style>
+    </head><body>${escapeHtml(t.texto_generado)}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== PUESTA A DISPOSICIÓN ====================== */
+function generarTextoPuestaDisposicion({ fecha, destinatarioNombre, destinatarioCargo, analistaNombre,
+                                           analistaCargo, asunto, candidatoNombre, candidatoCedula,
+                                           candidatoSexo, cargoDesignado }){
+  const F = candidatoSexo === 'F';
+  const portadorA = F ? 'portadora' : 'portador';
+  const designadoA = F ? 'designada' : 'designado';
+  const fechaTexto = new Date(fecha+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+
+  return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
+`${fechaTexto}.\nBonao, R. D.\n\n`+
+`Al\t\t\t: ${destinatarioNombre}\n\t\t\t  ${destinatarioCargo}\n\n`+
+`De\t\t\t: Emeterio Beltré Tineo M.A.\n\t\t\t  Director Distrito Educativo 16-06, Bonao Nordeste.\n\n`+
+`Vía\t\t\t: ${analistaNombre || '________________'}\n\t\t\t  ${analistaCargo}\n\n`+
+`Asunto\t\t\t: ${asunto}\n\n`+
+`Respetuosamente, nos dirigimos a este Superior Despacho para poner a disposición, al señor/a `+
+`${candidatoNombre}, ${portadorA} de la Cédula de Identidad y electoral No. ${candidatoCedula}, `+
+`${designadoA} como ${cargoDesignado}, para que sea reubicado en su jurisdicción.\n\n`+
+`Agradeciendo de antemano su acogida.\n\nMuy atentamente,\n\n\nEmeterio Beltré Tineo M.A.\nDirector Distrital 16-06, Bonao Nordeste`;
+}
+
+async function renderPuestasDisposicion(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('puestas_disposicion_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,sexo,centro_id,centros_rh(nombre_centro))')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+
+  window._puestasDisposicionData = todos || [];
+
+  const totalEnviados = (todos||[]).filter(p=>p.estado==='enviado').length;
+  const totalAceptados = (todos||[]).filter(p=>p.estado==='aceptado').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${todos?.length||0}</div><div class="etiqueta">Total oficios</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalEnviados}</div><div class="etiqueta">Enviados, en espera</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalAceptados}</div><div class="etiqueta">Aceptados</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Puestas a disposición</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPuestasDisp()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalPuestaDisp()">+ Nuevo oficio</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-pd-texto" oninput="filtrarPuestasDisp()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-pd-estado" onchange="filtrarPuestasDisp()">
+              <option value="">Todos</option>
+              <option value="borrador">Borrador</option><option value="enviado">Enviado</option>
+              <option value="aceptado">Aceptado</option><option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+          <div class="campo"><label>Distrito destino</label><input type="text" id="filtro-pd-distrito" oninput="filtrarPuestasDisp()" placeholder="Ej. 16-04"></div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckPD(this)"></th>
+              <th>Fecha</th><th>Empleado</th><th>Cargo</th><th>Destinatario</th><th>Distrito</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-puestas-disp"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-puesta-disp">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nuevo oficio de puesta a disposición</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-puesta-disp')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
+              <select id="pd-personal" onchange="actualizarPreviewPD()"></select></div>
+            <div class="campo"><label>Fecha del oficio</label><input type="date" id="pd-fecha" onchange="actualizarPreviewPD()"></div>
+            <div class="campo"><label>Cargo a designar en el oficio <span class="requerido">*</span></label>
+              <input type="text" id="pd-cargo" oninput="actualizarPreviewPD()"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Destinatario ("Al") <span class="requerido">*</span></label>
+              <input type="text" id="pd-destinatario" oninput="actualizarPreviewPD()" placeholder="Ej. Licdo. Estanislao Peralta"></div>
+            <div class="campo"><label>Cargo del destinatario</label>
+              <input type="text" id="pd-destinatario-cargo" value="Director/a Distrital" oninput="actualizarPreviewPD()"></div>
+            <div class="campo"><label>Distrito / instancia destino</label><input type="text" id="pd-distrito" placeholder="Ej. 16-04"></div>
+            <div class="campo"><label>Analista RH ("Vía")</label><input type="text" id="pd-analista" oninput="actualizarPreviewPD()"></div>
+            <div class="campo"><label>Asunto</label><input type="text" id="pd-asunto" value="Puesta A Disposición" oninput="actualizarPreviewPD()"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Motivo (uso interno, no aparece en el oficio)</label>
+              <input type="text" id="pd-motivo"></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa</div>
+            <div class="preview-telegrama" id="preview-pd" style="white-space:pre-wrap;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-puesta-disp')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarPuestaDisp()">Guardar y generar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-ver-pd">
+      <div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h3>Oficio de puesta a disposición</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-ver-pd')">×</button></div>
+        <div class="modal-body"><div class="preview-telegrama" id="preview-ver-pd" style="white-space:pre-wrap;"></div></div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-pd')">Cerrar</button>
+          <button class="btn btn-primario" onclick="imprimirPDActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+  `;
+  pintarTablaPuestasDisp(window._puestasDisposicionData);
+}
+
+function pintarTablaPuestasDisp(lista){
+  const tbody = document.getElementById('tbody-puestas-disp');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">📤</div>No hay oficios registrados.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(p=>`
+    <tr>
+      <td><input type="checkbox" class="chk-pd" value="${p.id}"></td>
+      <td>${fechaCorta(p.fecha_oficio)}</td>
+      <td>${escapeHtml((p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||''))}</td>
+      <td>${escapeHtml(p.cargo_designado)}</td>
+      <td>${escapeHtml(p.destinatario_nombre)}</td>
+      <td>${escapeHtml(p.distrito_destino||'—')}</td>
+      <td>${badgeEstado(p.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="verPuestaDisp(${p.id})">Ver</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarPuestasDisp(){
+  const texto = document.getElementById('filtro-pd-texto').value.toLowerCase();
+  const estado = document.getElementById('filtro-pd-estado').value;
+  const distrito = document.getElementById('filtro-pd-distrito').value.toLowerCase();
+  const filtrado = (window._puestasDisposicionData||[]).filter(p=>{
+    const nombre = ((p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'')+' '+(p.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(estado && p.estado !== estado) return false;
+    if(distrito && !(p.distrito_destino||'').toLowerCase().includes(distrito)) return false;
+    return true;
+  });
+  pintarTablaPuestasDisp(filtrado);
+}
+
+function toggleTodosCheckPD(master){
+  document.querySelectorAll('.chk-pd').forEach(c=>c.checked = master.checked);
+}
+
+async function eliminarSeleccionPuestasDisp(){
+  const ids = [...document.querySelectorAll('.chk-pd:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} oficio(s) seleccionado(s)?`)) return;
+  const { error } = await sb.from('puestas_disposicion_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderPuestasDisposicion();
+}
+
+async function abrirModalPuestaDisp(){
+  document.getElementById('pd-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('pd-cargo').value = '';
+  document.getElementById('pd-destinatario').value = '';
+  document.getElementById('pd-destinatario-cargo').value = 'Director/a Distrital';
+  document.getElementById('pd-distrito').value = '';
+  document.getElementById('pd-analista').value = '';
+  document.getElementById('pd-asunto').value = 'Puesta A Disposición';
+  document.getElementById('pd-motivo').value = '';
+  await cargarPersonalSelect(document.getElementById('pd-personal'));
+  actualizarPreviewPD();
+  abrirModal('modal-puesta-disp');
+}
+
+function actualizarPreviewPD(){
+  const id = document.getElementById('pd-personal')?.value;
+  const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+  if(!p){ document.getElementById('preview-pd').textContent=''; return; }
+  const texto = generarTextoPuestaDisposicion({
+    fecha: document.getElementById('pd-fecha').value || new Date().toISOString().slice(0,10),
+    destinatarioNombre: document.getElementById('pd-destinatario').value || '________________',
+    destinatarioCargo: document.getElementById('pd-destinatario-cargo').value || 'Director/a Distrital',
+    analistaNombre: document.getElementById('pd-analista').value,
+    analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+    asunto: document.getElementById('pd-asunto').value || 'Puesta A Disposición',
+    candidatoNombre: p.nombres+' '+p.apellidos,
+    candidatoCedula: p.cedula,
+    candidatoSexo: p.sexo,
+    cargoDesignado: document.getElementById('pd-cargo').value || p.cargo_actual || '________________',
+  });
+  document.getElementById('preview-pd').textContent = texto;
+}
+
+async function guardarPuestaDisp(){
+  const personalId = document.getElementById('pd-personal').value;
+  const destinatario = document.getElementById('pd-destinatario').value.trim();
+  const cargo = document.getElementById('pd-cargo').value.trim();
+  if(!personalId || !destinatario || !cargo){ toast('Completa empleado, destinatario y cargo.','error'); return; }
+
+  const { data: p, error: errP } = await sb.from('personal_rh').select('*').eq('id', personalId).single();
+  if(errP){ toast(errP.message,'error'); return; }
+
+  const fecha = document.getElementById('pd-fecha').value || new Date().toISOString().slice(0,10);
+  const texto = generarTextoPuestaDisposicion({
+    fecha, destinatarioNombre: destinatario,
+    destinatarioCargo: document.getElementById('pd-destinatario-cargo').value || 'Director/a Distrital',
+    analistaNombre: document.getElementById('pd-analista').value,
+    analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+    asunto: document.getElementById('pd-asunto').value || 'Puesta A Disposición',
+    candidatoNombre: p.nombres+' '+p.apellidos, candidatoCedula: p.cedula, candidatoSexo: p.sexo,
+    cargoDesignado: cargo,
+  });
+
+  const payload = {
+    personal_id: personalId, fecha_oficio: fecha, destinatario_nombre: destinatario,
+    destinatario_cargo: document.getElementById('pd-destinatario-cargo').value || 'Director/a Distrital',
+    distrito_destino: document.getElementById('pd-distrito').value.trim() || null,
+    analista_nombre: document.getElementById('pd-analista').value.trim() || null,
+    asunto: document.getElementById('pd-asunto').value.trim() || 'Puesta A Disposición',
+    cargo_designado: cargo, motivo: document.getElementById('pd-motivo').value.trim() || null,
+    texto_generado: texto,
+  };
+  const { error } = await sb.from('puestas_disposicion_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Oficio generado correctamente.','exito');
+  cerrarModal('modal-puesta-disp');
+  renderPuestasDisposicion();
+}
+
+function verPuestaDisp(id){
+  const p = (window._puestasDisposicionData||[]).find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('preview-ver-pd').textContent = p.texto_generado;
+  window._pdActual = p;
+  abrirModal('modal-ver-pd');
+}
+
+function imprimirPDActual(){
+  const p = window._pdActual;
+  if(!p) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Puesta a disposición</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}</style>
+    </head><body>${escapeHtml(p.texto_generado)}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== CARTA DE ACEPTACIÓN DE PERSONAL ====================== */
+function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCargo, analistaNombre,
+                                         analistaCargo, asunto, candidatoNombre, candidatoCedula,
+                                         candidatoSexo, cargoDesignado, centroNombre }){
+  const F = candidatoSexo === 'F';
+  const laSenora = F ? 'la señora' : 'al señor';
+  const portadorA = F ? 'portadora' : 'portador';
+  const fechaTexto = new Date(fecha+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+  const ubicacion = centroNombre
+    ? `la cual será ubicada en ${centroNombre}, centro educativo de nuestro Distrito Educativo 16-06, Bonao Nordeste`
+    : `la cual será ubicada en un centro educativo de nuestro Distrito Educativo 16-06, Bonao Nordeste`;
+
+  return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
+`${fechaTexto}.\nBonao, R. D.\nHHRR\n\n`+
+`A la\t\t\t: ${destinatarioNombre}\n\t\t\t  ${destinatarioCargo}\n\n`+
+`De\t\t\t: Emeterio Beltre Tineo M.A.\n\t\t\t  Director del Distrito Educativo 16-06.\n\n`+
+`Vía\t\t\t: ${analistaNombre || '________________'}\n\t\t\t  ${analistaCargo}\n\n`+
+`Asunto\t\t\t: ${asunto}.\n\n`+
+`Respetuosamente, nos dirigimos a ese superior despacho para saludarle y a la vez informarle sobre `+
+`la aceptación en nuestro Distrito a ${laSenora} ${candidatoNombre}, ${cargoDesignado}, ${portadorA} de la `+
+`cedula de identidad y electoral No. ${candidatoCedula}, ${ubicacion}.\n\n`+
+`Esperando que esta solicitud sea atendida lo antes posible, sin más nada que agregar se despide de usted.\n\n`+
+`Muy atentamente,\n\n\nEmeterio Beltre Tineo M.A.\nDirector Distrital 16-06, Bonao Nordeste`;
+}
+
+async function renderCartasAceptacion(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('cartas_aceptacion_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,sexo), centros_rh(nombre_centro)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._cartasAceptacionData = todos || [];
+
+  const totalEnviados = (todos||[]).filter(c=>c.estado==='enviado').length;
+  const totalConfirmados = (todos||[]).filter(c=>c.estado==='confirmado').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${todos?.length||0}</div><div class="etiqueta">Total cartas</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalEnviados}</div><div class="etiqueta">Enviadas, en espera</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalConfirmados}</div><div class="etiqueta">Confirmadas</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Cartas de aceptación de personal</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCA()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalCA()">+ Nueva carta</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-ca-texto" oninput="filtrarCA()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-ca-estado" onchange="filtrarCA()">
+              <option value="">Todos</option>
+              <option value="borrador">Borrador</option><option value="enviado">Enviado</option>
+              <option value="confirmado">Confirmado</option><option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckCA(this)"></th>
+              <th>Fecha</th><th>Empleado</th><th>Cargo</th><th>Procedencia</th><th>Centro destino</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-cartas-aceptacion"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-carta-aceptacion">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nueva carta de aceptación</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-carta-aceptacion')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
+              <select id="ca-personal" onchange="actualizarPreviewCA()"></select></div>
+            <div class="campo"><label>Fecha del oficio</label><input type="date" id="ca-fecha" onchange="actualizarPreviewCA()"></div>
+            <div class="campo"><label>Cargo con el que se acepta <span class="requerido">*</span></label>
+              <input type="text" id="ca-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Docente de Nivel Inicial"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Distrito de procedencia ("A la"/"Al") <span class="requerido">*</span></label>
+              <input type="text" id="ca-destinatario" oninput="actualizarPreviewCA()" placeholder="Ej. Licda. María Mercedes De La Cruz Valerio"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Cargo del destinatario</label>
+              <input type="text" id="ca-destinatario-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Directora del Distrito Educativo 16-05, Piedra Blanca"></div>
+            <div class="campo"><label>Analista RH ("Vía")</label><input type="text" id="ca-analista" oninput="actualizarPreviewCA()"></div>
+            <div class="campo"><label>Asunto</label><input type="text" id="ca-asunto" value="Aceptación De Personal" oninput="actualizarPreviewCA()"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Centro educativo donde será ubicado (opcional)</label>
+              <select id="ca-centro" onchange="actualizarPreviewCA()"></select></div>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa</div>
+            <div class="preview-telegrama" id="preview-ca" style="white-space:pre-wrap;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-carta-aceptacion')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarCA()">Guardar y generar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-ver-ca">
+      <div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h3>Carta de aceptación</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-ver-ca')">×</button></div>
+        <div class="modal-body"><div class="preview-telegrama" id="preview-ver-ca" style="white-space:pre-wrap;"></div></div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-ca')">Cerrar</button>
+          <button class="btn btn-primario" onclick="imprimirCAActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('ca-personal'));
+  await cargarCentrosSelect(document.getElementById('ca-centro'));
+  pintarTablaCA(window._cartasAceptacionData);
+}
+
+function pintarTablaCA(lista){
+  const tbody = document.getElementById('tbody-cartas-aceptacion');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">📥</div>No hay cartas de aceptación registradas.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(c=>`
+    <tr>
+      <td><input type="checkbox" class="chk-ca" value="${c.id}"></td>
+      <td>${fechaCorta(c.fecha_oficio)}</td>
+      <td>${escapeHtml((c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||''))}</td>
+      <td>${escapeHtml(c.cargo_designado)}</td>
+      <td>${escapeHtml(c.destinatario_nombre)}</td>
+      <td>${escapeHtml(c.centros_rh?.nombre_centro||'—')}</td>
+      <td>${badgeEstado(c.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="verCA(${c.id})">Ver</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarCA(){
+  const texto = document.getElementById('filtro-ca-texto').value.toLowerCase();
+  const estado = document.getElementById('filtro-ca-estado').value;
+  const filtrado = (window._cartasAceptacionData||[]).filter(c=>{
+    const nombre = ((c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'')+' '+(c.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(estado && c.estado !== estado) return false;
+    return true;
+  });
+  pintarTablaCA(filtrado);
+}
+
+function toggleTodosCheckCA(master){ document.querySelectorAll('.chk-ca').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionCA(){
+  const ids = [...document.querySelectorAll('.chk-ca:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} carta(s) seleccionada(s)?`)) return;
+  const { error } = await sb.from('cartas_aceptacion_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderCartasAceptacion();
+}
+
+async function abrirModalCA(){
+  document.getElementById('ca-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ca-cargo').value = '';
+  document.getElementById('ca-destinatario').value = '';
+  document.getElementById('ca-destinatario-cargo').value = '';
+  document.getElementById('ca-analista').value = '';
+  document.getElementById('ca-asunto').value = 'Aceptación De Personal';
+  await cargarPersonalSelect(document.getElementById('ca-personal'));
+  await cargarCentrosSelect(document.getElementById('ca-centro'));
+  actualizarPreviewCA();
+  abrirModal('modal-carta-aceptacion');
+}
+
+function actualizarPreviewCA(){
+  const id = document.getElementById('ca-personal')?.value;
+  const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+  if(!p){ document.getElementById('preview-ca').textContent=''; return; }
+  const centroSel = document.getElementById('ca-centro');
+  const centroNombre = centroSel?.options[centroSel.selectedIndex]?.textContent?.split(' — SIGERD')[0];
+  const texto = generarTextoCartaAceptacion({
+    fecha: document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10),
+    destinatarioNombre: document.getElementById('ca-destinatario').value || '________________',
+    destinatarioCargo: document.getElementById('ca-destinatario-cargo').value || '________________',
+    analistaNombre: document.getElementById('ca-analista').value,
+    analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+    asunto: document.getElementById('ca-asunto').value || 'Aceptación De Personal',
+    candidatoNombre: p.nombres+' '+p.apellidos,
+    candidatoCedula: p.cedula,
+    candidatoSexo: p.sexo,
+    cargoDesignado: document.getElementById('ca-cargo').value || p.cargo_actual || '________________',
+    centroNombre: (centroSel?.value) ? centroNombre : null,
+  });
+  document.getElementById('preview-ca').textContent = texto;
+}
+
+async function guardarCA(){
+  const personalId = document.getElementById('ca-personal').value;
+  const destinatario = document.getElementById('ca-destinatario').value.trim();
+  const destinatarioCargo = document.getElementById('ca-destinatario-cargo').value.trim();
+  const cargo = document.getElementById('ca-cargo').value.trim();
+  if(!personalId || !destinatario || !destinatarioCargo || !cargo){
+    toast('Completa empleado, destinatario, su cargo y el cargo designado.','error'); return;
+  }
+
+  const { data: p, error: errP } = await sb.from('personal_rh').select('*').eq('id', personalId).single();
+  if(errP){ toast(errP.message,'error'); return; }
+
+  const centroId = document.getElementById('ca-centro').value || null;
+  const centroSel = document.getElementById('ca-centro');
+  const centroNombre = centroId ? centroSel.options[centroSel.selectedIndex].textContent.split(' — SIGERD')[0] : null;
+
+  const fecha = document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10);
+  const texto = generarTextoCartaAceptacion({
+    fecha, destinatarioNombre: destinatario, destinatarioCargo,
+    analistaNombre: document.getElementById('ca-analista').value,
+    analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+    asunto: document.getElementById('ca-asunto').value || 'Aceptación De Personal',
+    candidatoNombre: p.nombres+' '+p.apellidos, candidatoCedula: p.cedula, candidatoSexo: p.sexo,
+    cargoDesignado: cargo, centroNombre,
+  });
+
+  const payload = {
+    personal_id: personalId, fecha_oficio: fecha,
+    destinatario_nombre: destinatario, destinatario_cargo: destinatarioCargo,
+    analista_nombre: document.getElementById('ca-analista').value.trim() || null,
+    asunto: document.getElementById('ca-asunto').value.trim() || 'Aceptación De Personal',
+    cargo_designado: cargo, centro_id: centroId,
+    texto_generado: texto,
+  };
+  const { error } = await sb.from('cartas_aceptacion_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Carta de aceptación generada correctamente.','exito');
+  cerrarModal('modal-carta-aceptacion');
+  renderCartasAceptacion();
+}
+
+function verCA(id){
+  const c = (window._cartasAceptacionData||[]).find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('preview-ver-ca').textContent = c.texto_generado;
+  window._caActual = c;
+  abrirModal('modal-ver-ca');
+}
+
+function imprimirCAActual(){
+  const c = window._caActual;
+  if(!c) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Carta de aceptación</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}</style>
+    </head><body>${escapeHtml(c.texto_generado)}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== VACACIONES ====================== */
+function diasEntreFechas(ini, fin){
+  if(!ini || !fin) return 0;
+  const d1 = new Date(ini+'T00:00:00'), d2 = new Date(fin+'T00:00:00');
+  return Math.round((d2-d1)/(1000*60*60*24)) + 1;
+}
+
+async function renderVacaciones(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('vacaciones_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual,centro_id,centros_rh(nombre_centro))')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._vacacionesData = todos || [];
+
+  const pendientesAutorizar = (todos||[]).filter(v=>v.estado==='solicitado'||v.estado==='firmado_supervisor').length;
+  const autorizadas = (todos||[]).filter(v=>v.estado==='autorizado_rrll').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${todos?.length||0}</div><div class="etiqueta">Solicitudes totales</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${pendientesAutorizar}</div><div class="etiqueta">Pendientes de autorizar</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${autorizadas}</div><div class="etiqueta">Autorizadas por RRLL</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Solicitudes de vacaciones</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionVacaciones()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalVacacion()">+ Nueva solicitud</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-vac-texto" oninput="filtrarVacaciones()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-vac-estado" onchange="filtrarVacaciones()">
+              <option value="">Todos</option>
+              <option value="solicitado">Solicitado</option><option value="firmado_supervisor">Firmado supervisor</option>
+              <option value="autorizado_rrll">Autorizado RRLL</option><option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+          <div class="campo"><label>Año</label><input type="number" id="filtro-vac-anio" oninput="filtrarVacaciones()" placeholder="Ej. 2026"></div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckVac(this)"></th>
+              <th>Empleado</th><th>Centro</th><th>Días (año1/año2)</th><th>Desde</th><th>Hasta</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-vacaciones"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-vacacion">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-header"><h3>Nueva solicitud de vacaciones</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-vacacion')">×</button></div>
+        <div class="modal-body">
+          <fieldset class="fieldset-doc">
+            <legend>Datos generales</legend>
+            <div class="grid-3">
+              <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
+                <select id="vac-personal"></select></div>
+              <div class="campo"><label>Fecha de solicitud</label><input type="date" id="vac-fecha-solicitud"></div>
+              <div class="campo"><label>Años servicio MINERD</label><input type="number" step="0.5" id="vac-anios-minerd"></div>
+              <div class="campo"><label>Años servicio otra institución</label><input type="number" step="0.5" id="vac-anios-otra" value="0"></div>
+              <div class="campo"><label>Total años en el Estado</label><input type="number" step="0.5" id="vac-anios-total"></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="fieldset-doc">
+            <legend>Días solicitados</legend>
+            <div class="grid-3">
+              <div class="campo"><label>Días año 1</label><input type="number" id="vac-dias1" value="0" oninput="validarReglasVacaciones()"></div>
+              <div class="campo"><label>Año 1</label><input type="number" id="vac-anio1"></div>
+              <div class="campo"><label>Días pendientes (saldo)</label><input type="number" id="vac-dias-pendientes"></div>
+              <div class="campo"><label>Días año 2 (opcional)</label><input type="number" id="vac-dias2" value="0" oninput="validarReglasVacaciones()"></div>
+              <div class="campo"><label>Año 2</label><input type="number" id="vac-anio2"></div>
+            </div>
+            <div class="grid-2">
+              <div class="campo"><label>Fecha inicio disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-inicio" onchange="validarReglasVacaciones()"></div>
+              <div class="campo"><label>Fecha fin disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-fin" onchange="validarReglasVacaciones()"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;">
+              <input type="checkbox" id="vac-pre-post-natal"> Empleada en licencia pre/post natal (autorización obligatoria)
+            </label>
+            <div id="vac-alertas" style="margin-top:10px;"></div>
+            <div class="campo" style="margin-top:10px;"><label>Comentario</label>
+              <textarea id="vac-comentario" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-vacacion')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarVacacion()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('vac-personal'));
+  pintarTablaVacaciones(window._vacacionesData);
+}
+
+function pintarTablaVacaciones(lista){
+  const tbody = document.getElementById('tbody-vacaciones');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">🏖</div>No hay solicitudes de vacaciones registradas.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(v=>`
+    <tr>
+      <td><input type="checkbox" class="chk-vac" value="${v.id}"></td>
+      <td>${escapeHtml((v.personal_rh?.nombres||'')+' '+(v.personal_rh?.apellidos||''))}</td>
+      <td>${escapeHtml(v.personal_rh?.centros_rh?.nombre_centro||'—')}</td>
+      <td>${v.dias_solicitados_anio1||0} (${v.anio1||'—'}) / ${v.dias_solicitados_anio2||0} (${v.anio2||'—'})</td>
+      <td>${fechaCorta(v.fecha_inicio_disfrute)}</td>
+      <td>${fechaCorta(v.fecha_fin_disfrute)}</td>
+      <td>${badgeEstado(v.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoVacacion(${v.id})">Estado</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarVacaciones(){
+  const texto = document.getElementById('filtro-vac-texto').value.toLowerCase();
+  const estado = document.getElementById('filtro-vac-estado').value;
+  const anio = document.getElementById('filtro-vac-anio').value;
+  const filtrado = (window._vacacionesData||[]).filter(v=>{
+    const nombre = ((v.personal_rh?.nombres||'')+' '+(v.personal_rh?.apellidos||'')+' '+(v.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(estado && v.estado !== estado) return false;
+    if(anio && String(v.anio1)!==String(anio) && String(v.anio2)!==String(anio)) return false;
+    return true;
+  });
+  pintarTablaVacaciones(filtrado);
+}
+
+function toggleTodosCheckVac(master){ document.querySelectorAll('.chk-vac').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionVacaciones(){
+  const ids = [...document.querySelectorAll('.chk-vac:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} solicitud(es) seleccionada(s)?`)) return;
+  const { error } = await sb.from('vacaciones_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderVacaciones();
+}
+
+function abrirModalVacacion(){
+  document.getElementById('vac-fecha-solicitud').value = new Date().toISOString().slice(0,10);
+  ['vac-anios-minerd','vac-anios-otra','vac-anios-total','vac-dias1','vac-anio1','vac-dias-pendientes','vac-dias2','vac-anio2','vac-fecha-inicio','vac-fecha-fin','vac-comentario'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value = (id==='vac-anios-otra')?'0':'';
+  });
+  document.getElementById('vac-pre-post-natal').checked = false;
+  document.getElementById('vac-alertas').innerHTML = '';
+  abrirModal('modal-vacacion');
+}
+
+// Reglas de negocio del formulario oficial: acumulación máxima 2 años,
+// fraccionamiento si supera 20 días, y obligatoriedad si está en pre/post natal.
+function validarReglasVacaciones(){
+  const dias1 = parseInt(document.getElementById('vac-dias1').value)||0;
+  const dias2 = parseInt(document.getElementById('vac-dias2').value)||0;
+  const totalDias = dias1+dias2;
+  const ini = document.getElementById('vac-fecha-inicio').value;
+  const fin = document.getElementById('vac-fecha-fin').value;
+  const alertas = [];
+
+  if(totalDias > 20){
+    alertas.push('Más de 20 días solicitados: pueden fraccionarse en dos fechas calendario distintas.');
+  }
+  if(ini && fin){
+    const rango = diasEntreFechas(ini, fin);
+    if(rango !== totalDias && totalDias > 0){
+      alertas.push(`El rango de fechas (${rango} día(s)) no coincide con el total de días solicitados (${totalDias}).`);
+    }
+  }
+  if(document.getElementById('vac-pre-post-natal').checked){
+    alertas.push('Empleada en licencia pre/post natal: la autorización de estas vacaciones es obligatoria según normativa.');
+  }
+
+  document.getElementById('vac-alertas').innerHTML = alertas.length ? alertas.map(a=>
+    `<div class="badge badge-amarillo" style="display:block;margin-bottom:6px;white-space:normal;padding:8px 10px;">⚠ ${a}</div>`
+  ).join('') : '';
+}
+
+async function guardarVacacion(){
+  const personalId = document.getElementById('vac-personal').value;
+  const ini = document.getElementById('vac-fecha-inicio').value;
+  const fin = document.getElementById('vac-fecha-fin').value;
+  if(!personalId || !ini || !fin){ toast('Selecciona empleado y fechas de disfrute.','error'); return; }
+
+  const payload = {
+    personal_id: personalId,
+    fecha_solicitud: document.getElementById('vac-fecha-solicitud').value || new Date().toISOString().slice(0,10),
+    anios_servicio_minerd: parseFloat(document.getElementById('vac-anios-minerd').value)||null,
+    anios_servicio_otra_institucion: parseFloat(document.getElementById('vac-anios-otra').value)||0,
+    anios_servicio_total_estado: parseFloat(document.getElementById('vac-anios-total').value)||null,
+    dias_solicitados_anio1: parseInt(document.getElementById('vac-dias1').value)||0,
+    anio1: parseInt(document.getElementById('vac-anio1').value)||null,
+    dias_solicitados_anio2: parseInt(document.getElementById('vac-dias2').value)||0,
+    anio2: parseInt(document.getElementById('vac-anio2').value)||null,
+    dias_pendientes: parseInt(document.getElementById('vac-dias-pendientes').value)||null,
+    fecha_inicio_disfrute: ini, fecha_fin_disfrute: fin,
+    comentario: document.getElementById('vac-comentario').value.trim() || null,
+    en_licencia_pre_post_natal: document.getElementById('vac-pre-post-natal').checked,
+  };
+  const { error } = await sb.from('vacaciones_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Solicitud de vacaciones guardada.','exito');
+  cerrarModal('modal-vacacion');
+  renderVacaciones();
+}
+
+async function cambiarEstadoVacacion(id){
+  const v = (window._vacacionesData||[]).find(x=>x.id===id);
+  if(!v) return;
+  const opciones = ['solicitado','firmado_supervisor','autorizado_rrll','rechazado'];
+  const etiquetas = {solicitado:'Solicitado',firmado_supervisor:'Firmado supervisor',autorizado_rrll:'Autorizado RRLL',rechazado:'Rechazado'};
+  const idxActual = opciones.indexOf(v.estado);
+  const elegido = prompt('Nuevo estado:\n'+opciones.map((o,i)=>`${i+1}. ${etiquetas[o]}`).join('\n'), String(idxActual+1));
+  const idx = parseInt(elegido)-1;
+  if(isNaN(idx) || !opciones[idx]) return;
+  const { error } = await sb.from('vacaciones_rh').update({ estado: opciones[idx] }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Estado actualizado.','exito');
+  renderVacaciones();
+}
+
+/* ====================== LICENCIAS Y PERMISOS ====================== */
+const SUBTIPOS_LICENCIA = [
+  ['SIN_DISFRUTE_SUELDO','Sin disfrute de sueldo', false],
+  ['MATRIMONIO','Matrimonio', true],
+  ['PARA_ESTUDIOS','Para estudios', false],
+  ['CUIDADO_FAMILIAR_DIRECTO','Cuidado de familiar directo', false],
+  ['POR_ENFERMEDAD','Por enfermedad', true],
+  ['PRE_POST_NATAL','Pre y post natal', true],
+  ['LICENCIA_OTRA','Otra (especificar)', false],
+];
+const SUBTIPOS_PERMISO = [
+  ['FALLECIMIENTO_FAMILIAR_DIRECTO','Fallecimiento familiar directo', true],
+  ['NACIMIENTO_HIJOS_PADRE','Nacimiento de hijos (padre)', false],
+  ['REQUERIMIENTO_LEGAL','Requerimiento legal', false],
+  ['PERMISO_ESTUDIO','Estudio', false],
+  ['PERMISO_OTROS','Otros (especificar)', false],
+];
+function labelSubtipoLP(codigo){
+  const t = [...SUBTIPOS_LICENCIA, ...SUBTIPOS_PERMISO].find(x=>x[0]===codigo);
+  return t ? t[1] : codigo;
+}
+
+async function renderLicenciasPermisos(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('licencias_permisos_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,centro_id,centros_rh(nombre_centro))')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._licenciasPermisosData = todos || [];
+
+  const totalLicencias = (todos||[]).filter(x=>x.categoria==='licencia').length;
+  const totalPermisos = (todos||[]).filter(x=>x.categoria==='permiso').length;
+  const evidenciaFaltante = (todos||[]).filter(x=>x.evidencia_requerida && !x.evidencia_presentada).length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalLicencias}</div><div class="etiqueta">Licencias</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalPermisos}</div><div class="etiqueta">Permisos</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor" style="color:var(--rojo-600);">${evidenciaFaltante}</div><div class="etiqueta">Evidencia pendiente</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Licencias y permisos</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionLP()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalLP()">+ Nueva solicitud</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-lp-texto" oninput="filtrarLP()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Categoría</label>
+            <select id="filtro-lp-categoria" onchange="filtrarLP()">
+              <option value="">Todas</option><option value="licencia">Licencia</option><option value="permiso">Permiso</option>
+            </select>
+          </div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-lp-estado" onchange="filtrarLP()">
+              <option value="">Todos</option><option value="solicitado">Solicitado</option>
+              <option value="aprobado_supervisor">Aprobado supervisor</option><option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckLP(this)"></th>
+              <th>Empleado</th><th>Categoría</th><th>Subtipo</th><th>Duración</th><th>Desde</th><th>Hasta</th><th>Evidencia</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-lp"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-lp">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-header"><h3>Nueva licencia / permiso</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-lp')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="lp-personal"></select></div>
+            <div class="campo"><label>Fecha de solicitud</label><input type="date" id="lp-fecha-solicitud"></div>
+            <div class="campo"><label>Categoría <span class="requerido">*</span></label>
+              <select id="lp-categoria" onchange="actualizarSubtiposLP()">
+                <option value="licencia">Licencia</option><option value="permiso">Permiso</option>
+              </select>
+            </div>
+            <div class="campo" style="grid-column:1/-1;"><label>Subtipo <span class="requerido">*</span></label>
+              <select id="lp-subtipo" onchange="actualizarDetalleLP()"></select></div>
+            <div class="campo" id="lp-detalle-wrap" style="display:none;grid-column:1/-1;">
+              <label>Especificar</label><input type="text" id="lp-detalle">
+            </div>
+          </div>
+
+          <fieldset class="fieldset-doc">
+            <legend>Duración</legend>
+            <div class="grid-3">
+              <div class="campo"><label>Días</label><input type="number" id="lp-dias" value="0"></div>
+              <div class="campo"><label>Meses</label><input type="number" id="lp-meses" value="0"></div>
+              <div class="campo"><label>Años</label><input type="number" id="lp-anios" value="0"></div>
+            </div>
+            <div class="grid-2">
+              <div class="campo"><label>Fecha inicio</label><input type="date" id="lp-fecha-inicio"></div>
+              <div class="campo"><label>Fecha fin</label><input type="date" id="lp-fecha-fin"></div>
+            </div>
+          </fieldset>
+
+          <div id="lp-alerta-evidencia"></div>
+          <div class="campo"><label>Comentario / justificación</label>
+            <textarea id="lp-comentario" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;">
+            <input type="checkbox" id="lp-evidencia-presentada"> Evidencia ya presentada
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-lp')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarLP()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('lp-personal'));
+  pintarTablaLP(window._licenciasPermisosData);
+}
+
+function pintarTablaLP(lista){
+  const tbody = document.getElementById('tbody-lp');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="10"><div class="vacio"><div class="icono-vacio">🗂</div>No hay licencias ni permisos registrados.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(x=>`
+    <tr>
+      <td><input type="checkbox" class="chk-lp" value="${x.id}"></td>
+      <td>${escapeHtml((x.personal_rh?.nombres||'')+' '+(x.personal_rh?.apellidos||''))}</td>
+      <td>${x.categoria==='licencia'?'Licencia':'Permiso'}</td>
+      <td>${escapeHtml(labelSubtipoLP(x.subtipo))}${x.subtipo_detalle?': '+escapeHtml(x.subtipo_detalle):''}</td>
+      <td>${x.duracion_dias||0}d ${x.duracion_meses||0}m ${x.duracion_anios||0}a</td>
+      <td>${fechaCorta(x.fecha_inicio)}</td>
+      <td>${fechaCorta(x.fecha_fin)}</td>
+      <td>${x.evidencia_requerida ? (x.evidencia_presentada?'<span class="badge badge-verde">Presentada</span>':'<span class="badge badge-rojo">Pendiente</span>') : '<span class="badge badge-gris">N/A</span>'}</td>
+      <td>${badgeEstado(x.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoLP(${x.id})">Estado</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarLP(){
+  const texto = document.getElementById('filtro-lp-texto').value.toLowerCase();
+  const categoria = document.getElementById('filtro-lp-categoria').value;
+  const estado = document.getElementById('filtro-lp-estado').value;
+  const filtrado = (window._licenciasPermisosData||[]).filter(x=>{
+    const nombre = ((x.personal_rh?.nombres||'')+' '+(x.personal_rh?.apellidos||'')+' '+(x.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(categoria && x.categoria !== categoria) return false;
+    if(estado && x.estado !== estado) return false;
+    return true;
+  });
+  pintarTablaLP(filtrado);
+}
+
+function toggleTodosCheckLP(master){ document.querySelectorAll('.chk-lp').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionLP(){
+  const ids = [...document.querySelectorAll('.chk-lp:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} registro(s) seleccionado(s)?`)) return;
+  const { error } = await sb.from('licencias_permisos_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderLicenciasPermisos();
+}
+
+function abrirModalLP(){
+  document.getElementById('lp-fecha-solicitud').value = new Date().toISOString().slice(0,10);
+  document.getElementById('lp-categoria').value = 'licencia';
+  document.getElementById('lp-dias').value = 0;
+  document.getElementById('lp-meses').value = 0;
+  document.getElementById('lp-anios').value = 0;
+  document.getElementById('lp-fecha-inicio').value = '';
+  document.getElementById('lp-fecha-fin').value = '';
+  document.getElementById('lp-comentario').value = '';
+  document.getElementById('lp-evidencia-presentada').checked = false;
+  actualizarSubtiposLP();
+  abrirModal('modal-lp');
+}
+
+function actualizarSubtiposLP(){
+  const cat = document.getElementById('lp-categoria').value;
+  const lista = cat === 'licencia' ? SUBTIPOS_LICENCIA : SUBTIPOS_PERMISO;
+  document.getElementById('lp-subtipo').innerHTML = lista.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('');
+  actualizarDetalleLP();
+}
+
+function actualizarDetalleLP(){
+  const cat = document.getElementById('lp-categoria').value;
+  const subtipo = document.getElementById('lp-subtipo').value;
+  const lista = cat === 'licencia' ? SUBTIPOS_LICENCIA : SUBTIPOS_PERMISO;
+  const t = lista.find(x=>x[0]===subtipo);
+  const esOtra = subtipo === 'LICENCIA_OTRA' || subtipo === 'PERMISO_OTROS';
+  document.getElementById('lp-detalle-wrap').style.display = esOtra ? 'block' : 'none';
+
+  const requiereEvidencia = t ? t[2] : false;
+  const alertaEl = document.getElementById('lp-alerta-evidencia');
+  if(requiereEvidencia){
+    let texto = 'Este subtipo requiere evidencia de respaldo.';
+    if(subtipo==='MATRIMONIO' || subtipo==='FALLECIMIENTO_FAMILIAR_DIRECTO') texto += ' Debe presentarse a más tardar 72 horas después.';
+    if(subtipo==='POR_ENFERMEDAD' || subtipo==='PRE_POST_NATAL') texto += ' Se requiere original y copia.';
+    if(subtipo==='PARA_ESTUDIOS') texto = 'Debe solicitarse con 60 días de anticipación; será evaluada por una comisión ad-hoc.';
+    alertaEl.innerHTML = `<div class="badge badge-amarillo" style="display:block;white-space:normal;padding:8px 10px;margin-bottom:10px;">⚠ ${texto}</div>`;
+  } else {
+    alertaEl.innerHTML = '';
+  }
+}
+
+async function guardarLP(){
+  const personalId = document.getElementById('lp-personal').value;
+  if(!personalId){ toast('Selecciona el empleado.','error'); return; }
+
+  const categoria = document.getElementById('lp-categoria').value;
+  const subtipo = document.getElementById('lp-subtipo').value;
+  const lista = categoria === 'licencia' ? SUBTIPOS_LICENCIA : SUBTIPOS_PERMISO;
+  const t = lista.find(x=>x[0]===subtipo);
+
+  const payload = {
+    personal_id: personalId,
+    fecha_solicitud: document.getElementById('lp-fecha-solicitud').value || new Date().toISOString().slice(0,10),
+    categoria, subtipo,
+    subtipo_detalle: document.getElementById('lp-detalle').value.trim() || null,
+    duracion_dias: parseInt(document.getElementById('lp-dias').value)||0,
+    duracion_meses: parseInt(document.getElementById('lp-meses').value)||0,
+    duracion_anios: parseInt(document.getElementById('lp-anios').value)||0,
+    fecha_inicio: document.getElementById('lp-fecha-inicio').value || null,
+    fecha_fin: document.getElementById('lp-fecha-fin').value || null,
+    comentario: document.getElementById('lp-comentario').value.trim() || null,
+    evidencia_requerida: t ? t[2] : false,
+    evidencia_presentada: document.getElementById('lp-evidencia-presentada').checked,
+  };
+  const { error } = await sb.from('licencias_permisos_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Solicitud guardada correctamente.','exito');
+  cerrarModal('modal-lp');
+  renderLicenciasPermisos();
+}
+
+async function cambiarEstadoLP(id){
+  const opciones = ['solicitado','aprobado_supervisor','rechazado'];
+  const etiquetas = {solicitado:'Solicitado',aprobado_supervisor:'Aprobado supervisor',rechazado:'Rechazado'};
+  const x = (window._licenciasPermisosData||[]).find(r=>r.id===id);
+  if(!x) return;
+  const idxActual = opciones.indexOf(x.estado);
+  const elegido = prompt('Nuevo estado:\n'+opciones.map((o,i)=>`${i+1}. ${etiquetas[o]}`).join('\n'), String(idxActual+1));
+  const idx = parseInt(elegido)-1;
+  if(isNaN(idx) || !opciones[idx]) return;
+  const { error } = await sb.from('licencias_permisos_rh').update({ estado: opciones[idx] }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Estado actualizado.','exito');
+  renderLicenciasPermisos();
+}
+
+
+/* ====================== RELACIÓN DE CENTROS ====================== */
+// Reporte: nombre de centro, director (nombre/cédula si se captura), teléfono y dirección.
+// Usa centros_rh y cruza con personal_rh para sacar contacto del director cuando aplica.
+async function renderRelacionCentros(){
+  const main = document.getElementById('main-content');
+  const { data: centros, error } = await sb.from('centros_rh').select('*').order('nombre_centro');
+  if(error){ toast(error.message,'error'); }
+
+  const { data: personal } = await sb.from('personal_rh')
+    .select('nombres,apellidos,cedula,telefono,direccion,centro_id,cargo_actual')
+    .ilike('cargo_actual', '%director%');
+
+  const directorPorCentro = {};
+  (personal||[]).forEach(p=>{ if(p.centro_id && !directorPorCentro[p.centro_id]) directorPorCentro[p.centro_id] = p; });
+
+  window._relacionCentrosData = (centros||[]).map(c=>{
+    const dir = directorPorCentro[c.id];
+    return {
+      centro: c.nombre_centro,
+      sigerd: c.codigo_sigerd || '',
+      nombre_contacto: dir ? (dir.nombres+' '+dir.apellidos) : (c.director_nombre || ''),
+      cedula_contacto: dir ? dir.cedula : '',
+      telefono: dir ? (dir.telefono||'') : '',
+      direccion: dir ? (dir.direccion||'') : '',
+    };
+  });
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Relación de centros educativos (${window._relacionCentrosData.length})</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secundario btn-chico" onclick="exportarRelacionCentrosCSV()">⬇ Exportar CSV</button>
+          <button class="btn btn-secundario btn-chico" onclick="imprimirRelacionCentros()">🖨 Imprimir</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="campo" style="max-width:340px;margin-bottom:14px;">
+          <label>Buscar centro o contacto</label>
+          <input type="text" id="filtro-rc-texto" oninput="filtrarRelacionCentros()" placeholder="Nombre del centro, persona o cédula…">
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th>Nombre del centro</th><th>Nombre de contacto</th><th>Cédula</th><th>Teléfono</th><th>Dirección</th>
+            </tr></thead>
+            <tbody id="tbody-relacion-centros"></tbody>
+          </table>
+        </div>
+        <div class="texto-ayuda" style="margin-top:10px;">
+          El contacto se toma automáticamente del personal con cargo "Director" asignado al centro; si no hay ninguno registrado, se usa el director capturado directamente en la ficha del centro.
+        </div>
+      </div>
+    </div>
+  `;
+  pintarTablaRelacionCentros(window._relacionCentrosData);
+}
+
+function pintarTablaRelacionCentros(lista){
+  const tbody = document.getElementById('tbody-relacion-centros');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="vacio"><div class="icono-vacio">📊</div>No hay centros registrados.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(r=>`
+    <tr>
+      <td><strong>${escapeHtml(r.centro)}</strong>${r.sigerd?' <span class="texto-ayuda">(SIGERD '+escapeHtml(r.sigerd)+')</span>':''}</td>
+      <td>${escapeHtml(r.nombre_contacto||'—')}</td>
+      <td>${escapeHtml(r.cedula_contacto||'—')}</td>
+      <td>${escapeHtml(r.telefono||'—')}</td>
+      <td>${escapeHtml(r.direccion||'—')}</td>
+    </tr>
+  `).join('');
+}
+
+function filtrarRelacionCentros(){
+  const texto = document.getElementById('filtro-rc-texto').value.toLowerCase();
+  const filtrado = (window._relacionCentrosData||[]).filter(r=>{
+    const todo = `${r.centro} ${r.nombre_contacto} ${r.cedula_contacto}`.toLowerCase();
+    return !texto || todo.includes(texto);
+  });
+  pintarTablaRelacionCentros(filtrado);
+}
+
+function exportarRelacionCentrosCSV(){
+  const lista = window._relacionCentrosData || [];
+  if(!lista.length){ toast('No hay datos para exportar.','error'); return; }
+  const encabezado = ['Nombre del Centro','Cédula Contacto','Nombre de Contacto','Teléfono','Dirección'];
+  const filas = lista.map(r=>[r.centro, r.cedula_contacto, r.nombre_contacto, r.telefono, r.direccion]
+    .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [encabezado.join(','), ...filas].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'relacion_centros_1606.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function imprimirRelacionCentros(){
+  const lista = window._relacionCentrosData || [];
+  const filas = lista.map(r=>`
+    <tr><td>${escapeHtml(r.centro)}</td><td>${escapeHtml(r.cedula_contacto)}</td>
+    <td>${escapeHtml(r.nombre_contacto)}</td><td>${escapeHtml(r.telefono)}</td><td>${escapeHtml(r.direccion)}</td></tr>
+  `).join('');
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Relación de Centros</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:12px;padding:30px;}
+      h2{font-size:15px;margin-bottom:14px;}
+      table{width:100%;border-collapse:collapse;}
+      th,td{border:1px solid #999;padding:5px 8px;text-align:left;}
+      th{background:#eef2f7;}
+    </style></head><body>
+    <h2>Distrito Educativo 16-06, Bonao Nordeste — Relación de Centros Educativos</h2>
+    <table><thead><tr><th>Centro</th><th>Cédula</th><th>Contacto</th><th>Teléfono</th><th>Dirección</th></tr></thead>
+    <tbody>${filas}</tbody></table>
+    </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== RIESGO LABORAL (ATR-2 / EPR-1) ====================== */
+async function renderRiesgosLaborales(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('riesgos_laborales_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula), centros_rh(nombre_centro)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._riesgosData = todos || [];
+
+  const totalATR = (todos||[]).filter(r=>r.tipo_formulario==='ATR-2').length;
+  const totalEPR = (todos||[]).filter(r=>r.tipo_formulario==='EPR-1').length;
+  const fueraPlazo = (todos||[]).filter(r=>{
+    const horas = (new Date(r.fecha_aviso) - new Date(r.fecha_evento)) / 36e5;
+    return horas > 72;
+  }).length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalATR}</div><div class="etiqueta">ATR-2 (accidentes)</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalEPR}</div><div class="etiqueta">EPR-1 (enfermedad profesional)</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor" style="color:var(--rojo-600);">${fueraPlazo}</div><div class="etiqueta">Notificados fuera de 72h</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Avisos de riesgo laboral</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionRiesgos()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalRiesgo()">+ Nuevo aviso</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-rl-texto" oninput="filtrarRiesgos()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Tipo</label>
+            <select id="filtro-rl-tipo" onchange="filtrarRiesgos()">
+              <option value="">Todos</option><option value="ATR-2">ATR-2 (accidente)</option><option value="EPR-1">EPR-1 (enfermedad)</option>
+            </select>
+          </div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-rl-estado" onchange="filtrarRiesgos()">
+              <option value="">Todos</option><option value="notificado">Notificado</option>
+              <option value="enviado_sisalril">Enviado SISALRIL</option><option value="calificado_AT_EP">Calificado</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckRL(this)"></th>
+              <th>Tipo</th><th>Empleado</th><th>Fecha evento</th><th>Fecha aviso</th><th>Plazo 72h</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-riesgos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-riesgo">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nuevo aviso de riesgo laboral</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-riesgo')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="rl-personal"></select></div>
+            <div class="campo"><label>Tipo de formulario <span class="requerido">*</span></label>
+              <select id="rl-tipo">
+                <option value="ATR-2">ATR-2 — Aviso de Accidente de Trabajo</option>
+                <option value="EPR-1">EPR-1 — Aviso de Enfermedad Profesional</option>
+              </select>
+            </div>
+            <div class="campo"><label>Centro educativo</label><select id="rl-centro"></select></div>
+            <div class="campo"><label>Fecha del evento <span class="requerido">*</span></label><input type="date" id="rl-fecha-evento"></div>
+            <div class="campo"><label>Fecha de aviso</label><input type="date" id="rl-fecha-aviso"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Lugar del evento</label><input type="text" id="rl-lugar" placeholder="Centro educativo, trayecto, etc."></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Descripción del evento <span class="requerido">*</span></label>
+              <textarea id="rl-descripcion" rows="3" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          </div>
+          <fieldset class="fieldset-doc">
+            <legend>Documentación del expediente</legend>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="rl-cert-medico"> Certificado médico</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="rl-acta-policial"> Acta policial (si aplica)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" id="rl-firmado-rrhh"> Formulario firmado y sellado por RRHH</label>
+          </fieldset>
+          <div id="rl-alerta-plazo"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-riesgo')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarRiesgo()">Guardar aviso</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('rl-personal'));
+  await cargarCentrosSelect(document.getElementById('rl-centro'));
+  ['rl-fecha-evento','rl-fecha-aviso'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', validarPlazoRiesgo);
+  });
+  pintarTablaRiesgos(window._riesgosData);
+}
+
+function pintarTablaRiesgos(lista){
+  const tbody = document.getElementById('tbody-riesgos');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">⚠</div>No hay avisos de riesgo laboral registrados.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(r=>{
+    const horas = (new Date(r.fecha_aviso) - new Date(r.fecha_evento)) / 36e5;
+    const dentroPlazo = horas <= 72;
+    return `
+    <tr>
+      <td><input type="checkbox" class="chk-rl" value="${r.id}"></td>
+      <td><span class="badge ${r.tipo_formulario==='ATR-2'?'badge-azul':'badge-amarillo'}">${r.tipo_formulario}</span></td>
+      <td>${escapeHtml((r.personal_rh?.nombres||'')+' '+(r.personal_rh?.apellidos||''))}</td>
+      <td>${fechaCorta(r.fecha_evento)}</td>
+      <td>${fechaCorta(r.fecha_aviso)}</td>
+      <td>${dentroPlazo?'<span class="badge badge-verde">Dentro</span>':'<span class="badge badge-rojo">Fuera</span>'}</td>
+      <td>${badgeEstado(r.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoRiesgo(${r.id})">Estado</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarRiesgos(){
+  const texto = document.getElementById('filtro-rl-texto').value.toLowerCase();
+  const tipo = document.getElementById('filtro-rl-tipo').value;
+  const estado = document.getElementById('filtro-rl-estado').value;
+  const filtrado = (window._riesgosData||[]).filter(r=>{
+    const nombre = ((r.personal_rh?.nombres||'')+' '+(r.personal_rh?.apellidos||'')+' '+(r.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(tipo && r.tipo_formulario !== tipo) return false;
+    if(estado && r.estado !== estado) return false;
+    return true;
+  });
+  pintarTablaRiesgos(filtrado);
+}
+
+function toggleTodosCheckRL(master){ document.querySelectorAll('.chk-rl').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionRiesgos(){
+  const ids = [...document.querySelectorAll('.chk-rl:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} registro(s) seleccionado(s)?`)) return;
+  const { error } = await sb.from('riesgos_laborales_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderRiesgosLaborales();
+}
+
+async function abrirModalRiesgo(){
+  document.getElementById('rl-fecha-evento').value = '';
+  document.getElementById('rl-fecha-aviso').value = new Date().toISOString().slice(0,10);
+  document.getElementById('rl-lugar').value = '';
+  document.getElementById('rl-descripcion').value = '';
+  document.getElementById('rl-cert-medico').checked = false;
+  document.getElementById('rl-acta-policial').checked = false;
+  document.getElementById('rl-firmado-rrhh').checked = false;
+  document.getElementById('rl-alerta-plazo').innerHTML = '';
+  await cargarPersonalSelect(document.getElementById('rl-personal'));
+  await cargarCentrosSelect(document.getElementById('rl-centro'));
+  abrirModal('modal-riesgo');
+}
+
+function validarPlazoRiesgo(){
+  const fEvento = document.getElementById('rl-fecha-evento').value;
+  const fAviso = document.getElementById('rl-fecha-aviso').value;
+  const alertaEl = document.getElementById('rl-alerta-plazo');
+  if(!fEvento || !fAviso){ alertaEl.innerHTML=''; return; }
+  const horas = (new Date(fAviso) - new Date(fEvento)) / 36e5;
+  if(horas > 72){
+    alertaEl.innerHTML = `<div class="badge badge-rojo" style="display:block;white-space:normal;padding:8px 10px;">⚠ El aviso se está registrando fuera del plazo de 72 horas posteriores al evento.</div>`;
+  } else if(horas >= 0){
+    alertaEl.innerHTML = `<div class="badge badge-verde" style="display:block;white-space:normal;padding:8px 10px;">✓ Dentro del plazo de 72 horas.</div>`;
+  } else {
+    alertaEl.innerHTML = '';
+  }
+}
+
+async function guardarRiesgo(){
+  const personalId = document.getElementById('rl-personal').value;
+  const fEvento = document.getElementById('rl-fecha-evento').value;
+  const descripcion = document.getElementById('rl-descripcion').value.trim();
+  if(!personalId || !fEvento || !descripcion){ toast('Completa empleado, fecha del evento y descripción.','error'); return; }
+
+  const payload = {
+    personal_id: personalId,
+    tipo_formulario: document.getElementById('rl-tipo').value,
+    centro_id: document.getElementById('rl-centro').value || null,
+    fecha_evento: fEvento,
+    fecha_aviso: document.getElementById('rl-fecha-aviso').value || new Date().toISOString().slice(0,10),
+    descripcion_evento: descripcion,
+    lugar_evento: document.getElementById('rl-lugar').value.trim() || null,
+    tiene_certificado_medico: document.getElementById('rl-cert-medico').checked,
+    tiene_acta_policial: document.getElementById('rl-acta-policial').checked,
+    formulario_firmado_rrhh: document.getElementById('rl-firmado-rrhh').checked,
+  };
+  const { error } = await sb.from('riesgos_laborales_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Aviso de riesgo laboral guardado.','exito');
+  cerrarModal('modal-riesgo');
+  renderRiesgosLaborales();
+}
+
+async function cambiarEstadoRiesgo(id){
+  const opciones = ['notificado','enviado_sisalril','calificado_AT_EP','rechazado'];
+  const etiquetas = {notificado:'Notificado',enviado_sisalril:'Enviado SISALRIL',calificado_AT_EP:'Calificado AT/EP',rechazado:'Rechazado'};
+  const r = (window._riesgosData||[]).find(x=>x.id===id);
+  if(!r) return;
+  const idxActual = opciones.indexOf(r.estado);
+  const elegido = prompt('Nuevo estado:\n'+opciones.map((o,i)=>`${i+1}. ${etiquetas[o]}`).join('\n'), String(idxActual+1));
+  const idx = parseInt(elegido)-1;
+  if(isNaN(idx) || !opciones[idx]) return;
+  const { error } = await sb.from('riesgos_laborales_rh').update({ estado: opciones[idx] }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Estado actualizado.','exito');
+  renderRiesgosLaborales();
+}
+
+/* ====================== PENSIONES ====================== */
+async function renderPensiones(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('pensiones_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._pensionesData = todos || [];
+
+  const totalDocentes = (todos||[]).filter(p=>p.tipo_personal==='docente').length;
+  const totalAdmin = (todos||[]).filter(p=>p.tipo_personal==='administrativo').length;
+  const enInabima = (todos||[]).filter(p=>p.estado==='enviado_inabima').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalDocentes}</div><div class="etiqueta">Expedientes docentes</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalAdmin}</div><div class="etiqueta">Expedientes administrativos</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${enInabima}</div><div class="etiqueta">En proceso en INABIMA</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Expedientes de pensión / jubilación</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPensiones()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalPension()">+ Nuevo expediente</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-pen-texto" oninput="filtrarPensiones()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Tipo de personal</label>
+            <select id="filtro-pen-tipo" onchange="filtrarPensiones()">
+              <option value="">Todos</option><option value="docente">Docente</option><option value="administrativo">Administrativo</option>
+            </select>
+          </div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-pen-estado" onchange="filtrarPensiones()">
+              <option value="">Todos</option><option value="armando_expediente">Armando expediente</option>
+              <option value="enviado_minerd">Enviado MINERD</option><option value="enviado_inabima">Enviado INABIMA</option>
+              <option value="decreto_promulgado">Decreto promulgado</option><option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckPen(this)"></th>
+              <th>Empleado</th><th>Tipo</th><th>Tipo pensión</th><th>Años servicio</th><th>Expediente</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-pensiones"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-pension">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nuevo expediente de pensión</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-pension')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="pen-personal"></select></div>
+            <div class="campo"><label>Tipo de personal <span class="requerido">*</span></label>
+              <select id="pen-tipo-personal"><option value="docente">Docente</option><option value="administrativo">Administrativo</option></select></div>
+            <div class="campo"><label>Tipo de pensión</label>
+              <select id="pen-tipo-pension">
+                <option value="tiempo_servicio">Por tiempo de servicio</option>
+                <option value="discapacidad">Por discapacidad</option>
+                <option value="sobrevivencia">Sobrevivencia</option>
+                <option value="otra">Otra</option>
+              </select>
+            </div>
+            <div class="campo"><label>Años de servicio</label><input type="number" step="0.5" id="pen-anios"></div>
+            <div class="campo"><label>Fecha de ingreso al MINERD</label><input type="date" id="pen-fecha-ingreso"></div>
+          </div>
+          <fieldset class="fieldset-doc">
+            <legend>Checklist del expediente</legend>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="pen-cert-trabajo"> Certificación de trabajo (MINERD)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="pen-cert-contraloria"> Certificación de cargos (Contraloría)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="pen-comunicacion-min"> Comunicación dirigida al Ministro</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="pen-copia-cedula"> Copia de cédula</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" id="pen-fotos"> Fotos 2x2</label>
+          </fieldset>
+          <div class="campo"><label>Observaciones</label>
+            <textarea id="pen-observaciones" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-pension')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarPension()">Guardar expediente</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('pen-personal'));
+  pintarTablaPensiones(window._pensionesData);
+}
+
+function pintarTablaPensiones(lista){
+  const tbody = document.getElementById('tbody-pensiones');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="vacio"><div class="icono-vacio">🎓</div>No hay expedientes de pensión registrados.</div></td></tr>`;
+    return;
+  }
+  const labelTipoPension = {tiempo_servicio:'Tiempo de servicio',discapacidad:'Discapacidad',sobrevivencia:'Sobrevivencia',otra:'Otra'};
+  tbody.innerHTML = lista.map(p=>{
+    const items = [p.tiene_certificacion_trabajo,p.tiene_certificacion_contraloria,p.tiene_comunicacion_ministro,p.tiene_copia_cedula,p.tiene_fotos];
+    const completos = items.filter(Boolean).length;
+    return `
+    <tr>
+      <td><input type="checkbox" class="chk-pen" value="${p.id}"></td>
+      <td>${escapeHtml((p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||''))}</td>
+      <td>${p.tipo_personal==='docente'?'Docente':'Administrativo'}</td>
+      <td>${labelTipoPension[p.tipo_pension]||p.tipo_pension}</td>
+      <td>${p.anios_servicio??'—'}</td>
+      <td>${completos}/5 docs</td>
+      <td>${badgeEstado(p.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoPension(${p.id})">Estado</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarPensiones(){
+  const texto = document.getElementById('filtro-pen-texto').value.toLowerCase();
+  const tipo = document.getElementById('filtro-pen-tipo').value;
+  const estado = document.getElementById('filtro-pen-estado').value;
+  const filtrado = (window._pensionesData||[]).filter(p=>{
+    const nombre = ((p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'')+' '+(p.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(tipo && p.tipo_personal !== tipo) return false;
+    if(estado && p.estado !== estado) return false;
+    return true;
+  });
+  pintarTablaPensiones(filtrado);
+}
+
+function toggleTodosCheckPen(master){ document.querySelectorAll('.chk-pen').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionPensiones(){
+  const ids = [...document.querySelectorAll('.chk-pen:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} expediente(s) seleccionado(s)?`)) return;
+  const { error } = await sb.from('pensiones_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderPensiones();
+}
+
+async function abrirModalPension(){
+  document.getElementById('pen-anios').value = '';
+  document.getElementById('pen-fecha-ingreso').value = '';
+  document.getElementById('pen-observaciones').value = '';
+  ['pen-cert-trabajo','pen-cert-contraloria','pen-comunicacion-min','pen-copia-cedula','pen-fotos'].forEach(id=>{
+    document.getElementById(id).checked = false;
+  });
+  await cargarPersonalSelect(document.getElementById('pen-personal'));
+  abrirModal('modal-pension');
+}
+
+async function guardarPension(){
+  const personalId = document.getElementById('pen-personal').value;
+  if(!personalId){ toast('Selecciona el empleado.','error'); return; }
+
+  const payload = {
+    personal_id: personalId,
+    tipo_personal: document.getElementById('pen-tipo-personal').value,
+    tipo_pension: document.getElementById('pen-tipo-pension').value,
+    anios_servicio: parseFloat(document.getElementById('pen-anios').value)||null,
+    fecha_ingreso_minerd: document.getElementById('pen-fecha-ingreso').value || null,
+    tiene_certificacion_trabajo: document.getElementById('pen-cert-trabajo').checked,
+    tiene_certificacion_contraloria: document.getElementById('pen-cert-contraloria').checked,
+    tiene_comunicacion_ministro: document.getElementById('pen-comunicacion-min').checked,
+    tiene_copia_cedula: document.getElementById('pen-copia-cedula').checked,
+    tiene_fotos: document.getElementById('pen-fotos').checked,
+    observaciones: document.getElementById('pen-observaciones').value.trim() || null,
+  };
+  const { error } = await sb.from('pensiones_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Expediente de pensión guardado.','exito');
+  cerrarModal('modal-pension');
+  renderPensiones();
+}
+
+async function cambiarEstadoPension(id){
+  const opciones = ['armando_expediente','enviado_minerd','enviado_inabima','decreto_promulgado','rechazado'];
+  const etiquetas = {armando_expediente:'Armando expediente',enviado_minerd:'Enviado MINERD',enviado_inabima:'Enviado INABIMA',decreto_promulgado:'Decreto promulgado',rechazado:'Rechazado'};
+  const p = (window._pensionesData||[]).find(x=>x.id===id);
+  if(!p) return;
+  const idxActual = opciones.indexOf(p.estado);
+  const elegido = prompt('Nuevo estado:\n'+opciones.map((o,i)=>`${i+1}. ${etiquetas[o]}`).join('\n'), String(idxActual+1));
+  const idx = parseInt(elegido)-1;
+  if(isNaN(idx) || !opciones[idx]) return;
+  const { error } = await sb.from('pensiones_rh').update({ estado: opciones[idx] }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Estado actualizado.','exito');
+  renderPensiones();
+}
+
+/* ====================== SEGURO DE SALUD (SeNaSa F1/F2) ====================== */
+const PARENTESCOS = ['conyuge','hijo_a','hijastro_a','padre','madre','suegro_a'];
+const LABEL_PARENTESCO = {conyuge:'Cónyuge',hijo_a:'Hijo/a',hijastro_a:'Hijastro/a',padre:'Padre',madre:'Madre',suegro_a:'Suegro/a'};
+
+async function renderSegurosSalud(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('seguros_salud_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._segurosData = todos || [];
+
+  const totalF1 = (todos||[]).filter(s=>s.tipo_formulario==='F1').length;
+  const totalF2 = (todos||[]).filter(s=>s.tipo_formulario==='F2').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalF1}</div><div class="etiqueta">F1 — Titular / directos</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalF2}</div><div class="etiqueta">F2 — Dependientes adicionales</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${todos?.length||0}</div><div class="etiqueta">Total solicitudes</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Afiliaciones de seguro de salud</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionSeguros()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalSeguro()">+ Nueva solicitud</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-seg-texto" oninput="filtrarSeguros()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Tipo</label>
+            <select id="filtro-seg-tipo" onchange="filtrarSeguros()">
+              <option value="">Todos</option><option value="F1">F1</option><option value="F2">F2</option>
+            </select>
+          </div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-seg-estado" onchange="filtrarSeguros()">
+              <option value="">Todos</option><option value="solicitado">Solicitado</option>
+              <option value="depositado_nomina">Depositado en nómina</option><option value="aprobado">Aprobado</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckSeg(this)"></th>
+              <th>Titular</th><th>Tipo</th><th>Dependiente</th><th>Parentesco</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-seguros"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-seguro">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nueva solicitud de afiliación</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-seguro')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado titular <span class="requerido">*</span></label><select id="seg-personal"></select></div>
+            <div class="campo"><label>Tipo de formulario <span class="requerido">*</span></label>
+              <select id="seg-tipo" onchange="actualizarAyudaSeguro()">
+                <option value="F1">F1 — Titular / dependientes directos</option>
+                <option value="F2">F2 — Dependientes adicionales</option>
+              </select>
+            </div>
+            <div class="campo"><label>Parentesco</label>
+              <select id="seg-parentesco">${PARENTESCOS.map(p=>`<option value="${p}">${LABEL_PARENTESCO[p]}</option>`).join('')}</select></div>
+            <div class="campo"><label>Nombre del dependiente</label><input type="text" id="seg-nombre-dep"></div>
+            <div class="campo"><label>Cédula del dependiente</label><input type="text" id="seg-cedula-dep"></div>
+          </div>
+          <div id="seg-ayuda" class="texto-ayuda" style="margin:6px 0 10px;"></div>
+          <fieldset class="fieldset-doc">
+            <legend>Documentación</legend>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="seg-copia-cedula"> Copia de cédula</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="seg-acta-nacimiento"> Acta de nacimiento</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;"><input type="checkbox" id="seg-cert-estudio"> Certificación de estudio (hijos 18-21+)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" id="seg-form-descuento"> Formulario de autorización de descuento</label>
+          </fieldset>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-seguro')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarSeguro()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('seg-personal'));
+  actualizarAyudaSeguro();
+  pintarTablaSeguros(window._segurosData);
+}
+
+function actualizarAyudaSeguro(){
+  const tipo = document.getElementById('seg-tipo').value;
+  document.getElementById('seg-ayuda').textContent = tipo === 'F1'
+    ? 'F1: cónyuge e hijos menores como dependientes directos del núcleo familiar.'
+    : 'F2: hijos mayores de 21, padres o suegros — requiere formulario de autorización de descuento mensual.';
+}
+
+function pintarTablaSeguros(lista){
+  const tbody = document.getElementById('tbody-seguros');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="7"><div class="vacio"><div class="icono-vacio">➕</div>No hay solicitudes de seguro registradas.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(s=>`
+    <tr>
+      <td><input type="checkbox" class="chk-seg" value="${s.id}"></td>
+      <td>${escapeHtml((s.personal_rh?.nombres||'')+' '+(s.personal_rh?.apellidos||''))}</td>
+      <td><span class="badge ${s.tipo_formulario==='F1'?'badge-azul':'badge-amarillo'}">${s.tipo_formulario}</span></td>
+      <td>${escapeHtml(s.nombre_dependiente||'—')}</td>
+      <td>${s.parentesco?escapeHtml(LABEL_PARENTESCO[s.parentesco]||s.parentesco):'—'}</td>
+      <td>${badgeEstado(s.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoSeguro(${s.id})">Estado</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarSeguros(){
+  const texto = document.getElementById('filtro-seg-texto').value.toLowerCase();
+  const tipo = document.getElementById('filtro-seg-tipo').value;
+  const estado = document.getElementById('filtro-seg-estado').value;
+  const filtrado = (window._segurosData||[]).filter(s=>{
+    const nombre = ((s.personal_rh?.nombres||'')+' '+(s.personal_rh?.apellidos||'')+' '+(s.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(tipo && s.tipo_formulario !== tipo) return false;
+    if(estado && s.estado !== estado) return false;
+    return true;
+  });
+  pintarTablaSeguros(filtrado);
+}
+
+function toggleTodosCheckSeg(master){ document.querySelectorAll('.chk-seg').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionSeguros(){
+  const ids = [...document.querySelectorAll('.chk-seg:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} solicitud(es) seleccionada(s)?`)) return;
+  const { error } = await sb.from('seguros_salud_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderSegurosSalud();
+}
+
+async function abrirModalSeguro(){
+  document.getElementById('seg-nombre-dep').value = '';
+  document.getElementById('seg-cedula-dep').value = '';
+  ['seg-copia-cedula','seg-acta-nacimiento','seg-cert-estudio','seg-form-descuento'].forEach(id=>{
+    document.getElementById(id).checked = false;
+  });
+  await cargarPersonalSelect(document.getElementById('seg-personal'));
+  actualizarAyudaSeguro();
+  abrirModal('modal-seguro');
+}
+
+async function guardarSeguro(){
+  const personalId = document.getElementById('seg-personal').value;
+  if(!personalId){ toast('Selecciona el empleado titular.','error'); return; }
+
+  const payload = {
+    personal_id: personalId,
+    tipo_formulario: document.getElementById('seg-tipo').value,
+    parentesco: document.getElementById('seg-parentesco').value || null,
+    nombre_dependiente: document.getElementById('seg-nombre-dep').value.trim() || null,
+    cedula_dependiente: document.getElementById('seg-cedula-dep').value.trim() || null,
+    tiene_copia_cedula: document.getElementById('seg-copia-cedula').checked,
+    tiene_acta_nacimiento: document.getElementById('seg-acta-nacimiento').checked,
+    tiene_certificacion_estudio: document.getElementById('seg-cert-estudio').checked,
+    tiene_formulario_descuento: document.getElementById('seg-form-descuento').checked,
+  };
+  const { error } = await sb.from('seguros_salud_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Solicitud de afiliación guardada.','exito');
+  cerrarModal('modal-seguro');
+  renderSegurosSalud();
+}
+
+async function cambiarEstadoSeguro(id){
+  const opciones = ['solicitado','depositado_nomina','aprobado','rechazado'];
+  const etiquetas = {solicitado:'Solicitado',depositado_nomina:'Depositado en nómina',aprobado:'Aprobado',rechazado:'Rechazado'};
+  const s = (window._segurosData||[]).find(x=>x.id===id);
+  if(!s) return;
+  const idxActual = opciones.indexOf(s.estado);
+  const elegido = prompt('Nuevo estado:\n'+opciones.map((o,i)=>`${i+1}. ${etiquetas[o]}`).join('\n'), String(idxActual+1));
+  const idx = parseInt(elegido)-1;
+  if(isNaN(idx) || !opciones[idx]) return;
+  const { error } = await sb.from('seguros_salud_rh').update({ estado: opciones[idx] }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Estado actualizado.','exito');
+  renderSegurosSalud();
+}
+
+/* ====================== CERTIFICACIÓN LABORAL ====================== */
+function generarTextoCertificacionLaboral({ personalNombre, personalCedula, cargo, periodoDesde, periodoHasta, fechaEmision }){
+  const fechaTexto = new Date(fechaEmision+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+  const desde = periodoDesde ? new Date(periodoDesde+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'}) : '________';
+  const hasta = periodoHasta ? new Date(periodoHasta+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'}) : 'la fecha';
+
+  return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
+`${fechaTexto}.\nBonao, R. D.\n\nA QUIEN PUEDA INTERESAR:\n\n`+
+`Quien suscribe, Emeterio Beltré Tineo M.A., Director del Distrito Educativo 16-06, Bonao Nordeste, `+
+`hace constar por medio de la presente que el/la señor(a) ${personalNombre}, portador(a) de la cédula de `+
+`identidad y electoral No. ${personalCedula}, ha prestado/presta sus servicios en esta institución desde el ${desde} `+
+`hasta ${hasta}, desempeñando el cargo de ${cargo}.\n\n`+
+`La presente certificación se expide a solicitud de la parte interesada, para los fines que estime convenientes.\n\n`+
+`Muy atentamente,\n\n\nEmeterio Beltré Tineo M.A.\nDirector Distrital 16-06, Bonao Nordeste`;
+}
+
+async function renderCertificacionesLaborales(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('certificaciones_laborales_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._certLaboralData = todos || [];
+
+  const pendientes = (todos||[]).filter(c=>c.estado==='solicitado'||c.estado==='en_proceso').length;
+  const emitidas = (todos||[]).filter(c=>c.estado==='emitida'||c.estado==='entregada').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${todos?.length||0}</div><div class="etiqueta">Total solicitudes</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${pendientes}</div><div class="etiqueta">Pendientes</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${emitidas}</div><div class="etiqueta">Emitidas</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Certificaciones laborales</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCertLab()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalCertLab()">+ Nueva certificación</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo"><label>Buscar empleado</label><input type="text" id="filtro-cl-texto" oninput="filtrarCertLab()" placeholder="Nombre o cédula…"></div>
+          <div class="campo"><label>Estado</label>
+            <select id="filtro-cl-estado" onchange="filtrarCertLab()">
+              <option value="">Todos</option><option value="solicitado">Solicitado</option>
+              <option value="en_proceso">En proceso</option><option value="emitida">Emitida</option>
+              <option value="entregada">Entregada</option><option value="rechazada">Rechazada</option>
+            </select>
+          </div>
+          <div class="campo"><label>Solicitado por terceros</label>
+            <select id="filtro-cl-terceros" onchange="filtrarCertLab()">
+              <option value="">Todos</option><option value="si">Sí</option><option value="no">No</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleTodosCheckCL(this)"></th>
+              <th>Empleado</th><th>Período</th><th>Motivo</th><th>Terceros</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-cert-laboral"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-cert-laboral">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3>Nueva certificación laboral</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-cert-laboral')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
+              <select id="cl-personal" onchange="actualizarPreviewCL()"></select></div>
+            <div class="campo"><label>Período desde</label><input type="date" id="cl-periodo-desde" onchange="actualizarPreviewCL()"></div>
+            <div class="campo"><label>Período hasta</label><input type="date" id="cl-periodo-hasta" onchange="actualizarPreviewCL()"></div>
+            <div class="campo"><label>Cargo a certificar</label><input type="text" id="cl-cargo" oninput="actualizarPreviewCL()"></div>
+            <div class="campo"><label>Fecha de emisión</label><input type="date" id="cl-fecha-emision" onchange="actualizarPreviewCL()"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Motivo</label><input type="text" id="cl-motivo" placeholder="Ej. trámite migratorio, constancia laboral…"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0;">
+            <input type="checkbox" id="cl-terceros" onchange="document.getElementById('cl-poder-wrap').style.display=this.checked?'block':'none'">
+            Solicitado por un tercero
+          </label>
+          <div id="cl-poder-wrap" style="display:none;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" id="cl-poder-notarial"> Cuenta con poder notarial</label>
+          </div>
+          <div style="margin-top:14px;">
+            <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa</div>
+            <div class="preview-telegrama" id="preview-cl" style="white-space:pre-wrap;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-cert-laboral')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarCertLab()">Guardar y generar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-ver-cl">
+      <div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h3>Certificación laboral</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-ver-cl')">×</button></div>
+        <div class="modal-body"><div class="preview-telegrama" id="preview-ver-cl" style="white-space:pre-wrap;"></div></div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-cl')">Cerrar</button>
+          <button class="btn btn-primario" onclick="imprimirCLActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect(document.getElementById('cl-personal'));
+  pintarTablaCertLab(window._certLaboralData);
+}
+
+function pintarTablaCertLab(lista){
+  const tbody = document.getElementById('tbody-cert-laboral');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="7"><div class="vacio"><div class="icono-vacio">📜</div>No hay certificaciones laborales registradas.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(c=>`
+    <tr>
+      <td><input type="checkbox" class="chk-cl" value="${c.id}"></td>
+      <td>${escapeHtml((c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||''))}</td>
+      <td>${fechaCorta(c.periodo_desde)} – ${c.periodo_hasta?fechaCorta(c.periodo_hasta):'actual'}</td>
+      <td>${escapeHtml(c.motivo||'—')}</td>
+      <td>${c.solicitado_por_terceros?'<span class="badge badge-amarillo">Sí</span>':'<span class="badge badge-gris">No</span>'}</td>
+      <td>${badgeEstado(c.estado)}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick="verCL(${c.id})">Ver</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarCertLab(){
+  const texto = document.getElementById('filtro-cl-texto').value.toLowerCase();
+  const estado = document.getElementById('filtro-cl-estado').value;
+  const terceros = document.getElementById('filtro-cl-terceros').value;
+  const filtrado = (window._certLaboralData||[]).filter(c=>{
+    const nombre = ((c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'')+' '+(c.personal_rh?.cedula||'')).toLowerCase();
+    if(texto && !nombre.includes(texto)) return false;
+    if(estado && c.estado !== estado) return false;
+    if(terceros==='si' && !c.solicitado_por_terceros) return false;
+    if(terceros==='no' && c.solicitado_por_terceros) return false;
+    return true;
+  });
+  pintarTablaCertLab(filtrado);
+}
+
+function toggleTodosCheckCL(master){ document.querySelectorAll('.chk-cl').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionCertLab(){
+  const ids = [...document.querySelectorAll('.chk-cl:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} certificación(es) seleccionada(s)?`)) return;
+  const { error } = await sb.from('certificaciones_laborales_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderCertificacionesLaborales();
+}
+
+async function abrirModalCertLab(){
+  document.getElementById('cl-periodo-desde').value = '';
+  document.getElementById('cl-periodo-hasta').value = '';
+  document.getElementById('cl-cargo').value = '';
+  document.getElementById('cl-fecha-emision').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cl-motivo').value = '';
+  document.getElementById('cl-terceros').checked = false;
+  document.getElementById('cl-poder-notarial').checked = false;
+  document.getElementById('cl-poder-wrap').style.display = 'none';
+  await cargarPersonalSelect(document.getElementById('cl-personal'));
+  actualizarPreviewCL();
+  abrirModal('modal-cert-laboral');
+}
+
+function actualizarPreviewCL(){
+  const id = document.getElementById('cl-personal')?.value;
+  const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+  if(!p){ document.getElementById('preview-cl').textContent=''; return; }
+  const texto = generarTextoCertificacionLaboral({
+    personalNombre: p.nombres+' '+p.apellidos,
+    personalCedula: p.cedula,
+    cargo: document.getElementById('cl-cargo').value || p.cargo_actual || '________________',
+    periodoDesde: document.getElementById('cl-periodo-desde').value,
+    periodoHasta: document.getElementById('cl-periodo-hasta').value,
+    fechaEmision: document.getElementById('cl-fecha-emision').value || new Date().toISOString().slice(0,10),
+  });
+  document.getElementById('preview-cl').textContent = texto;
+}
+
+async function guardarCertLab(){
+  const personalId = document.getElementById('cl-personal').value;
+  if(!personalId){ toast('Selecciona el empleado.','error'); return; }
+
+  const { data: p, error: errP } = await sb.from('personal_rh').select('*').eq('id', personalId).single();
+  if(errP){ toast(errP.message,'error'); return; }
+
+  const fechaEmision = document.getElementById('cl-fecha-emision').value || new Date().toISOString().slice(0,10);
+  const periodoDesde = document.getElementById('cl-periodo-desde').value || null;
+  const periodoHasta = document.getElementById('cl-periodo-hasta').value || null;
+  const cargo = document.getElementById('cl-cargo').value.trim() || p.cargo_actual || '';
+
+  const texto = generarTextoCertificacionLaboral({
+    personalNombre: p.nombres+' '+p.apellidos, personalCedula: p.cedula, cargo,
+    periodoDesde, periodoHasta, fechaEmision,
+  });
+
+  const payload = {
+    personal_id: personalId,
+    fecha_emision: fechaEmision, periodo_desde: periodoDesde, periodo_hasta: periodoHasta,
+    cargo_certificado: cargo,
+    motivo: document.getElementById('cl-motivo').value.trim() || null,
+    solicitado_por_terceros: document.getElementById('cl-terceros').checked,
+    tiene_poder_notarial: document.getElementById('cl-poder-notarial').checked,
+    texto_generado: texto,
+  };
+  const { error } = await sb.from('certificaciones_laborales_rh').insert(payload);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Certificación laboral generada.','exito');
+  cerrarModal('modal-cert-laboral');
+  renderCertificacionesLaborales();
+}
+
+function verCL(id){
+  const c = (window._certLaboralData||[]).find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('preview-ver-cl').textContent = c.texto_generado;
+  window._clActual = c;
+  abrirModal('modal-ver-cl');
+}
+
+function imprimirCLActual(){
+  const c = window._clActual;
+  if(!c) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Certificación laboral</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}</style>
+    </head><body>${escapeHtml(c.texto_generado)}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
+/* ====================== NÓMINAS MINERD ====================== */
+async function renderNominas(){
+  const main = document.getElementById('main-content');
+  const { data, error } = await sb.from('nominas_rh').select('*').order('anio',{ascending:false}).order('mes',{ascending:false});
+  if(error){ toast(error.message,'error'); }
+
+  const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Nóminas registradas (${data?.length||0})</h3>
+        <button class="btn btn-primario btn-chico" onclick="abrirModalNomina()">+ Importar nómina</button>
+      </div>
+      <div class="tarjeta-body tabla-wrap">
+        ${ (data && data.length) ? `
+        <table>
+          <thead><tr><th>Período</th><th>Fecha de pago</th><th>Archivo origen</th><th></th></tr></thead>
+          <tbody>
+            ${data.map(n=>`
+              <tr>
+                <td><strong>${MESES[n.mes]} ${n.anio}</strong></td>
+                <td>${fechaCorta(n.fecha_pago)}</td>
+                <td>${escapeHtml(n.archivo_origen||'—')}</td>
+                <td><button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES[n.mes]} ${n.anio}')">Ver detalle</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<div class="vacio"><div class="icono-vacio">💵</div>No hay nóminas importadas todavía.</div>` }
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-nomina">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar nómina MINERD</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-nomina')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="campo"><label>Mes <span class="requerido">*</span></label>
+              <select id="nom-mes">${MESES.map((m,i)=>i?`<option value="${i}">${m}</option>`:'').join('')}</select></div>
+            <div class="campo"><label>Año <span class="requerido">*</span></label><input type="number" id="nom-anio" value="${new Date().getFullYear()}"></div>
+            <div class="campo"><label>Fecha de pago</label><input type="date" id="nom-fecha-pago"></div>
+          </div>
+          <div class="campo">
+            <label>Archivo Excel/CSV del MINERD <span class="requerido">*</span></label>
+            <input type="file" id="nom-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">Columnas esperadas: cédula, nombre, centro, salario bruto, descuentos, salario neto (los nombres de columna pueden variar, el sistema intenta detectarlos).</div>
+          </div>
+          <div id="nom-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-nomina')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-nomina" onclick="procesarImportacionNomina()">Importar y cruzar con personal</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-detalle-nomina">
+      <div class="modal" style="max-width:900px;">
+        <div class="modal-header"><h3 id="titulo-detalle-nomina">Detalle de nómina</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-detalle-nomina')">×</button></div>
+        <div class="modal-body tabla-wrap" id="cuerpo-detalle-nomina"></div>
+        <div class="modal-footer"><button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button></div>
+      </div>
+    </div>
+  `;
+}
+
+function abrirModalNomina(){
+  document.getElementById('nom-archivo').value = '';
+  document.getElementById('nom-resumen-preview').innerHTML = '';
+  document.getElementById('nom-fecha-pago').value = '';
+  abrirModal('modal-nomina');
+}
+
+// Detecta encabezados típicos del archivo de nómina del MINERD/Contraloría,
+// tolerando variaciones de nombre de columna.
+function detectarColumnas(headers){
+  const norm = h => h.toString().toLowerCase().trim()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  const mapa = {};
+  headers.forEach((h,i)=>{
+    const n = norm(h);
+    if(/cedula/.test(n)) mapa.cedula = i;
+    else if(/nombre/.test(n)) mapa.nombre = i;
+    else if(/centro/.test(n)) mapa.centro = i;
+    else if(/bruto/.test(n)) mapa.bruto = i;
+    else if(/descuent/.test(n)) mapa.descuentos = i;
+    else if(/neto/.test(n)) mapa.neto = i;
+  });
+  return mapa;
+}
+
+async function procesarImportacionNomina(){
+  const archivo = document.getElementById('nom-archivo').files[0];
+  const mes = parseInt(document.getElementById('nom-mes').value);
+  const anio = parseInt(document.getElementById('nom-anio').value);
+  const fechaPago = document.getElementById('nom-fecha-pago').value || null;
+
+  if(!archivo){ toast('Selecciona el archivo de nómina.','error'); return; }
+  if(!mes || !anio){ toast('Indica mes y año.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-nomina');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+
+    const headers = filas[0];
+    const mapa = detectarColumnas(headers);
+    if(mapa.cedula === undefined) throw new Error('No se pudo detectar la columna de cédula en el archivo.');
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula]).map(f=>({
+      cedula_archivo: String(f[mapa.cedula]).trim(),
+      nombre_archivo: mapa.nombre!==undefined ? String(f[mapa.nombre]||'').trim() : null,
+      centro_archivo: mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : null,
+      salario_bruto: mapa.bruto!==undefined ? parseFloat(f[mapa.bruto])||null : null,
+      descuentos: mapa.descuentos!==undefined ? parseFloat(f[mapa.descuentos])||null : null,
+      salario_neto: mapa.neto!==undefined ? parseFloat(f[mapa.neto])||null : null,
+    }));
+
+    const { data: nomina, error: errNom } = await sb.from('nominas_rh')
+      .insert({ mes, anio, fecha_pago: fechaPago, archivo_origen: archivo.name })
+      .select('id').single();
+    if(errNom) throw errNom;
+
+    const { data: personal } = await sb.from('personal_rh').select('id,cedula');
+    const mapaPersonal = {};
+    (personal||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
+
+    const detalle = registros.map(r=>{
+      const cedNorm = r.cedula_archivo.replace(/[^0-9]/g,'');
+      const personalId = mapaPersonal[cedNorm] || null;
+      return {
+        ...r,
+        nomina_id: nomina.id,
+        personal_id: personalId,
+        match_estado: personalId ? 'encontrado' : 'no_encontrado',
+      };
+    });
+
+    const { error: errDet } = await sb.from('detalle_nomina_rh').insert(detalle);
+    if(errDet) throw errDet;
+
+    const encontrados = detalle.filter(d=>d.match_estado==='encontrado').length;
+    const noEncontrados = detalle.length - encontrados;
+
+    document.getElementById('nom-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${detalle.length}</strong> registros importados ·
+        <span style="color:var(--verde-600);font-weight:600;">${encontrados} encontrados</span> en personal ·
+        <span style="color:var(--rojo-600);font-weight:600;">${noEncontrados} sin coincidencia</span> (revisar manualmente)
+      </div>`;
+
+    toast('Nómina importada y cruzada correctamente.','exito');
+    renderNominas();
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar y cruzar con personal';
+  }
+}
+
+// Lee CSV o Excel y devuelve array de filas (incluyendo encabezado en fila 0)
+function leerArchivoNomina(archivo){
+  return new Promise((resolve, reject)=>{
+    const nombre = archivo.name.toLowerCase();
+    if(nombre.endsWith('.csv')){
+      const reader = new FileReader();
+      reader.onload = e => {
+        const lineas = e.target.result.split(/\r?\n/).filter(l=>l.trim().length);
+        resolve(lineas.map(l=>l.split(',').map(c=>c.trim())));
+      };
+      reader.onerror = reject;
+      reader.readAsText(archivo, 'UTF-8');
+    } else {
+      if(typeof XLSX === 'undefined'){
+        reject(new Error('No se pudo cargar el lector de Excel. Verifica tu conexión a internet.'));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        try{
+          const wb = XLSX.read(e.target.result, { type:'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const filas = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+          resolve(filas.filter(f=>f.some(c=>String(c).trim().length)));
+        }catch(err){ reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(archivo);
+    }
+  });
+}
+
+async function verDetalleNomina(nominaId, periodo){
+  document.getElementById('titulo-detalle-nomina').textContent = `Detalle de nómina — ${periodo}`;
+  const { data, error } = await sb.from('detalle_nomina_rh')
+    .select('*, personal_rh(nombres,apellidos)').eq('nomina_id', nominaId).order('cedula_archivo');
+  if(error){ toast(error.message,'error'); return; }
+
+  document.getElementById('cuerpo-detalle-nomina').innerHTML = (data && data.length) ? `
+    <table>
+      <thead><tr><th>Cédula</th><th>Nombre (archivo)</th><th>Centro (archivo)</th><th>Bruto</th><th>Descuentos</th><th>Neto</th><th>Cruce</th></tr></thead>
+      <tbody>
+        ${data.map(d=>`
+          <tr>
+            <td>${escapeHtml(d.cedula_archivo)}</td>
+            <td>${escapeHtml(d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'—'))}</td>
+            <td>${escapeHtml(d.centro_archivo||'—')}</td>
+            <td>${d.salario_bruto!=null?Number(d.salario_bruto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+            <td>${d.descuentos!=null?Number(d.descuentos).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+            <td>${d.salario_neto!=null?Number(d.salario_neto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+            <td>${badgeEstado(d.match_estado)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="vacio">Sin registros en esta nómina.</div>`;
+  abrirModal('modal-detalle-nomina');
+}
+</script>
+
+</body>
+</html>
