@@ -6,6 +6,7 @@
 <title>RH 16-06 | Distrito Educativo 16-06 Bonao Nordeste</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
   --azul-900:#0d2340;
@@ -3410,12 +3411,12 @@ function imprimirCLActual(){
 }
 
 /* ====================== NÓMINAS MINERD ====================== */
+const MESES_NOMINA = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 async function renderNominas(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('nominas_rh').select('*').order('anio',{ascending:false}).order('mes',{ascending:false});
   if(error){ toast(error.message,'error'); }
-
-  const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   main.innerHTML = `
     <div class="tarjeta">
@@ -3430,10 +3431,13 @@ async function renderNominas(){
           <tbody>
             ${data.map(n=>`
               <tr>
-                <td><strong>${MESES[n.mes]} ${n.anio}</strong></td>
+                <td><strong>${MESES_NOMINA[n.mes]} ${n.anio}</strong></td>
                 <td>${fechaCorta(n.fecha_pago)}</td>
                 <td>${escapeHtml(n.archivo_origen||'—')}</td>
-                <td><button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES[n.mes]} ${n.anio}')">Ver detalle</button></td>
+                <td style="display:flex;gap:6px;">
+                  <button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Detalle</button>
+                  <button class="btn btn-secundario btn-chico" onclick="verMovimientosNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Movimientos</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -3448,15 +3452,18 @@ async function renderNominas(){
         <div class="modal-body">
           <div class="grid-2">
             <div class="campo"><label>Mes <span class="requerido">*</span></label>
-              <select id="nom-mes">${MESES.map((m,i)=>i?`<option value="${i}">${m}</option>`:'').join('')}</select></div>
+              <select id="nom-mes">${MESES_NOMINA.map((m,i)=>i?`<option value="${i}">${m}</option>`:'').join('')}</select></div>
             <div class="campo"><label>Año <span class="requerido">*</span></label><input type="number" id="nom-anio" value="${new Date().getFullYear()}"></div>
             <div class="campo"><label>Fecha de pago</label><input type="date" id="nom-fecha-pago"></div>
           </div>
           <div class="campo">
-            <label>Archivo Excel/CSV del MINERD <span class="requerido">*</span></label>
-            <input type="file" id="nom-archivo" accept=".xlsx,.xls,.csv">
-            <div class="texto-ayuda">Columnas esperadas: cédula, nombre, centro, salario bruto, descuentos, salario neto (los nombres de columna pueden variar, el sistema intenta detectarlos).</div>
+            <label>Archivo Excel, CSV o PDF del MINERD <span class="requerido">*</span></label>
+            <input type="file" id="nom-archivo" accept=".xlsx,.xls,.csv,.pdf">
+            <div class="texto-ayuda">Columnas esperadas: cédula, nombre, centro, salario bruto, descuentos, salario neto (los nombres pueden variar, el sistema intenta detectarlos). El PDF debe tener texto seleccionable, no ser un escaneo.</div>
           </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px;">
+            <input type="checkbox" id="nom-comparar" checked> Comparar contra el historial de nóminas (detectar nuevos, reingresos y cancelados)
+          </label>
           <div id="nom-resumen-preview"></div>
         </div>
         <div class="modal-footer">
@@ -3474,6 +3481,31 @@ async function renderNominas(){
         <div class="modal-footer"><button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button></div>
       </div>
     </div>
+
+    <div class="modal-fondo" id="modal-movimientos-nomina">
+      <div class="modal" style="max-width:900px;">
+        <div class="modal-header"><h3 id="titulo-movimientos-nomina">Movimientos de personal</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-movimientos-nomina')">×</button></div>
+        <div class="modal-body">
+          <div class="grid-3" style="margin-bottom:14px;">
+            <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+              <div class="valor" id="mov-kpi-nuevo" style="font-size:20px;color:var(--verde-600);">0</div><div class="etiqueta">Nuevos</div>
+            </div></div>
+            <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+              <div class="valor" id="mov-kpi-reingreso" style="font-size:20px;color:var(--azul-600);">0</div><div class="etiqueta">Reingresos</div>
+            </div></div>
+            <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+              <div class="valor" id="mov-kpi-cancelado" style="font-size:20px;color:var(--rojo-600);">0</div><div class="etiqueta">Cancelados</div>
+            </div></div>
+          </div>
+          <div class="tabla-wrap" id="cuerpo-movimientos-nomina"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="exportarMovimientosCSV()">⬇ Exportar CSV</button>
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-movimientos-nomina')">Cerrar</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -3481,6 +3513,7 @@ function abrirModalNomina(){
   document.getElementById('nom-archivo').value = '';
   document.getElementById('nom-resumen-preview').innerHTML = '';
   document.getElementById('nom-fecha-pago').value = '';
+  document.getElementById('nom-comparar').checked = true;
   abrirModal('modal-nomina');
 }
 
@@ -3493,7 +3526,11 @@ function detectarColumnas(headers){
   headers.forEach((h,i)=>{
     const n = norm(h);
     if(/cedula/.test(n)) mapa.cedula = i;
-    else if(/nombre/.test(n)) mapa.nombre = i;
+    else if(/apellido/.test(n)) mapa.apellidos = i;
+    else if(/^nombre|nombres?$|nombre completo|nombre empleado/.test(n)) mapa.nombre = i;
+    else if(/cargo|posicion|puesto/.test(n)) mapa.cargo = i;
+    else if(/sigerd/.test(n)) mapa.sigerd = i;
+    else if(/dependencia/.test(n)) mapa.dependencia = i;
     else if(/centro/.test(n)) mapa.centro = i;
     else if(/bruto/.test(n)) mapa.bruto = i;
     else if(/descuent/.test(n)) mapa.descuentos = i;
@@ -3507,6 +3544,7 @@ async function procesarImportacionNomina(){
   const mes = parseInt(document.getElementById('nom-mes').value);
   const anio = parseInt(document.getElementById('nom-anio').value);
   const fechaPago = document.getElementById('nom-fecha-pago').value || null;
+  const compararHistorial = document.getElementById('nom-comparar').checked;
 
   if(!archivo){ toast('Selecciona el archivo de nómina.','error'); return; }
   if(!mes || !anio){ toast('Indica mes y año.','error'); return; }
@@ -3523,29 +3561,144 @@ async function procesarImportacionNomina(){
     const mapa = detectarColumnas(headers);
     if(mapa.cedula === undefined) throw new Error('No se pudo detectar la columna de cédula en el archivo.');
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula]).map(f=>({
-      cedula_archivo: String(f[mapa.cedula]).trim(),
-      nombre_archivo: mapa.nombre!==undefined ? String(f[mapa.nombre]||'').trim() : null,
-      centro_archivo: mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : null,
-      salario_bruto: mapa.bruto!==undefined ? parseFloat(f[mapa.bruto])||null : null,
-      descuentos: mapa.descuentos!==undefined ? parseFloat(f[mapa.descuentos])||null : null,
-      salario_neto: mapa.neto!==undefined ? parseFloat(f[mapa.neto])||null : null,
-    }));
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula]).map(f=>{
+      const nombreCol = mapa.nombre!==undefined ? String(f[mapa.nombre]||'').trim() : '';
+      const apellidosCol = mapa.apellidos!==undefined ? String(f[mapa.apellidos]||'').trim() : '';
+      const nombreCompleto = apellidosCol ? (nombreCol+' '+apellidosCol).trim() : nombreCol;
+      return {
+        cedula_archivo: String(f[mapa.cedula]).trim(),
+        nombre_archivo: nombreCompleto || null,
+        nombres_col: nombreCol || null,
+        apellidos_col: apellidosCol || null,
+        cargo_archivo: mapa.cargo!==undefined ? String(f[mapa.cargo]||'').trim() : null,
+        sigerd_archivo: mapa.sigerd!==undefined ? String(f[mapa.sigerd]||'').trim() : null,
+        dependencia_archivo: mapa.dependencia!==undefined ? String(f[mapa.dependencia]||'').trim() : null,
+        centro_archivo: mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : null,
+        salario_bruto: mapa.bruto!==undefined ? parseFloat(f[mapa.bruto])||null : null,
+        descuentos: mapa.descuentos!==undefined ? parseFloat(f[mapa.descuentos])||null : null,
+        salario_neto: mapa.neto!==undefined ? parseFloat(f[mapa.neto])||null : null,
+      };
+    });
+
+    // Deduplicar por cédula dentro del mismo archivo (por si el PDF repite encabezados de página)
+    const vistos = new Set();
+    const registrosUnicos = registros.filter(r=>{
+      const ced = r.cedula_archivo.replace(/[^0-9]/g,'');
+      if(!ced || vistos.has(ced)) return false;
+      vistos.add(ced);
+      return true;
+    });
 
     const { data: nomina, error: errNom } = await sb.from('nominas_rh')
       .insert({ mes, anio, fecha_pago: fechaPago, archivo_origen: archivo.name })
       .select('id').single();
     if(errNom) throw errNom;
 
-    const { data: personal } = await sb.from('personal_rh').select('id,cedula');
-    const mapaPersonal = {};
-    (personal||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
+    // ---- PASO 1: UPSERT de centros (por dependencia, o por SIGERD si no hay dependencia) ----
+    const { data: centrosExistentes } = await sb.from('centros_rh').select('id,codigo_sigerd,numero_dependencia_nomina');
+    const mapaCentroPorDependencia = {};
+    const mapaCentroPorSigerd = {};
+    (centrosExistentes||[]).forEach(c=>{
+      if(c.numero_dependencia_nomina) mapaCentroPorDependencia[c.numero_dependencia_nomina] = c.id;
+      if(c.codigo_sigerd) mapaCentroPorSigerd[c.codigo_sigerd] = c.id;
+    });
 
-    const detalle = registros.map(r=>{
+    const centrosNuevos = [];
+    const vistosCentro = new Set();
+    registrosUnicos.forEach(r=>{
+      const dep = r.dependencia_archivo, sig = r.sigerd_archivo;
+      if(!dep && !sig) return;
+      const yaExiste = (dep && mapaCentroPorDependencia[dep]) || (sig && mapaCentroPorSigerd[sig]);
+      const clave = dep || sig;
+      if(yaExiste || vistosCentro.has(clave)) return;
+      vistosCentro.add(clave);
+      centrosNuevos.push({
+        nombre_centro: r.centro_archivo || `Centro dependencia ${dep||sig}`,
+        codigo_sigerd: sig || null,
+        numero_dependencia_nomina: dep || null,
+      });
+    });
+
+    if(centrosNuevos.length){
+      const { data: insertados, error: errCentros } = await sb.from('centros_rh').insert(centrosNuevos).select('id,codigo_sigerd,numero_dependencia_nomina');
+      if(errCentros) throw errCentros;
+      (insertados||[]).forEach(c=>{
+        if(c.numero_dependencia_nomina) mapaCentroPorDependencia[c.numero_dependencia_nomina] = c.id;
+        if(c.codigo_sigerd) mapaCentroPorSigerd[c.codigo_sigerd] = c.id;
+      });
+    }
+
+    function resolverCentroId(r){
+      if(r.dependencia_archivo && mapaCentroPorDependencia[r.dependencia_archivo]) return mapaCentroPorDependencia[r.dependencia_archivo];
+      if(r.sigerd_archivo && mapaCentroPorSigerd[r.sigerd_archivo]) return mapaCentroPorSigerd[r.sigerd_archivo];
+      return null;
+    }
+
+    // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
+    const { data: personalExistente } = await sb.from('personal_rh').select('id,cedula,cargo_actual,centro_id');
+    const mapaPersonal = {};
+    (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
+
+    const personalNuevo = [];
+    const personalActualizar = [];
+
+    registrosUnicos.forEach(r=>{
       const cedNorm = r.cedula_archivo.replace(/[^0-9]/g,'');
-      const personalId = mapaPersonal[cedNorm] || null;
+      const centroId = resolverCentroId(r);
+      const existente = mapaPersonal[cedNorm];
+
+      if(!existente){
+        personalNuevo.push({
+          cedula: r.cedula_archivo,
+          nombres: r.nombres_col || r.nombre_archivo || 'Sin nombre',
+          apellidos: r.apellidos_col || '',
+          sexo: 'M', // dato no provisto por la nómina; se ajusta manualmente luego si aplica
+          cargo_actual: r.cargo_archivo || null,
+          centro_id: centroId,
+          numero_dependencia_nomina: r.dependencia_archivo || null,
+          estatus: 'activo',
+        });
+      } else {
+        const necesitaActualizar = (r.cargo_archivo && r.cargo_archivo !== existente.cargo_actual)
+          || (centroId && centroId !== existente.centro_id)
+          || existente.estatus !== 'activo';
+        if(necesitaActualizar){
+          personalActualizar.push({
+            id: existente.id,
+            cargo_actual: r.cargo_archivo || existente.cargo_actual,
+            centro_id: centroId || existente.centro_id,
+            estatus: 'activo',
+          });
+        }
+      }
+    });
+
+    if(personalNuevo.length){
+      const { data: insertadosP, error: errPersNuevo } = await sb.from('personal_rh').insert(personalNuevo).select('id,cedula');
+      if(errPersNuevo) throw errPersNuevo;
+      (insertadosP||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = { id:p.id }; });
+    }
+    for(const upd of personalActualizar){
+      const { id, ...campos } = upd;
+      await sb.from('personal_rh').update(campos).eq('id', id);
+    }
+
+    // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
+    const { data: personalFinal } = await sb.from('personal_rh').select('id,cedula');
+    const mapaPersonalFinal = {};
+    (personalFinal||[]).forEach(p=>{ mapaPersonalFinal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
+
+    // ---- PASO 3: Guardar detalle de nómina con el cruce ya resuelto ----
+    const detalle = registrosUnicos.map(r=>{
+      const cedNorm = r.cedula_archivo.replace(/[^0-9]/g,'');
+      const personalId = mapaPersonalFinal[cedNorm] || null;
       return {
-        ...r,
+        cedula_archivo: r.cedula_archivo,
+        nombre_archivo: r.nombre_archivo,
+        centro_archivo: r.centro_archivo,
+        salario_bruto: r.salario_bruto,
+        descuentos: r.descuentos,
+        salario_neto: r.salario_neto,
         nomina_id: nomina.id,
         personal_id: personalId,
         match_estado: personalId ? 'encontrado' : 'no_encontrado',
@@ -3558,11 +3711,24 @@ async function procesarImportacionNomina(){
     const encontrados = detalle.filter(d=>d.match_estado==='encontrado').length;
     const noEncontrados = detalle.length - encontrados;
 
+    let resumenMovimientos = '';
+    if(compararHistorial){
+      const mov = await compararConHistorial(nomina.id, registrosUnicos, mapaPersonalFinal);
+      resumenMovimientos = `<br><span style="color:var(--verde-600);font-weight:600;">${mov.nuevos}</span> nuevos ·
+        <span style="color:var(--azul-600);font-weight:600;">${mov.reingresos}</span> reingresos ·
+        <span style="color:var(--rojo-600);font-weight:600;">${mov.cancelados}</span> cancelados`;
+    }
+
+    const resumenMaestro = `<br><span class="texto-ayuda">Catálogo: ${centrosNuevos.length} centro(s) nuevo(s) ·
+      ${personalNuevo.length} empleado(s) nuevo(s) en personal · ${personalActualizar.length} actualizado(s) (cargo/centro)</span>`;
+
     document.getElementById('nom-resumen-preview').innerHTML = `
       <div class="texto-ayuda" style="margin-top:10px;">
         <strong>${detalle.length}</strong> registros importados ·
         <span style="color:var(--verde-600);font-weight:600;">${encontrados} encontrados</span> en personal ·
         <span style="color:var(--rojo-600);font-weight:600;">${noEncontrados} sin coincidencia</span> (revisar manualmente)
+        ${resumenMovimientos}
+        ${resumenMaestro}
       </div>`;
 
     toast('Nómina importada y cruzada correctamente.','exito');
@@ -3575,10 +3741,95 @@ async function procesarImportacionNomina(){
   }
 }
 
-// Lee CSV o Excel y devuelve array de filas (incluyendo encabezado en fila 0)
+// Compara la nómina recién importada contra TODO el historial acumulado
+// (detalle_nomina_rh de nóminas anteriores) para detectar:
+//  - nuevo: cédula nunca vista en ninguna nómina anterior
+//  - reingreso: cédula vista antes, no estaba en la última nómina anterior, ahora sí
+//  - cancelado: cédula estaba en la última nómina anterior y ya no aparece en esta
+async function compararConHistorial(nominaNuevaId, registrosNuevos, mapaPersonal){
+  // Nómina inmediatamente anterior a la actual (por fecha de creación, excluyendo la nueva)
+  const { data: nominaAnterior } = await sb.from('nominas_rh')
+    .select('id, mes, anio').neq('id', nominaNuevaId)
+    .order('anio',{ascending:false}).order('mes',{ascending:false}).limit(1).maybeSingle();
+
+  // Todo el historial de cédulas que han aparecido en CUALQUIER nómina anterior
+  const { data: historico } = await sb.from('detalle_nomina_rh')
+    .select('cedula_archivo, nomina_id').neq('nomina_id', nominaNuevaId);
+
+  const cedulasHistoricas = new Set((historico||[]).map(h=>h.cedula_archivo.replace(/[^0-9]/g,'')));
+
+  let cedulasNominaAnterior = new Set();
+  if(nominaAnterior){
+    const { data: detAnterior } = await sb.from('detalle_nomina_rh')
+      .select('cedula_archivo, nombre_archivo, personal_id').eq('nomina_id', nominaAnterior.id);
+    cedulasNominaAnterior = new Set((detAnterior||[]).map(d=>d.cedula_archivo.replace(/[^0-9]/g,'')));
+    window._detAnteriorCache = detAnterior || [];
+  }
+
+  const cedulasNuevaNomina = new Set(registrosNuevos.map(r=>r.cedula_archivo.replace(/[^0-9]/g,'')));
+
+  const movimientos = [];
+  let nuevos = 0, reingresos = 0, cancelados = 0;
+
+  // Nuevos y reingresos: presentes en la nómina nueva
+  registrosNuevos.forEach(r=>{
+    const ced = r.cedula_archivo.replace(/[^0-9]/g,'');
+    if(!ced) return;
+    const estabaEnAnterior = cedulasNominaAnterior.has(ced);
+    const habiaAparecidoAntes = cedulasHistoricas.has(ced);
+
+    if(!habiaAparecidoAntes){
+      movimientos.push({
+        nomina_id: nominaNuevaId, personal_id: mapaPersonal[ced]||null,
+        cedula: r.cedula_archivo, nombre: r.nombre_archivo,
+        tipo_movimiento: 'nuevo',
+      });
+      nuevos++;
+    } else if(!estabaEnAnterior){
+      movimientos.push({
+        nomina_id: nominaNuevaId, personal_id: mapaPersonal[ced]||null,
+        cedula: r.cedula_archivo, nombre: r.nombre_archivo,
+        tipo_movimiento: 'reingreso',
+      });
+      reingresos++;
+    }
+  });
+
+  // Cancelados: estaban en la nómina anterior pero no en la nueva
+  if(nominaAnterior){
+    (window._detAnteriorCache||[]).forEach(d=>{
+      const ced = d.cedula_archivo.replace(/[^0-9]/g,'');
+      if(ced && !cedulasNuevaNomina.has(ced)){
+        movimientos.push({
+          nomina_id: nominaNuevaId, personal_id: d.personal_id||null,
+          cedula: d.cedula_archivo, nombre: d.nombre_archivo,
+          tipo_movimiento: 'cancelado', ultima_nomina_presente_id: nominaAnterior.id,
+        });
+        cancelados++;
+      }
+    });
+  }
+
+  if(movimientos.length){
+    const { error } = await sb.from('movimientos_nomina_rh').insert(movimientos);
+    if(error) console.error('Error guardando movimientos:', error.message);
+
+    // Marcar automáticamente como inactivo/cancelado en personal_rh a quienes
+    // ya no aparecen en la nómina nueva
+    const idsCancelados = movimientos.filter(m=>m.tipo_movimiento==='cancelado' && m.personal_id).map(m=>m.personal_id);
+    if(idsCancelados.length){
+      await sb.from('personal_rh').update({ estatus:'inactivo' }).in('id', idsCancelados);
+    }
+  }
+
+  return { nuevos, reingresos, cancelados };
+}
+
+// Lee CSV, Excel o PDF y devuelve array de filas (incluyendo encabezado en fila 0)
 function leerArchivoNomina(archivo){
+  const nombre = archivo.name.toLowerCase();
+  if(nombre.endsWith('.pdf')) return leerPDFNomina(archivo);
   return new Promise((resolve, reject)=>{
-    const nombre = archivo.name.toLowerCase();
     if(nombre.endsWith('.csv')){
       const reader = new FileReader();
       reader.onload = e => {
@@ -3607,6 +3858,51 @@ function leerArchivoNomina(archivo){
   });
 }
 
+// Extrae texto de un PDF (debe tener texto seleccionable, no ser escaneo) y lo
+// reconstruye en filas/columnas aproximando por posición X de cada palabra.
+async function leerPDFNomina(archivo){
+  if(typeof pdfjsLib === 'undefined'){
+    throw new Error('No se pudo cargar el lector de PDF. Verifica tu conexión a internet.');
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const buffer = await archivo.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+  const filas = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const contenido = await page.getTextContent();
+
+    // Agrupar items por línea (misma coordenada Y aproximada)
+    const lineasMapa = {};
+    contenido.items.forEach(item=>{
+      const y = Math.round(item.transform[5]);
+      if(!lineasMapa[y]) lineasMapa[y] = [];
+      lineasMapa[y].push({ x: item.transform[4], texto: item.str });
+    });
+
+    Object.keys(lineasMapa).sort((a,b)=>b-a).forEach(y=>{
+      const items = lineasMapa[y].sort((a,b)=>a.x-b.x);
+      // Unir palabras cercanas en la misma "columna" usando saltos de espacio amplio como separador de celda
+      const celdas = [];
+      let celdaActual = '';
+      let xAnterior = null;
+      items.forEach(it=>{
+        if(xAnterior !== null && (it.x - xAnterior) > 25){
+          celdas.push(celdaActual.trim());
+          celdaActual = '';
+        }
+        celdaActual += (celdaActual ? ' ' : '') + it.texto;
+        xAnterior = it.x + it.texto.length*3;
+      });
+      if(celdaActual.trim()) celdas.push(celdaActual.trim());
+      if(celdas.some(c=>c.length)) filas.push(celdas);
+    });
+  }
+  return filas.filter(f=>f.some(c=>String(c).trim().length));
+}
+
 async function verDetalleNomina(nominaId, periodo){
   document.getElementById('titulo-detalle-nomina').textContent = `Detalle de nómina — ${periodo}`;
   const { data, error } = await sb.from('detalle_nomina_rh')
@@ -3632,6 +3928,68 @@ async function verDetalleNomina(nominaId, periodo){
     </table>
   ` : `<div class="vacio">Sin registros en esta nómina.</div>`;
   abrirModal('modal-detalle-nomina');
+}
+
+/* ---- Reporte de movimientos (nuevos / reingresos / cancelados) ---- */
+async function verMovimientosNomina(nominaId, periodo){
+  document.getElementById('titulo-movimientos-nomina').textContent = `Movimientos de personal — ${periodo}`;
+  const { data, error } = await sb.from('movimientos_nomina_rh')
+    .select('*, personal_rh(nombres,apellidos,cargo_actual)').eq('nomina_id', nominaId)
+    .order('tipo_movimiento');
+  if(error){ toast(error.message,'error'); return; }
+
+  window._movimientosActuales = data || [];
+
+  document.getElementById('mov-kpi-nuevo').textContent = (data||[]).filter(m=>m.tipo_movimiento==='nuevo').length;
+  document.getElementById('mov-kpi-reingreso').textContent = (data||[]).filter(m=>m.tipo_movimiento==='reingreso').length;
+  document.getElementById('mov-kpi-cancelado').textContent = (data||[]).filter(m=>m.tipo_movimiento==='cancelado').length;
+
+  const labelTipo = {nuevo:['verde','Nuevo nombramiento'],reingreso:['azul','Reingreso'],cancelado:['rojo','Cancelado/bloqueado']};
+
+  document.getElementById('cuerpo-movimientos-nomina').innerHTML = (data && data.length) ? `
+    <table>
+      <thead><tr><th>Cédula</th><th>Nombre</th><th>Cargo</th><th>Movimiento</th><th>Revisado</th></tr></thead>
+      <tbody>
+        ${data.map(m=>{
+          const [color,texto] = labelTipo[m.tipo_movimiento];
+          return `
+          <tr>
+            <td>${escapeHtml(m.cedula)}</td>
+            <td>${escapeHtml(m.personal_rh ? m.personal_rh.nombres+' '+m.personal_rh.apellidos : (m.nombre||'—'))}</td>
+            <td>${escapeHtml(m.personal_rh?.cargo_actual||'—')}</td>
+            <td><span class="badge badge-${color}">${texto}</span></td>
+            <td><input type="checkbox" ${m.revisado?'checked':''} onchange="marcarMovimientoRevisado(${m.id}, this.checked)"></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">📊</div>No hay movimientos detectados para esta nómina.<br><span class="texto-ayuda">Esto puede significar que no hubo cambios respecto a la nómina anterior, o que la comparación no estaba activada al importar.</span></div>`;
+  abrirModal('modal-movimientos-nomina');
+}
+
+async function marcarMovimientoRevisado(id, valor){
+  const { error } = await sb.from('movimientos_nomina_rh').update({ revisado: valor }).eq('id', id);
+  if(error){ toast(error.message,'error'); }
+}
+
+function exportarMovimientosCSV(){
+  const lista = window._movimientosActuales || [];
+  if(!lista.length){ toast('No hay movimientos para exportar.','error'); return; }
+  const labelTipo = {nuevo:'Nuevo nombramiento',reingreso:'Reingreso',cancelado:'Cancelado/bloqueado'};
+  const encabezado = ['Cédula','Nombre','Cargo','Movimiento'];
+  const filas = lista.map(m=>[
+    m.cedula,
+    m.personal_rh ? m.personal_rh.nombres+' '+m.personal_rh.apellidos : (m.nombre||''),
+    m.personal_rh?.cargo_actual||'',
+    labelTipo[m.tipo_movimiento],
+  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [encabezado.join(','), ...filas].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'movimientos_nomina_1606.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 </script>
 
