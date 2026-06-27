@@ -840,7 +840,10 @@ async function renderCentros(){
     <div class="tarjeta">
       <div class="tarjeta-header">
         <h3>Centros educativos (${data?.length||0})</h3>
-        <button class="btn btn-primario btn-chico" onclick="abrirModalCentro()">+ Agregar centro</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarCentros()">⬆ Importar Excel</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalCentro()">+ Agregar centro</button>
+        </div>
       </div>
       <div class="tarjeta-body tabla-wrap">
         ${ (data && data.length) ? `
@@ -897,7 +900,124 @@ async function renderCentros(){
         </div>
       </div>
     </div>
+
+    <div class="modal-fondo" id="modal-importar-centros">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar centros desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-centros')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="centros-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas (los nombres pueden variar, el sistema intenta detectarlos): nombre del centro, código SIGERD, matrícula, nivel, tanda, número de dependencia, director/a, sexo del director/a.
+              Si el código SIGERD de una fila ya existe, se actualiza ese centro en vez de duplicarlo.
+            </div>
+          </div>
+          <div id="centros-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-centros')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-centros" onclick="procesarImportacionCentros()">Importar centros</button>
+        </div>
+      </div>
+    </div>
   `;
+}
+
+function abrirModalImportarCentros(){
+  document.getElementById('centros-archivo').value = '';
+  document.getElementById('centros-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-centros');
+}
+
+// Detecta encabezados típicos de un Excel de centros educativos, tolerando
+// variaciones de nombre de columna (mismo patrón usado en Nóminas).
+function detectarColumnasCentros(headers){
+  const norm = h => h.toString().toLowerCase().trim()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  const mapa = {};
+  headers.forEach((h,i)=>{
+    const n = norm(h);
+    if(/sigerd/.test(n)) mapa.sigerd = i;
+    else if(/matricula/.test(n)) mapa.matricula = i;
+    else if(/nivel/.test(n)) mapa.nivel = i;
+    else if(/tanda|jornada/.test(n)) mapa.tanda = i;
+    else if(/dependencia/.test(n)) mapa.dependencia = i;
+    else if(/director.*sexo|sexo.*director/.test(n)) mapa.directorSexo = i;
+    else if(/director/.test(n)) mapa.director = i;
+    else if(/centro|nombre/.test(n)) mapa.nombre = i;
+  });
+  return mapa;
+}
+
+async function procesarImportacionCentros(){
+  const archivo = document.getElementById('centros-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo de centros.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-centros');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo); // reutiliza el lector genérico CSV/Excel/PDF
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+
+    const headers = filas[0];
+    const mapa = detectarColumnasCentros(headers);
+    if(mapa.nombre === undefined) throw new Error('No se pudo detectar la columna con el nombre del centro.');
+
+    const registros = filas.slice(1)
+      .filter(f=>f[mapa.nombre] && String(f[mapa.nombre]).trim())
+      .map(f=>({
+        nombre_centro: String(f[mapa.nombre]).trim(),
+        codigo_sigerd: mapa.sigerd!==undefined ? (String(f[mapa.sigerd]||'').trim() || null) : null,
+        matricula: mapa.matricula!==undefined ? (parseInt(f[mapa.matricula])||null) : null,
+        nivel: mapa.nivel!==undefined ? (String(f[mapa.nivel]||'').trim() || null) : null,
+        tanda: mapa.tanda!==undefined ? (String(f[mapa.tanda]||'').trim() || null) : null,
+        numero_dependencia_nomina: mapa.dependencia!==undefined ? (String(f[mapa.dependencia]||'').trim() || null) : null,
+        director_nombre: mapa.director!==undefined ? (String(f[mapa.director]||'').trim() || null) : null,
+        director_sexo: mapa.directorSexo!==undefined ? (String(f[mapa.directorSexo]||'').trim().toUpperCase().startsWith('F') ? 'F' : (String(f[mapa.directorSexo]||'').trim() ? 'M' : null)) : null,
+      }));
+
+    if(!registros.length) throw new Error('No se encontraron filas válidas con nombre de centro.');
+
+    // UPSERT por código SIGERD: si existe, actualiza; si no, crea nuevo.
+    const { data: existentes } = await sb.from('centros_rh').select('id,codigo_sigerd');
+    const mapaExistente = {};
+    (existentes||[]).forEach(c=>{ if(c.codigo_sigerd) mapaExistente[c.codigo_sigerd] = c.id; });
+
+    let creados = 0, actualizados = 0, sinSigerd = 0;
+    for(const r of registros){
+      if(r.codigo_sigerd && mapaExistente[r.codigo_sigerd]){
+        const { error } = await sb.from('centros_rh').update(r).eq('id', mapaExistente[r.codigo_sigerd]);
+        if(error) throw error;
+        actualizados++;
+      } else {
+        const { data: nuevo, error } = await sb.from('centros_rh').insert(r).select('id,codigo_sigerd').single();
+        if(error) throw error;
+        if(nuevo.codigo_sigerd) mapaExistente[nuevo.codigo_sigerd] = nuevo.id;
+        creados++;
+        if(!r.codigo_sigerd) sinSigerd++;
+      }
+    }
+
+    document.getElementById('centros-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creados</span> ·
+        <span style="color:var(--azul-600);font-weight:600;">${actualizados} actualizados</span>
+        ${sinSigerd ? `<br><span style="color:var(--amarillo-600);">${sinSigerd} sin código SIGERD: revisar para evitar duplicados en próximas importaciones.</span>` : ''}
+      </div>`;
+
+    toast('Centros importados correctamente.','exito');
+    renderCentros();
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar centros';
+  }
 }
 
 function abrirModalCentro(c){
