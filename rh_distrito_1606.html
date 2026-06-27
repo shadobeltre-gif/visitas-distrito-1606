@@ -5002,7 +5002,13 @@ async function renderUsuarios(){
             <div class="campo"><label>Usuario <span class="requerido">*</span></label><input type="text" id="usuario-usuario" placeholder="ej. mperez"></div>
             <div class="campo"><label>Contraseña <span class="requerido">*</span></label><input type="password" id="usuario-pass" placeholder="Mínimo 4 caracteres"></div>
             <div class="campo"><label>Nombre completo <span class="requerido">*</span></label><input type="text" id="usuario-nombre"></div>
-            <div class="campo"><label>Rol / cargo</label><input type="text" id="usuario-rol" value="Administrativo"></div>
+            <div class="campo"><label>Rol / cargo</label>
+              <select id="usuario-rol-select" onchange="toggleRolPersonalizadoRH()">
+                <option>Administrativo</option><option>Director Distrital</option><option>Analista RRHH</option>
+                <option>Secretaria</option><option>Contable</option><option>Supervisor</option><option value="__otro__">Otro (especificar)</option>
+              </select>
+              <input type="text" id="usuario-rol" style="display:none;margin-top:6px;" placeholder="Escribe el rol">
+            </div>
           </div>
           <fieldset class="fieldset-doc" style="margin-top:14px;">
             <legend>Acceso a módulos</legend>
@@ -5040,7 +5046,19 @@ function abrirModalUsuario(u){
   document.getElementById('usuario-pass').value = '';
   document.getElementById('usuario-pass').placeholder = u ? 'Dejar en blanco para no cambiarla' : 'Mínimo 4 caracteres';
   document.getElementById('usuario-nombre').value = u?.nombre || '';
-  document.getElementById('usuario-rol').value = u?.rol || 'Administrativo';
+
+  const rolesPredefinidos = ['Administrativo','Director Distrital','Analista RRHH','Secretaria','Contable','Supervisor'];
+  const rolActual = u?.rol || 'Administrativo';
+  const selectRol = document.getElementById('usuario-rol-select');
+  if(rolesPredefinidos.includes(rolActual)){
+    selectRol.value = rolActual;
+    document.getElementById('usuario-rol').style.display = 'none';
+    document.getElementById('usuario-rol').value = rolActual;
+  } else {
+    selectRol.value = '__otro__';
+    document.getElementById('usuario-rol').style.display = 'block';
+    document.getElementById('usuario-rol').value = rolActual;
+  }
 
   const permisos = Array.isArray(u?.permisos_rh) ? u.permisos_rh : [];
   const accesoTotal = !u || permisos.length === 0;
@@ -5053,14 +5071,26 @@ function abrirModalUsuario(u){
   abrirModal('modal-usuario');
 }
 
+function toggleRolPersonalizadoRH(){
+  const esOtro = document.getElementById('usuario-rol-select').value === '__otro__';
+  const input = document.getElementById('usuario-rol');
+  input.style.display = esOtro ? 'block' : 'none';
+  if(!esOtro) input.value = document.getElementById('usuario-rol-select').value;
+  else input.value = '';
+}
+
 async function guardarUsuario(){
   const id = document.getElementById('usuario-id').value;
   const usuario = document.getElementById('usuario-usuario').value.trim().toLowerCase();
   const pass = document.getElementById('usuario-pass').value;
   const nombre = document.getElementById('usuario-nombre').value.trim();
-  const rol = document.getElementById('usuario-rol').value.trim() || 'Administrativo';
+  const rolSelect = document.getElementById('usuario-rol-select').value;
+  const rol = (rolSelect === '__otro__' ? document.getElementById('usuario-rol').value.trim() : rolSelect) || 'Administrativo';
 
   if(!usuario || !nombre){ toast('Usuario y nombre son obligatorios.','error'); return; }
+  if(rolSelect === '__otro__' && !document.getElementById('usuario-rol').value.trim()){
+    toast('Escribe el rol personalizado.','error'); return;
+  }
   if(!id && !pass){ toast('La contraseña es obligatoria para un usuario nuevo.','error'); return; }
   if(pass && pass.length < 4){ toast('La contraseña debe tener al menos 4 caracteres.','error'); return; }
   if(usuario === USUARIO_CREADOR){ toast('Ese nombre de usuario está reservado.','error'); return; }
