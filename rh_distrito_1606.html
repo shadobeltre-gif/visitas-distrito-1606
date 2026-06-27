@@ -619,43 +619,119 @@ async function renderPanel(){
     return;
   }
 
-  const [sol, tel, per, nom] = await Promise.all([
+  main.innerHTML = `<div class="vacio">Cargando panel general…</div>`;
+
+  const [sol, tel, pd, ca, vac, lp, riesgo, pen, seg, cl, per, cen, nom, movRecientes] = await Promise.all([
     sb.from('solicitudes_ap').select('id,estado', {count:'exact'}),
-    sb.from('telegramas_rh').select('id', {count:'exact'}),
-    sb.from('personal_rh').select('id', {count:'exact'}).eq('estatus','activo'),
+    sb.from('telegramas_rh').select('id,estado_envio', {count:'exact'}),
+    sb.from('puestas_disposicion_rh').select('id,estado', {count:'exact'}),
+    sb.from('cartas_aceptacion_rh').select('id,estado', {count:'exact'}),
+    sb.from('vacaciones_rh').select('id,estado', {count:'exact'}),
+    sb.from('licencias_permisos_rh').select('id,categoria,estado,evidencia_requerida,evidencia_presentada', {count:'exact'}),
+    sb.from('riesgos_laborales_rh').select('id,tipo_formulario,estado', {count:'exact'}),
+    sb.from('pensiones_rh').select('id,tipo_personal,estado', {count:'exact'}),
+    sb.from('seguros_salud_rh').select('id,estado', {count:'exact'}),
+    sb.from('certificaciones_laborales_rh').select('id,estado', {count:'exact'}),
+    sb.from('personal_rh').select('id,estatus', {count:'exact'}),
+    sb.from('centros_rh').select('id', {count:'exact'}),
     sb.from('nominas_rh').select('id,mes,anio').order('anio',{ascending:false}).order('mes',{ascending:false}).limit(1),
+    sb.from('movimientos_nomina_rh').select('id,tipo_movimiento,nomina_id').order('creado_en',{ascending:false}).limit(500),
   ]);
 
-  const pendientes = (sol.data||[]).filter(s=>['enviado','expediente_incompleto','incidencias'].includes(s.estado)).length;
-  const nombrados = (sol.data||[]).filter(s=>s.estado==='nombrado').length;
-  const ultimaNomina = nom.data && nom.data[0] ? `${nom.data[0].mes}/${nom.data[0].anio}` : 'Sin registrar';
+  const pendientesAP = (sol.data||[]).filter(s=>['enviado','expediente_incompleto','incidencias'].includes(s.estado)).length;
+  const nombradosAP = (sol.data||[]).filter(s=>s.estado==='nombrado').length;
+
+  const personalActivo = (per.data||[]).filter(p=>p.estatus==='activo').length;
+  const personalInactivo = (per.data||[]).filter(p=>p.estatus==='inactivo'||p.estatus==='sustituido'||p.estatus==='renunciado'||p.estatus==='fallecido').length;
+
+  const vacPendientes = (vac.data||[]).filter(v=>['solicitado','firmado_supervisor'].includes(v.estado)).length;
+  const licPendientes = (lp.data||[]).filter(l=>l.estado==='solicitado').length;
+  const evidenciaFaltante = (lp.data||[]).filter(l=>l.evidencia_requerida && !l.evidencia_presentada).length;
+
+  const riesgoATR = (riesgo.data||[]).filter(r=>r.tipo_formulario==='ATR-2').length;
+  const riesgoEPR = (riesgo.data||[]).filter(r=>r.tipo_formulario==='EPR-1').length;
+
+  const pensionesActivas = (pen.data||[]).filter(p=>!['decreto_promulgado','rechazado'].includes(p.estado)).length;
+
+  const ultimaNomina = nom.data && nom.data[0] ? `${MESES_NOMINA[nom.data[0].mes]} ${nom.data[0].anio}` : 'Sin registrar';
+  const ultimaNominaId = nom.data && nom.data[0] ? nom.data[0].id : null;
+  const movUltimaNomina = (movRecientes.data||[]).filter(m=>m.nomina_id===ultimaNominaId);
+  const movNuevos = movUltimaNomina.filter(m=>m.tipo_movimiento==='nuevo').length;
+  const movReingresos = movUltimaNomina.filter(m=>m.tipo_movimiento==='reingreso').length;
+  const movCancelados = movUltimaNomina.filter(m=>m.tipo_movimiento==='cancelado').length;
 
   main.innerHTML = `
-    <div class="grid-3">
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor">${sol.count ?? 0}</div><div class="etiqueta">Solicitudes AP totales</div>
-      </div></div>
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor">${pendientes}</div><div class="etiqueta">AP pendientes de respuesta MINERD</div>
-      </div></div>
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor">${nombrados}</div><div class="etiqueta">Nombramientos confirmados</div>
-      </div></div>
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor">${tel.count ?? 0}</div><div class="etiqueta">Telegramas generados</div>
-      </div></div>
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor">${per.count ?? 0}</div><div class="etiqueta">Personal activo</div>
-      </div></div>
-      <div class="tarjeta"><div class="tarjeta-body kpi">
-        <div class="valor" style="font-size:20px;">${ultimaNomina}</div><div class="etiqueta">Última nómina registrada</div>
-      </div></div>
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Personal y centros</h3></div>
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div class="kpi"><div class="valor">${per.count ?? 0}</div><div class="etiqueta">Personal total</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--verde-600);">${personalActivo}</div><div class="etiqueta">Activos</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--gris-500);">${personalInactivo}</div><div class="etiqueta">Inactivos / salidos</div></div>
+          <div class="kpi"><div class="valor">${cen.count ?? 0}</div><div class="etiqueta">Centros educativos</div></div>
+        </div>
+      </div>
     </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Acciones de personal</h3></div>
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div class="kpi"><div class="valor">${sol.count ?? 0}</div><div class="etiqueta">Solicitudes AP</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--amarillo-600);">${pendientesAP}</div><div class="etiqueta">AP pendientes MINERD</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--verde-600);">${nombradosAP}</div><div class="etiqueta">Nombramientos confirmados</div></div>
+          <div class="kpi"><div class="valor">${tel.count ?? 0}</div><div class="etiqueta">Telegramas generados</div></div>
+          <div class="kpi"><div class="valor">${pd.count ?? 0}</div><div class="etiqueta">Puestas a disposición</div></div>
+          <div class="kpi"><div class="valor">${ca.count ?? 0}</div><div class="etiqueta">Cartas de aceptación</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Ausencias</h3></div>
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div class="kpi"><div class="valor">${vac.count ?? 0}</div><div class="etiqueta">Vacaciones solicitadas</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--amarillo-600);">${vacPendientes}</div><div class="etiqueta">Vacaciones por autorizar</div></div>
+          <div class="kpi"><div class="valor">${lp.count ?? 0}</div><div class="etiqueta">Licencias y permisos</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--amarillo-600);">${licPendientes}</div><div class="etiqueta">Pendientes de aprobar</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--rojo-600);">${evidenciaFaltante}</div><div class="etiqueta">Evidencia pendiente</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Seguridad social</h3></div>
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div class="kpi"><div class="valor">${riesgoATR}</div><div class="etiqueta">ATR-2 (accidentes)</div></div>
+          <div class="kpi"><div class="valor">${riesgoEPR}</div><div class="etiqueta">EPR-1 (enf. profesional)</div></div>
+          <div class="kpi"><div class="valor">${pensionesActivas}</div><div class="etiqueta">Pensiones en trámite</div></div>
+          <div class="kpi"><div class="valor">${seg.count ?? 0}</div><div class="etiqueta">Afiliaciones de seguro</div></div>
+          <div class="kpi"><div class="valor">${cl.count ?? 0}</div><div class="etiqueta">Certificaciones laborales</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Nómina MINERD</h3></div>
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div class="kpi"><div class="valor" style="font-size:20px;">${ultimaNomina}</div><div class="etiqueta">Última nómina registrada</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--verde-600);">${movNuevos}</div><div class="etiqueta">Nuevos (última nómina)</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--azul-600);">${movReingresos}</div><div class="etiqueta">Reingresos</div></div>
+          <div class="kpi"><div class="valor" style="color:var(--rojo-600);">${movCancelados}</div><div class="etiqueta">Cancelados</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="tarjeta">
       <div class="tarjeta-header"><h3>Accesos rápidos</h3></div>
       <div class="tarjeta-body" style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-primario" onclick="irAVista('solicitudes')">+ Nueva solicitud AP</button>
         <button class="btn btn-secundario" onclick="irAVista('telegramas')">Generar telegrama</button>
+        <button class="btn btn-secundario" onclick="irAVista('vacaciones')">Vacaciones</button>
+        <button class="btn btn-secundario" onclick="irAVista('licenciaspermisos')">Licencias y permisos</button>
         <button class="btn btn-secundario" onclick="irAVista('nominas')">Importar nómina</button>
       </div>
     </div>
@@ -773,6 +849,7 @@ async function renderPersonal(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('personal_rh').select('*, centros_rh(nombre_centro)').order('apellidos');
   if(error){ toast(error.message,'error'); }
+  window._personalTodos = data || [];
 
   main.innerHTML = `
     <div class="tarjeta">
@@ -780,25 +857,30 @@ async function renderPersonal(){
         <h3>Personal (${data?.length||0})</h3>
         <button class="btn btn-primario btn-chico" onclick="abrirModalPersonal()">+ Agregar empleado</button>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr>
-            <th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Centro</th><th>Estatus</th><th></th>
-          </tr></thead>
-          <tbody>
-            ${data.map(p=>`
-              <tr>
-                <td><strong>${escapeHtml(p.nombres)} ${escapeHtml(p.apellidos)}</strong></td>
-                <td>${escapeHtml(p.cedula)}</td>
-                <td>${escapeHtml(p.cargo_actual||'—')}</td>
-                <td>${escapeHtml(p.centros_rh?.nombre_centro||'—')}</td>
-                <td>${badgeEstado(p.estatus)}</td>
-                <td><button class="btn btn-secundario btn-chico" onclick='abrirModalPersonal(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Editar</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">👤</div>No hay personal registrado todavía.</div>` }
+      <div class="tarjeta-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="campo" style="grid-column:span 2;">
+            <label>Buscar empleado</label>
+            <input type="text" id="filtro-personal-texto" oninput="filtrarPersonal()" placeholder="Nombre, cédula o cargo…">
+          </div>
+          <div class="campo">
+            <label>Estatus</label>
+            <select id="filtro-personal-estatus" onchange="filtrarPersonal()">
+              <option value="">Todos</option>
+              <option value="activo">Activo</option><option value="inactivo">Inactivo</option>
+              <option value="sustituido">Sustituido</option><option value="renunciado">Renunciado</option>
+              <option value="fallecido">Fallecido</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Centro</th><th>Estatus</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-personal"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -822,7 +904,7 @@ async function renderPersonal(){
             <div class="campo"><label>Centro</label><select id="personal-centro"></select></div>
             <div class="campo"><label>No. dependencia nómina</label><input type="text" id="personal-dependencia"></div>
             <div class="campo"><label>Fecha de ingreso</label><input type="date" id="personal-ingreso"></div>
-            <div class="campo"><label>Estatus</label>
+            <div class="campo"><label>Estatus <span class="requerido">*</span></label>
               <select id="personal-estatus">
                 <option value="activo">Activo</option><option value="inactivo">Inactivo</option>
                 <option value="sustituido">Sustituido</option><option value="renunciado">Renunciado</option>
@@ -839,6 +921,53 @@ async function renderPersonal(){
     </div>
   `;
   await cargarCentrosSelect(document.getElementById('personal-centro'));
+  pintarTablaPersonal(window._personalTodos);
+}
+
+function pintarTablaPersonal(lista){
+  const tbody = document.getElementById('tbody-personal');
+  if(!lista || !lista.length){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="vacio"><div class="icono-vacio">👤</div>No se encontró personal con ese criterio.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(p=>`
+    <tr>
+      <td><strong>${escapeHtml(p.nombres)} ${escapeHtml(p.apellidos)}</strong></td>
+      <td>${escapeHtml(p.cedula)}</td>
+      <td>${escapeHtml(p.cargo_actual||'—')}</td>
+      <td>${escapeHtml(p.centros_rh?.nombre_centro||'—')}</td>
+      <td>
+        <select onchange="cambiarEstatusRapidoPersonal(${p.id}, this.value)" style="padding:4px 6px;border-radius:6px;border:1px solid var(--gris-300);font-size:12px;">
+          <option value="activo" ${p.estatus==='activo'?'selected':''}>Activo</option>
+          <option value="inactivo" ${p.estatus==='inactivo'?'selected':''}>Inactivo</option>
+          <option value="sustituido" ${p.estatus==='sustituido'?'selected':''}>Sustituido</option>
+          <option value="renunciado" ${p.estatus==='renunciado'?'selected':''}>Renunciado</option>
+          <option value="fallecido" ${p.estatus==='fallecido'?'selected':''}>Fallecido</option>
+        </select>
+      </td>
+      <td><button class="btn btn-secundario btn-chico" onclick='abrirModalPersonal(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Editar</button></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarPersonal(){
+  const texto = document.getElementById('filtro-personal-texto').value.toLowerCase().trim();
+  const estatus = document.getElementById('filtro-personal-estatus').value;
+  const filtrado = (window._personalTodos||[]).filter(p=>{
+    if(estatus && p.estatus !== estatus) return false;
+    if(!texto) return true;
+    const campo = `${p.nombres} ${p.apellidos} ${p.cedula} ${p.cargo_actual||''}`.toLowerCase();
+    return campo.includes(texto);
+  });
+  pintarTablaPersonal(filtrado);
+}
+
+async function cambiarEstatusRapidoPersonal(id, nuevoEstatus){
+  const { error } = await sb.from('personal_rh').update({ estatus: nuevoEstatus }).eq('id', id);
+  if(error){ toast(error.message,'error'); return; }
+  const p = (window._personalTodos||[]).find(x=>x.id===id);
+  if(p) p.estatus = nuevoEstatus;
+  toast(`Estatus actualizado a "${nuevoEstatus}".`,'exito');
 }
 
 async function abrirModalPersonal(p){
