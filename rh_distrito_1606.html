@@ -844,7 +844,7 @@ async function cargarCentrosSelect(selectEl, valorSeleccionado){
 }
 
 async function cargarPersonalSelect(selectEl, valorSeleccionado){
-  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo').order('apellidos');
+  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso').order('apellidos');
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
   selectEl.innerHTML = '<option value="">Seleccione un empleado…</option>' +
@@ -2817,12 +2817,6 @@ function imprimirCAActual(){
 }
 
 /* ====================== VACACIONES ====================== */
-function diasEntreFechas(ini, fin){
-  if(!ini || !fin) return 0;
-  const d1 = new Date(ini+'T00:00:00'), d2 = new Date(fin+'T00:00:00');
-  return Math.round((d2-d1)/(1000*60*60*24)) + 1;
-}
-
 async function renderVacaciones(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('vacaciones_rh')
@@ -2883,26 +2877,49 @@ async function renderVacaciones(){
             <legend>Datos generales</legend>
             <div class="grid-3">
               <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
-                <select id="vac-personal"></select></div>
+                <select id="vac-personal" onchange="calcularAniosServicioVacaciones()"></select></div>
               <div class="campo"><label>Fecha de solicitud</label><input type="date" id="vac-fecha-solicitud"></div>
-              <div class="campo"><label>Años servicio MINERD</label><input type="number" step="0.5" id="vac-anios-minerd"></div>
-              <div class="campo"><label>Años servicio otra institución</label><input type="number" step="0.5" id="vac-anios-otra" value="0"></div>
+              <div class="campo"><label>Años servicio MINERD</label><input type="number" step="0.5" id="vac-anios-minerd" oninput="actualizarTotalAniosVacaciones()"></div>
+              <div class="campo"><label>Años servicio otra institución</label><input type="number" step="0.5" id="vac-anios-otra" value="0" oninput="actualizarTotalAniosVacaciones()"></div>
               <div class="campo"><label>Total años en el Estado</label><input type="number" step="0.5" id="vac-anios-total"></div>
             </div>
+            <div class="texto-ayuda" id="vac-fuente-anios" style="margin-top:6px;"></div>
           </fieldset>
 
           <fieldset class="fieldset-doc">
             <legend>Días solicitados</legend>
+            <div class="texto-ayuda" style="margin-bottom:8px;">
+              Según años de servicio: 1 a &lt;5 años = 15 días · 5 a &lt;10 = 20 días · 10 a &lt;15 = 25 días · 15+ = 30 días (días laborables).
+            </div>
             <div class="grid-3">
-              <div class="campo"><label>Días año 1</label><input type="number" id="vac-dias1" value="0" oninput="validarReglasVacaciones()"></div>
+              <div class="campo">
+                <label>Días año 1</label>
+                <select id="vac-dias1-select" onchange="aplicarDiasPredefinidos(1)">
+                  <option value="15">15 días</option><option value="20">20 días</option>
+                  <option value="25">25 días</option><option value="30">30 días</option>
+                  <option value="__manual__">Otro (digitar)</option>
+                </select>
+                <input type="number" id="vac-dias1" value="0" oninput="validarReglasVacaciones()" style="display:none;margin-top:6px;">
+              </div>
               <div class="campo"><label>Año 1</label><input type="number" id="vac-anio1"></div>
               <div class="campo"><label>Días pendientes (saldo)</label><input type="number" id="vac-dias-pendientes"></div>
-              <div class="campo"><label>Días año 2 (opcional)</label><input type="number" id="vac-dias2" value="0" oninput="validarReglasVacaciones()"></div>
+              <div class="campo">
+                <label>Días año 2 (opcional)</label>
+                <select id="vac-dias2-select" onchange="aplicarDiasPredefinidos(2)">
+                  <option value="0">No aplica</option>
+                  <option value="15">15 días</option><option value="20">20 días</option>
+                  <option value="25">25 días</option><option value="30">30 días</option>
+                  <option value="__manual__">Otro (digitar)</option>
+                </select>
+                <input type="number" id="vac-dias2" value="0" oninput="validarReglasVacaciones()" style="display:none;margin-top:6px;">
+              </div>
               <div class="campo"><label>Año 2</label><input type="number" id="vac-anio2"></div>
             </div>
             <div class="grid-2">
-              <div class="campo"><label>Fecha inicio disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-inicio" onchange="validarReglasVacaciones()"></div>
-              <div class="campo"><label>Fecha fin disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-fin" onchange="validarReglasVacaciones()"></div>
+              <div class="campo"><label>Fecha inicio disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-inicio" onchange="calcularFechaFinVacaciones()"></div>
+              <div class="campo"><label>Fecha fin disfrute <span class="requerido">*</span></label><input type="date" id="vac-fecha-fin" onchange="validarReglasVacaciones()">
+                <div class="texto-ayuda">Se sugiere automáticamente contando días laborables (sin sábados ni domingos); puedes ajustarla manualmente.</div>
+              </div>
             </div>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;">
               <input type="checkbox" id="vac-pre-post-natal"> Empleada en licencia pre/post natal (autorización obligatoria)
@@ -2982,14 +2999,107 @@ async function eliminarSeleccionVacaciones(){
   renderVacaciones();
 }
 
-function abrirModalVacacion(){
+async function abrirModalVacacion(){
   document.getElementById('vac-fecha-solicitud').value = new Date().toISOString().slice(0,10);
   ['vac-anios-minerd','vac-anios-otra','vac-anios-total','vac-dias1','vac-anio1','vac-dias-pendientes','vac-dias2','vac-anio2','vac-fecha-inicio','vac-fecha-fin','vac-comentario'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.value = (id==='vac-anios-otra')?'0':'';
   });
   document.getElementById('vac-pre-post-natal').checked = false;
   document.getElementById('vac-alertas').innerHTML = '';
+  document.getElementById('vac-fuente-anios').textContent = '';
+  document.getElementById('vac-dias1-select').value = '15';
+  document.getElementById('vac-dias2-select').value = '0';
+  document.getElementById('vac-dias1').style.display = 'none';
+  document.getElementById('vac-dias2').style.display = 'none';
+  await cargarPersonalSelect(document.getElementById('vac-personal'));
   abrirModal('modal-vacacion');
+}
+
+// Calcula los años de servicio completos desde la fecha de ingreso del
+// empleado hasta la fecha de solicitud, y sugiere automáticamente los
+// días de vacaciones según la tabla oficial (editable después).
+function calcularAniosServicioVacaciones(){
+  const id = document.getElementById('vac-personal').value;
+  const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+  const fuenteEl = document.getElementById('vac-fuente-anios');
+  if(!p || !p.fecha_ingreso){
+    fuenteEl.textContent = p ? 'Este empleado no tiene fecha de ingreso registrada; ingresa los años manualmente.' : '';
+    return;
+  }
+  const fechaSolicitud = document.getElementById('vac-fecha-solicitud').value || new Date().toISOString().slice(0,10);
+  const anios = calcularAniosEntreFechas(p.fecha_ingreso, fechaSolicitud);
+  document.getElementById('vac-anios-minerd').value = anios;
+  fuenteEl.textContent = `Calculado automáticamente desde la fecha de ingreso (${fechaCorta(p.fecha_ingreso)}). Puedes ajustarlo manualmente.`;
+  actualizarTotalAniosVacaciones();
+  sugerirDiasPorAnios(anios);
+}
+
+function calcularAniosEntreFechas(fechaIngreso, fechaHasta){
+  const ini = new Date(fechaIngreso+'T00:00:00');
+  const fin = new Date(fechaHasta+'T00:00:00');
+  let anios = fin.getFullYear() - ini.getFullYear();
+  const aniversarioEsteAnio = new Date(fin.getFullYear(), ini.getMonth(), ini.getDate());
+  if(fin < aniversarioEsteAnio) anios--;
+  return Math.max(anios, 0);
+}
+
+function actualizarTotalAniosVacaciones(){
+  const minerd = parseFloat(document.getElementById('vac-anios-minerd').value) || 0;
+  const otra = parseFloat(document.getElementById('vac-anios-otra').value) || 0;
+  document.getElementById('vac-anios-total').value = (minerd + otra) || '';
+}
+
+// Sugiere los días de la tabla oficial según los años de servicio del
+// empleado, sin sobrescribir si el usuario ya seleccionó "Otro" manual.
+function sugerirDiasPorAnios(anios){
+  const select1 = document.getElementById('vac-dias1-select');
+  if(select1.value === '__manual__') return; // respeta si ya está en modo manual
+  let dias = 15;
+  if(anios >= 15) dias = 30;
+  else if(anios >= 10) dias = 25;
+  else if(anios >= 5) dias = 20;
+  else dias = 15;
+  select1.value = String(dias);
+  document.getElementById('vac-dias1').value = dias;
+  calcularFechaFinVacaciones();
+}
+
+// Cambia entre el select de días predefinidos y el campo manual.
+function aplicarDiasPredefinidos(numero){
+  const select = document.getElementById(`vac-dias${numero}-select`);
+  const input = document.getElementById(`vac-dias${numero}`);
+  if(select.value === '__manual__'){
+    input.style.display = 'block';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = select.value;
+  }
+  validarReglasVacaciones();
+  if(numero === 1) calcularFechaFinVacaciones();
+}
+
+// Calcula la fecha de fin sugerida sumando los días laborables solicitados
+// (excluyendo sábados y domingos) a partir de la fecha de inicio.
+function calcularFechaFinVacaciones(){
+  const inicio = document.getElementById('vac-fecha-inicio').value;
+  const dias1 = parseInt(document.getElementById('vac-dias1').value) || 0;
+  const dias2 = parseInt(document.getElementById('vac-dias2').value) || 0;
+  const totalDias = dias1 + dias2;
+  if(!inicio || !totalDias){ validarReglasVacaciones(); return; }
+
+  let fecha = new Date(inicio+'T00:00:00');
+  let diasContados = 1; // el propio día de inicio cuenta como el primer día laborable, si no es fin de semana
+  if(fecha.getDay() === 0 || fecha.getDay() === 6) diasContados = 0;
+
+  while(diasContados < totalDias){
+    fecha.setDate(fecha.getDate() + 1);
+    const diaSemana = fecha.getDay();
+    if(diaSemana !== 0 && diaSemana !== 6) diasContados++;
+  }
+
+  document.getElementById('vac-fecha-fin').value = fecha.toISOString().slice(0,10);
+  validarReglasVacaciones();
 }
 
 // Reglas de negocio del formulario oficial: acumulación máxima 2 años,
@@ -3006,9 +3116,9 @@ function validarReglasVacaciones(){
     alertas.push('Más de 20 días solicitados: pueden fraccionarse en dos fechas calendario distintas.');
   }
   if(ini && fin){
-    const rango = diasEntreFechas(ini, fin);
-    if(rango !== totalDias && totalDias > 0){
-      alertas.push(`El rango de fechas (${rango} día(s)) no coincide con el total de días solicitados (${totalDias}).`);
+    const rangoLaborable = diasLaborablesEntreFechas(ini, fin);
+    if(rangoLaborable !== totalDias && totalDias > 0){
+      alertas.push(`El rango de fechas (${rangoLaborable} día(s) laborable(s)) no coincide con el total de días solicitados (${totalDias}).`);
     }
   }
   if(document.getElementById('vac-pre-post-natal').checked){
@@ -3018,6 +3128,21 @@ function validarReglasVacaciones(){
   document.getElementById('vac-alertas').innerHTML = alertas.length ? alertas.map(a=>
     `<div class="badge badge-amarillo" style="display:block;margin-bottom:6px;white-space:normal;padding:8px 10px;">⚠ ${a}</div>`
   ).join('') : '';
+}
+
+// Cuenta días laborables (excluyendo sábados y domingos) entre dos fechas, ambas inclusive.
+function diasLaborablesEntreFechas(ini, fin){
+  if(!ini || !fin) return 0;
+  let fecha = new Date(ini+'T00:00:00');
+  const fechaFin = new Date(fin+'T00:00:00');
+  if(fecha > fechaFin) return 0;
+  let conteo = 0;
+  while(fecha <= fechaFin){
+    const diaSemana = fecha.getDay();
+    if(diaSemana !== 0 && diaSemana !== 6) conteo++;
+    fecha.setDate(fecha.getDate() + 1);
+  }
+  return conteo;
 }
 
 async function guardarVacacion(){
