@@ -286,6 +286,7 @@ input{font-family:inherit}
     <div class="portal-user">
       <div class="info"><div class="nm" id="pu-nombre">—</div><div class="rl" id="pu-rol">—</div></div>
       <div class="av" id="pu-av">?</div>
+      <button class="btn-logout-portal" id="btn-gestion-accesos" style="display:none;" onclick="abrirGestionAccesos()">Usuarios y accesos</button>
       <button class="btn-logout-portal" onclick="doLogoutPortal()">Salir</button>
     </div>
   </header>
@@ -338,6 +339,51 @@ input{font-family:inherit}
 
 <div class="toast-soon" id="toast-soon"></div>
 
+<div id="modal-accesos-fondo" style="display:none;position:fixed;inset:0;background:rgba(7,30,61,.6);z-index:200;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:18px;max-width:760px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.35);">
+    <div style="padding:1.4rem 1.6rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="font-size:18px;color:var(--navy);">Usuarios y accesos del portal</h2>
+      <button onclick="cerrarGestionAccesos()" style="background:none;border:none;font-size:22px;color:var(--text3);">×</button>
+    </div>
+    <div style="padding:1.4rem 1.6rem;max-height:70vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <p style="font-size:12.5px;color:var(--text2);">Controla qué módulos completos puede ver cada usuario al entrar al portal.</p>
+        <button class="btn-login" style="width:auto;padding:9px 16px;font-size:12.5px;" onclick="abrirModalUsuarioPortal()">+ Crear usuario</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="text-align:left;background:var(--surface2);">
+          <th style="padding:8px 10px;">Usuario</th><th style="padding:8px 10px;">Nombre</th><th style="padding:8px 10px;">Acceso</th><th style="padding:8px 10px;"></th>
+        </tr></thead>
+        <tbody id="tbody-usuarios-portal"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="modal-usuario-portal-fondo" style="display:none;position:fixed;inset:0;background:rgba(7,30,61,.6);z-index:210;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:18px;max-width:480px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.35);">
+    <div style="padding:1.4rem 1.6rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <h2 id="titulo-modal-usuario-portal" style="font-size:16px;color:var(--navy);">Crear usuario</h2>
+      <button onclick="cerrarModalUsuarioPortal()" style="background:none;border:none;font-size:22px;color:var(--text3);">×</button>
+    </div>
+    <div style="padding:1.4rem 1.6rem;">
+      <input type="hidden" id="up-id">
+      <div class="lf"><label>Usuario</label><input type="text" id="up-usuario" placeholder="ej. mperez"></div>
+      <div class="lf"><label>Contraseña</label><input type="password" id="up-pass" placeholder="Mínimo 4 caracteres"></div>
+      <div class="lf"><label>Nombre completo</label><input type="text" id="up-nombre"></div>
+      <div class="lf"><label>Rol / cargo</label><input type="text" id="up-rol" value="Administrativo"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;font-weight:600;">
+        <input type="checkbox" id="up-acceso-total" onchange="toggleAccesoTotalPortal()"> Acceso a todos los módulos del portal
+      </label>
+      <div id="up-lista-modulos" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem;"></div>
+    </div>
+    <div style="padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn-login" style="width:auto;background:var(--surface2);color:var(--text2);padding:9px 16px;font-size:12.5px;" onclick="cerrarModalUsuarioPortal()">Cancelar</button>
+      <button class="btn-login" style="width:auto;padding:9px 16px;font-size:12.5px;" onclick="guardarUsuarioPortal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 // SUPABASE CONFIG (mismo proyecto del Sistema Financiero)
@@ -362,6 +408,8 @@ let CU = null;
 let USERS_FIN = [];
 let TECNICOS_VT = [];
 let TECNICO_CEDULA_ENCONTRADO = null;
+// Usuario autorizado a gestionar usuarios y accesos del portal (en minúsculas).
+const USUARIO_CREADOR_PORTAL = 'admin';
 
 // ═══════════════════════════════════════════════
 // MÓDULOS DEL PORTAL — editar aquí para activar/cambiar enlaces
@@ -413,7 +461,7 @@ function hide(id){ const el=document.getElementById(id); if(el) el.style.display
 async function cargarUsuariosFin(){
   const {data,error}=await sb.from('usuarios_fin').select('*');
   if(error) throw error;
-  USERS_FIN=(data||[]).map(r=>({id:r.id,nombre:r.nombre,user:r.usuario,pass:r.pass,rol:r.rol,color:r.color,tecnico_id:r.tecnico_id||null}));
+  USERS_FIN=(data||[]).map(r=>({id:r.id,nombre:r.nombre,user:r.usuario,pass:r.pass,rol:r.rol,color:r.color,tecnico_id:r.tecnico_id||null,permisos_portal:r.permisos_portal||null}));
 }
 async function cargarTecnicosVT(){
   const {data}=await sb.from('tecnicos_vt').select('*').order('nombre');
@@ -548,7 +596,14 @@ function entrarAlPortal(){
 
 function renderModulos(){
   const grid=document.getElementById('modules-grid');
-  grid.innerHTML=MODULOS.map(m=>{
+  const esCreador = (CU.user||'').toLowerCase() === USUARIO_CREADOR_PORTAL;
+  const permisos = CU.permisos_portal;
+  const tieneRestriccion = Array.isArray(permisos) && permisos.length > 0;
+  const modulosVisibles = (!esCreador && tieneRestriccion)
+    ? MODULOS.filter(m => permisos.includes(m.id))
+    : MODULOS;
+
+  grid.innerHTML=modulosVisibles.map(m=>{
     const esVivo=m.estado==='live';
     return `<button class="mod-card ${m.clase} ${esVivo?'':'is-soon'}" onclick="${esVivo?`abrirModulo('${m.id}')`:`avisoProximamente('${m.titulo}')`}">
       <div class="mod-num">${m.num}</div>
@@ -558,6 +613,12 @@ function renderModulos(){
       <span class="mod-status ${esVivo?'live':'soon'}"><span class="dot"></span>${esVivo?'Disponible':'Próximamente'}</span>
     </button>`;
   }).join('');
+
+  if(!modulosVisibles.length){
+    grid.innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--text2);grid-column:1/-1;">No tienes acceso a ningún módulo todavía. Contacta al administrador del sistema.</div>`;
+  }
+
+  document.getElementById('btn-gestion-accesos').style.display = esCreador ? 'inline-flex' : 'none';
 }
 
 function abrirModulo(id){
@@ -589,6 +650,118 @@ function doLogoutPortal(){
   hide('lt-pass-wrap'); hide('lt-pass2-wrap'); hide('lt-msg-nueva'); hide('login-err');
   const ltBtn=document.getElementById('lt-btn');
   ltBtn.disabled=true; ltBtn.style.opacity='.5'; ltBtn.textContent='Ingresa tu cédula';
+}
+
+// ═══════════════════════════════════════════════
+// GESTIÓN DE USUARIOS Y ACCESOS DEL PORTAL (solo usuario creador)
+// ═══════════════════════════════════════════════
+async function abrirGestionAccesos(){
+  const esCreador = (CU.user||'').toLowerCase() === USUARIO_CREADOR_PORTAL;
+  if(!esCreador) return;
+  await cargarUsuariosFin();
+  pintarTablaUsuariosPortal();
+  document.getElementById('modal-accesos-fondo').style.display='flex';
+}
+
+function cerrarGestionAccesos(){
+  document.getElementById('modal-accesos-fondo').style.display='none';
+}
+
+function pintarTablaUsuariosPortal(){
+  const tbody = document.getElementById('tbody-usuarios-portal');
+  if(!USERS_FIN.length){
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:14px;color:var(--text3);text-align:center;">No hay usuarios registrados.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = USERS_FIN.map(u=>{
+    const esteEsCreador = (u.user||'').toLowerCase() === USUARIO_CREADOR_PORTAL;
+    const permisos = Array.isArray(u.permisos_portal) ? u.permisos_portal : [];
+    const resumen = esteEsCreador ? 'Acceso total (creador)' : (permisos.length ? permisos.map(p=>{
+      const m = MODULOS.find(x=>x.id===p); return m ? m.titulo : p;
+    }).join(', ') : 'Acceso total');
+    return `<tr style="border-top:1px solid var(--border);">
+      <td style="padding:8px 10px;font-weight:600;">${u.user}</td>
+      <td style="padding:8px 10px;">${u.nombre||'—'}</td>
+      <td style="padding:8px 10px;font-size:12px;color:var(--text2);">${resumen}</td>
+      <td style="padding:8px 10px;">${esteEsCreador ? '<span style="font-size:11.5px;color:var(--text3);">No editable</span>' : `<button class="btn-login" style="width:auto;padding:5px 10px;font-size:11.5px;" onclick='abrirModalUsuarioPortal(${JSON.stringify(u).replace(/'/g,"&apos;")})'>Editar</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalUsuarioPortal(u){
+  document.getElementById('titulo-modal-usuario-portal').textContent = u ? 'Editar usuario' : 'Crear usuario';
+  document.getElementById('up-id').value = u?.id || '';
+  document.getElementById('up-usuario').value = u?.user || '';
+  document.getElementById('up-usuario').disabled = !!u;
+  document.getElementById('up-pass').value = '';
+  document.getElementById('up-pass').placeholder = u ? 'Dejar en blanco para no cambiarla' : 'Mínimo 4 caracteres';
+  document.getElementById('up-nombre').value = u?.nombre || '';
+  document.getElementById('up-rol').value = u?.rol || 'Administrativo';
+
+  const lista = document.getElementById('up-lista-modulos');
+  lista.innerHTML = MODULOS.map(m=>`
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
+      <input type="checkbox" class="chk-permiso-portal" value="${m.id}"> ${m.titulo}
+    </label>
+  `).join('');
+
+  const permisos = Array.isArray(u?.permisos_portal) ? u.permisos_portal : [];
+  const accesoTotal = !u || permisos.length === 0;
+  document.getElementById('up-acceso-total').checked = accesoTotal;
+  document.querySelectorAll('.chk-permiso-portal').forEach(c=>{
+    c.disabled = accesoTotal;
+    c.checked = permisos.includes(c.value);
+  });
+
+  document.getElementById('modal-usuario-portal-fondo').style.display='flex';
+}
+
+function cerrarModalUsuarioPortal(){
+  document.getElementById('modal-usuario-portal-fondo').style.display='none';
+}
+
+function toggleAccesoTotalPortal(){
+  const total = document.getElementById('up-acceso-total').checked;
+  document.querySelectorAll('.chk-permiso-portal').forEach(c=>{ c.disabled = total; if(total) c.checked = false; });
+}
+
+async function guardarUsuarioPortal(){
+  const id = gv('up-id');
+  const usuario = gv('up-usuario').trim().toLowerCase();
+  const pass = gv('up-pass');
+  const nombre = gv('up-nombre').trim();
+  const rol = gv('up-rol').trim() || 'Administrativo';
+
+  if(!usuario || !nombre){ alert('Usuario y nombre son obligatorios.'); return; }
+  if(!id && !pass){ alert('La contraseña es obligatoria para un usuario nuevo.'); return; }
+  if(pass && pass.length < 4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
+  if(usuario === USUARIO_CREADOR_PORTAL){ alert('Ese nombre de usuario está reservado.'); return; }
+
+  const accesoTotal = document.getElementById('up-acceso-total').checked;
+  const permisos = accesoTotal ? null : [...document.querySelectorAll('.chk-permiso-portal:checked')].map(c=>c.value);
+  if(!accesoTotal && (!permisos || !permisos.length)){
+    alert('Selecciona al menos un módulo, o marca "Acceso a todos los módulos".'); return;
+  }
+
+  const payload = { nombre, rol, permisos_portal: permisos };
+  if(pass) payload.pass = pass;
+
+  try{
+    if(id){
+      const {error} = await sb.from('usuarios_fin').update(payload).eq('id', id);
+      if(error) throw error;
+    } else {
+      const {data: existente} = await sb.from('usuarios_fin').select('id').eq('usuario', usuario).maybeSingle();
+      if(existente){ alert('Ya existe un usuario con ese nombre.'); return; }
+      const {error} = await sb.from('usuarios_fin').insert({ usuario, pass, ...payload });
+      if(error) throw error;
+    }
+    cerrarModalUsuarioPortal();
+    await cargarUsuariosFin();
+    pintarTablaUsuariosPortal();
+  } catch(e){
+    alert('Error: '+e.message);
+  }
 }
 </script>
 </body>
