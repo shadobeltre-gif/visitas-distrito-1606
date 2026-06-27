@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --azul-900:#0d2340;
@@ -660,6 +661,19 @@ async function renderPanel(){
   const movReingresos = movUltimaNomina.filter(m=>m.tipo_movimiento==='reingreso').length;
   const movCancelados = movUltimaNomina.filter(m=>m.tipo_movimiento==='cancelado').length;
 
+  // ---- Datos agrupados para las gráficas ----
+  const ESTATUS_PERSONAL_LABELS = {activo:'Activo',inactivo:'Inactivo',sustituido:'Sustituido',renunciado:'Renunciado',fallecido:'Fallecido'};
+  const conteoPorEstatus = {};
+  (per.data||[]).forEach(p=>{ conteoPorEstatus[p.estatus] = (conteoPorEstatus[p.estatus]||0)+1; });
+  const labelsPersonal = Object.keys(conteoPorEstatus).map(k=>ESTATUS_PERSONAL_LABELS[k]||k);
+  const valoresPersonal = Object.values(conteoPorEstatus);
+
+  const ESTADO_AP_LABELS = {borrador:'Borrador',enviado:'Enviado',expediente_incompleto:'Expediente incompleto',incidencias:'Incidencias',aprobado:'Aprobado',nombrado:'Nombrado',rechazado:'Rechazado'};
+  const conteoPorEstadoAP = {};
+  (sol.data||[]).forEach(s=>{ conteoPorEstadoAP[s.estado] = (conteoPorEstadoAP[s.estado]||0)+1; });
+  const labelsAP = Object.keys(conteoPorEstadoAP).map(k=>ESTADO_AP_LABELS[k]||k);
+  const valoresAP = Object.values(conteoPorEstadoAP);
+
   main.innerHTML = `
     <div class="tarjeta">
       <div class="tarjeta-header"><h3>Personal y centros</h3></div>
@@ -669,6 +683,9 @@ async function renderPanel(){
           <div class="kpi"><div class="valor" style="color:var(--verde-600);">${personalActivo}</div><div class="etiqueta">Activos</div></div>
           <div class="kpi"><div class="valor" style="color:var(--gris-500);">${personalInactivo}</div><div class="etiqueta">Inactivos / salidos</div></div>
           <div class="kpi"><div class="valor">${cen.count ?? 0}</div><div class="etiqueta">Centros educativos</div></div>
+        </div>
+        <div style="max-width:340px;margin:18px auto 4px;">
+          <canvas id="chart-personal-estatus" height="220"></canvas>
         </div>
       </div>
     </div>
@@ -684,8 +701,12 @@ async function renderPanel(){
           <div class="kpi"><div class="valor">${pd.count ?? 0}</div><div class="etiqueta">Puestas a disposición</div></div>
           <div class="kpi"><div class="valor">${ca.count ?? 0}</div><div class="etiqueta">Cartas de aceptación</div></div>
         </div>
+        <div style="max-width:100%;margin-top:18px;">
+          <canvas id="chart-ap-estado" height="140"></canvas>
+        </div>
       </div>
     </div>
+
 
     <div class="tarjeta">
       <div class="tarjeta-header"><h3>Ausencias</h3></div>
@@ -722,8 +743,13 @@ async function renderPanel(){
           <div class="kpi"><div class="valor" style="color:var(--azul-600);">${movReingresos}</div><div class="etiqueta">Reingresos</div></div>
           <div class="kpi"><div class="valor" style="color:var(--rojo-600);">${movCancelados}</div><div class="etiqueta">Cancelados</div></div>
         </div>
+        ${ (movNuevos+movReingresos+movCancelados) > 0 ? `
+        <div style="max-width:320px;margin:18px auto 4px;">
+          <canvas id="chart-movimientos-nomina" height="220"></canvas>
+        </div>` : `<div class="texto-ayuda" style="margin-top:14px;">Sin movimientos registrados todavía para esta nómina.</div>` }
       </div>
     </div>
+
 
     <div class="tarjeta">
       <div class="tarjeta-header"><h3>Accesos rápidos</h3></div>
@@ -736,6 +762,72 @@ async function renderPanel(){
       </div>
     </div>
   `;
+
+  renderGraficosPanel({
+    labelsPersonal, valoresPersonal,
+    labelsAP, valoresAP,
+    movNuevos, movReingresos, movCancelados,
+  });
+}
+
+// Mantiene referencias a las instancias de Chart.js para destruirlas antes de
+// volver a dibujar (evita fugas de memoria al re-entrar al panel general).
+window._chartsPanel = window._chartsPanel || {};
+
+function renderGraficosPanel({ labelsPersonal, valoresPersonal, labelsAP, valoresAP, movNuevos, movReingresos, movCancelados }){
+  if(typeof Chart === 'undefined') return;
+
+  Object.values(window._chartsPanel).forEach(c=>{ if(c) c.destroy(); });
+  window._chartsPanel = {};
+
+  const coloresEstatus = {
+    Activo:'#1f7a4d', Inactivo:'#6b7280', Sustituido:'#a8730a', Renunciado:'#b3242c', Fallecido:'#3d4450',
+  };
+  const ctxPersonal = document.getElementById('chart-personal-estatus');
+  if(ctxPersonal && labelsPersonal.length){
+    window._chartsPanel.personal = new Chart(ctxPersonal, {
+      type: 'pie',
+      data: {
+        labels: labelsPersonal,
+        datasets: [{ data: valoresPersonal, backgroundColor: labelsPersonal.map(l=>coloresEstatus[l]||'#94a3b8') }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      },
+    });
+  }
+
+  const ctxAP = document.getElementById('chart-ap-estado');
+  if(ctxAP && labelsAP.length){
+    window._chartsPanel.ap = new Chart(ctxAP, {
+      type: 'bar',
+      data: {
+        labels: labelsAP,
+        datasets: [{ label: 'Solicitudes AP', data: valoresAP, backgroundColor: '#1d4f93', borderRadius: 4 }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } },
+      },
+    });
+  }
+
+  const ctxMov = document.getElementById('chart-movimientos-nomina');
+  if(ctxMov && (movNuevos+movReingresos+movCancelados) > 0){
+    window._chartsPanel.movimientos = new Chart(ctxMov, {
+      type: 'doughnut',
+      data: {
+        labels: ['Nuevos','Reingresos','Cancelados'],
+        datasets: [{ data: [movNuevos, movReingresos, movCancelados], backgroundColor: ['#1f7a4d','#1d4f93','#b3242c'] }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      },
+    });
+  }
 }
 
 /* ====================== CENTROS EDUCATIVOS ====================== */
