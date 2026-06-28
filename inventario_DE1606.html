@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --azul: #003087;
@@ -269,10 +270,82 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 #qr-output { text-align: center; margin-top: 10px; }
 .action-btns-row { display: flex; gap: 4px; }
+
+/* ===== LOGIN ===== */
+#app { display: none; }
+#app.show { display: flex; }
+#login-screen {
+  position: fixed; inset: 0; z-index: 500;
+  background: linear-gradient(135deg, var(--azul) 0%, #001A5C 60%, var(--negro) 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#login-screen.hide { display: none; }
+.login-box {
+  background: var(--blanco); border-radius: 16px;
+  box-shadow: var(--sombra-fuerte);
+  width: 100%; max-width: 380px; padding: 36px 30px 30px;
+  text-align: center;
+}
+.login-box .login-icon {
+  width: 84px; height: 84px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,48,135,0.25);
+}
+.login-box .login-icon img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.login-box h2 {
+  font-family: 'Barlow Condensed', sans-serif; color: var(--azul);
+  font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.login-box .login-sub {
+  color: var(--gris-texto); font-size: 13px; margin-top: 4px; margin-bottom: 22px;
+}
+.login-box .form-group { text-align: left; margin-bottom: 14px; }
+.login-box label { display:block; font-size: 12px; font-weight: 600; color: var(--negro); margin-bottom: 5px; }
+.login-box input {
+  width: 100%; padding: 11px 12px; border: 1.5px solid var(--gris-medio);
+  border-radius: 8px; font-size: 14px; font-family: 'Barlow', sans-serif;
+}
+.login-box input:focus { outline: none; border-color: var(--azul); }
+#login-error {
+  color: var(--rojo); font-size: 12.5px; font-weight: 600; margin-top: 10px; min-height: 16px;
+}
+.login-box .btn-login {
+  width: 100%; margin-top: 8px; padding: 12px; border: none; border-radius: 8px;
+  background: var(--azul); color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background 0.2s; letter-spacing: 0.3px;
+}
+.login-box .btn-login:hover { background: var(--azul-claro); }
+.login-box .btn-login:disabled { opacity: 0.6; cursor: default; }
+.login-box .login-footer {
+  margin-top: 18px; font-size: 11px; color: var(--gris-texto);
+}
 </style>
 </head>
 <body>
 
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-icon"><img src="escudo.jpg" alt="Escudo Distrito 16-06"></div>
+    <h2>SIGID — Inventario</h2>
+    <div class="login-sub">Distrito Educativo 16-06 · Bonao Nordeste</div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Nombre de usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
+    </div>
+    <div id="login-error"></div>
+    <button class="btn-login" id="login-btn" onclick="hacerLogin()">Iniciar Sesión</button>
+    <div class="login-footer">SHADO Software · Sistema interno del Distrito 16-06</div>
+  </div>
+</div>
 <div id="overlay" onclick="closeSidebar()"></div>
 <div id="toast"></div>
 
@@ -332,7 +405,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   <!-- SIDEBAR -->
   <nav id="sidebar">
     <div class="logo-area">
-      <div style="font-size:52px;line-height:1;">🏛️</div>
+      <img src="escudo.jpg" alt="Escudo Distrito 16-06" class="escudo">
       <div class="inst-name">Ministerio de Educación<br>Rep. Dominicana</div>
       <div class="sub-name">Distrito 16-06 · Bonao Nordeste</div>
     </div>
@@ -353,7 +426,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
     <div class="nav-section">
       <div class="nav-label">Registros</div>
       <div class="nav-item" onclick="navTo('centros')">
-        <span class="nav-icon">🏫</span> Centros Educativos
+        <span class="nav-icon">🏢</span> Áreas / Dependencias
       </div>
       <div class="nav-item" onclick="navTo('movimientos')">
         <span class="nav-icon">🔄</span> Movimientos
@@ -400,7 +473,9 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
       <h1 id="topbar-title">Dashboard</h1>
       <div class="topbar-right">
         <span id="current-time"></span>
+        <span id="user-badge" style="font-size:13px;font-weight:600;color:var(--azul);display:flex;align-items:center;gap:6px;">👤 <span id="user-badge-name"></span></span>
         <button class="btn-top" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn-top" onclick="hacerLogout()">🚪 Salir</button>
       </div>
     </div>
 
@@ -600,14 +675,14 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
           <div id="tab-ubicacion" class="tab-content" style="display:none;">
             <div class="form-grid">
               <div class="form-group">
-                <label>Centro Educativo *</label>
+                <label>Área / Dependencia *</label>
                 <select id="f-centro">
-                  <option value="">Seleccione centro...</option>
+                  <option value="">Seleccione área...</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Aula / Área</label>
-                <input type="text" id="f-aula" placeholder="Ej. Aula 3, Dirección, Lab.">
+                <label>Espacio específico</label>
+                <input type="text" id="f-aula" placeholder="Ej. Oficina 2, Estante 3, etc.">
               </div>
               <div class="form-group">
                 <label>Responsable / Custodio</label>
@@ -690,20 +765,20 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
       <!-- ===== CENTROS ===== -->
       <div id="page-centros" class="page">
-        <div class="page-title"><span class="pt-icon">🏫</span> Centros Educativos</div>
+        <div class="page-title"><span class="pt-icon">🏢</span> Áreas / Dependencias del Distrito</div>
         <div class="card">
           <div class="btn-actions">
-            <button class="btn btn-primary" onclick="nuevoCentro()">➕ Nuevo Centro</button>
+            <button class="btn btn-primary" onclick="nuevoCentro()">➕ Nueva Área</button>
           </div>
           <div id="form-centro" style="display:none;background:var(--gris-claro);padding:16px;border-radius:10px;margin-bottom:16px;">
             <div class="form-grid">
-              <div class="form-group"><label>Nombre del Centro *</label><input type="text" id="c-nombre" placeholder="Nombre oficial"></div>
-              <div class="form-group"><label>Código MINERD</label><input type="text" id="c-codigo" placeholder="Código oficial"></div>
-              <div class="form-group"><label>Sector</label><select id="c-sector"><option>Público</option><option>Privado</option><option>Semi-oficial</option></select></div>
-              <div class="form-group"><label>Nivel</label><select id="c-nivel"><option>Inicial</option><option>Primaria</option><option>Secundaria</option><option>Técnico-Vocacional</option><option>Adultos</option><option>Especial</option><option>Todos los niveles</option></select></div>
-              <div class="form-group"><label>Director/a</label><input type="text" id="c-director" placeholder="Nombre del director"></div>
+              <div class="form-group"><label>Nombre del Área *</label><input type="text" id="c-nombre" placeholder="Ej. Almacén / Suministros"></div>
+              <div class="form-group"><label>Código (opcional)</label><input type="text" id="c-codigo" placeholder="Código interno"></div>
+              <div class="form-group"><label>Sector</label><input type="text" id="c-sector" placeholder="Ej. Distrito 16-06" value="Distrito 16-06"></div>
+              <div class="form-group"><label>Tipo de Área</label><select id="c-nivel"><option>Administrativo</option><option>Almacén</option><option>Técnico</option><option>Pedagógico</option><option>Otro</option></select></div>
+              <div class="form-group"><label>Encargado/a</label><input type="text" id="c-director" placeholder="Nombre del encargado"></div>
               <div class="form-group"><label>Teléfono</label><input type="text" id="c-telefono" placeholder="000-000-0000"></div>
-              <div class="form-group full"><label>Dirección</label><input type="text" id="c-direccion" placeholder="Dirección física"></div>
+              <div class="form-group full"><label>Dirección / Ubicación</label><input type="text" id="c-direccion" placeholder="Ubicación física"></div>
             </div>
             <input type="hidden" id="c-id">
             <div style="display:flex;gap:8px;margin-top:12px;">
@@ -713,7 +788,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
           </div>
           <div class="table-container">
             <table>
-              <thead><tr><th>#</th><th>Nombre del Centro</th><th>Código</th><th>Nivel</th><th>Director/a</th><th>Artículos</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>#</th><th>Nombre del Área</th><th>Código</th><th>Tipo</th><th>Encargado/a</th><th>Artículos</th><th>Acciones</th></tr></thead>
               <tbody id="tbody-centros"></tbody>
             </table>
           </div>
@@ -811,7 +886,7 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
           </div>
           <div class="report-card" onclick="generarReporte('por_centro')">
             <div class="rc-icon">🏫</div>
-            <h4>Por Centro Educativo</h4>
+            <h4>Por Área / Dependencia</h4>
             <p>Artículos agrupados por centro</p>
           </div>
           <div class="report-card" onclick="generarReporte('por_categoria')">
@@ -915,11 +990,10 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn btn-success" onclick="exportarDatos()">📤 Exportar backup JSON</button>
             <button class="btn btn-info" onclick="document.getElementById('import-file').click()">📥 Importar backup</button>
-            <button class="btn btn-warning" onclick="cargarDatosDemostracion()">🎲 Cargar datos de ejemplo</button>
             <button class="btn btn-danger" onclick="confirmarBorrarTodo()">⚠️ Borrar todos los datos</button>
           </div>
           <div style="margin-top:14px;padding:12px;background:var(--gris-claro);border-radius:8px;font-size:13px;color:var(--gris-texto);">
-            <strong>💡 Nota:</strong> Los datos se guardan permanentemente en el navegador (IndexedDB). Para transferir datos entre dispositivos use la función de Exportar/Importar backup.
+            <strong>💡 Nota:</strong> Los datos se guardan en la nube (Supabase) y están disponibles desde cualquier dispositivo con su usuario. Use Exportar/Importar para respaldos manuales.
           </div>
         </div>
       </div>
@@ -930,86 +1004,147 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 <script>
 // =============================================
-// BASE DE DATOS - IndexedDB
+// SUPABASE — Conexión
+// Proyecto: SIGID - Inventario 1606 (independiente)
 // =============================================
-let db;
-const DB_NAME = 'InventarioDE1606';
-const DB_VER = 1;
+const SUPABASE_URL = 'https://mvxhssmljaxoxijkviml.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12eGhzc21samF4b3hpamt2aW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTQyMDQsImV4cCI6MjA5NjM3MDIwNH0.b1e-4-hMbL-6u9IuuN7H1HzJAr16SXEPfwXbsFl03Is';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('articulos')) {
-        const s = d.createObjectStore('articulos', { keyPath: 'id', autoIncrement: true });
-        s.createIndex('codigo','codigo',{unique:false});
-        s.createIndex('categoria','categoria',{unique:false});
-        s.createIndex('centro','centro',{unique:false});
-        s.createIndex('estado','estado',{unique:false});
-      }
-      if (!d.objectStoreNames.contains('centros')) d.createObjectStore('centros',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('movimientos')) d.createObjectStore('movimientos',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('bajas')) d.createObjectStore('bajas',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('config')) d.createObjectStore('config',{keyPath:'key'});
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(); };
-    req.onerror = e => reject(e.target.error);
-  });
+// Mapa: nombre lógico usado en el código → tabla real en Supabase
+const TABLAS = {
+  articulos: 'articulos_inv',
+  centros: 'centros_inv',
+  movimientos: 'movimientos_inv',
+  bajas: 'bajas_inv',
+  config: 'config_inv',
+};
+
+// Traducción de nombres de campo: JS (camelCase) <-> Postgres (snake_case)
+const CAMPO_JS_A_DB = {
+  articuloId: 'articulo_id',
+  valorTotal: 'valor_total',
+  fechaRegistro: 'fecha_registro',
+};
+const CAMPO_DB_A_JS = {
+  articulo_id: 'articuloId',
+  valor_total: 'valorTotal',
+  fecha_registro: 'fechaRegistro',
+};
+
+function aDB(obj) {
+  const out = {};
+  for (const k in obj) {
+    if (k === 'id' && (obj[k] === '' || obj[k] === undefined || obj[k] === null)) continue;
+    const nuevaClave = CAMPO_JS_A_DB[k] || k;
+    out[nuevaClave] = obj[k];
+  }
+  return out;
+}
+function aJS(row) {
+  if (!row) return row;
+  const out = {};
+  for (const k in row) {
+    const nuevaClave = CAMPO_DB_A_JS[k] || k;
+    out[nuevaClave] = row[k];
+  }
+  return out;
 }
 
-function dbGet(store, id) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).get(id);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+// =============================================
+// FUNCIONES DE BASE DE DATOS (equivalentes a las antiguas de IndexedDB,
+// misma firma para no romper el resto del sistema)
+// =============================================
+async function dbGet(store, id) {
+  const { data, error } = await sb.from(TABLAS[store]).select('*').eq('id', id).maybeSingle();
+  if (error) { console.error(error); return null; }
+  return aJS(data);
 }
 
-function dbGetAll(store) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbGetAll(store) {
+  const { data, error } = await sb.from(TABLAS[store]).select('*').order('id', { ascending: true });
+  if (error) { console.error(error); toast('Error cargando datos: ' + error.message, 'error'); return []; }
+  return (data || []).map(aJS);
 }
 
-function dbPut(store, item) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).put(item);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbPut(store, item) {
+  const row = aDB(item);
+  const { data, error } = await sb.from(TABLAS[store]).update(row).eq('id', item.id).select().maybeSingle();
+  if (error) { console.error(error); toast('Error guardando: ' + error.message, 'error'); return null; }
+  return aJS(data)?.id;
 }
 
-function dbAdd(store, item) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).add(item);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbAdd(store, item) {
+  const row = aDB(item);
+  const { data, error } = await sb.from(TABLAS[store]).insert(row).select().maybeSingle();
+  if (error) { console.error(error); toast('Error guardando: ' + error.message, 'error'); return null; }
+  return aJS(data)?.id;
 }
 
-function dbDelete(store, id) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).delete(id);
-    req.onsuccess = e => res();
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbDelete(store, id) {
+  const { error } = await sb.from(TABLAS[store]).delete().eq('id', id);
+  if (error) { console.error(error); toast('Error eliminando: ' + error.message, 'error'); }
 }
 
-function dbClear(store) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).clear();
-    tx.oncomplete = () => res();
-    tx.onerror = e => rej(e.target.error);
-  });
+async function dbClear(store) {
+  const { error } = await sb.from(TABLAS[store]).delete().neq('id', 0);
+  if (error) { console.error(error); toast('Error: ' + error.message, 'error'); }
+}
+
+// =============================================
+// LOGIN / SESIÓN
+// =============================================
+let currentUser = null;
+
+function hacerLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('sigid_inv_user');
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-screen').classList.remove('hide');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+async function hacerLogin() {
+  const usuario = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!usuario || !pass) { errEl.textContent = 'Ingrese usuario y contraseña'; return; }
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const { data, error } = await sb.from('usuarios_inv').select('*')
+      .eq('nombre_usuario', usuario).eq('activo', true).maybeSingle();
+    if (error || !data || data.password !== pass) {
+      errEl.textContent = 'Usuario o contraseña incorrectos';
+      btn.disabled = false; btn.textContent = 'Iniciar Sesión';
+      return;
+    }
+    currentUser = data;
+    sessionStorage.setItem('sigid_inv_user', JSON.stringify(data));
+    await entrarAlSistema();
+  } catch (e) {
+    errEl.textContent = 'Error de conexión. Intente de nuevo.';
+    btn.disabled = false; btn.textContent = 'Iniciar Sesión';
+  }
+}
+
+async function entrarAlSistema() {
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('app').classList.add('show');
+  document.getElementById('user-badge-name').textContent = currentUser.nombre_completo || currentUser.nombre_usuario;
+  await init();
+}
+
+function intentarSesionGuardada() {
+  const saved = sessionStorage.getItem('sigid_inv_user');
+  if (saved) {
+    try { currentUser = JSON.parse(saved); entrarAlSistema(); return true; }
+    catch(e) {}
+  }
+  return false;
 }
 
 // =============================================
@@ -1031,7 +1166,6 @@ let charts = {};
 // INIT
 // =============================================
 async function init() {
-  await initDB();
   await cargarTodos();
   poblarSelects();
   renderInventario();
@@ -1053,19 +1187,6 @@ async function cargarTodos() {
   centros = await dbGetAll('centros');
   movimientos = await dbGetAll('movimientos');
   bajas = await dbGetAll('bajas');
-  if (centros.length === 0) await cargarCentrosPorDefecto();
-}
-
-async function cargarCentrosPorDefecto() {
-  const cs = [
-    {nombre:'Liceo Las Clavellinas',codigo:'16-153',sector:'Público',nivel:'Secundaria',director:'',telefono:'',direccion:'Las Clavellinas, Bonao'},
-    {nombre:'Escuela Básica El Naranjal',codigo:'16-154',sector:'Público',nivel:'Primaria',director:'',telefono:'',direccion:'El Naranjal, Bonao'},
-    {nombre:'Centro Educativo Sabana Grande',codigo:'16-155',sector:'Público',nivel:'Todos los niveles',director:'',telefono:'',direccion:'Sabana Grande'},
-    {nombre:'Escuela La Cuchilla',codigo:'16-156',sector:'Público',nivel:'Primaria',director:'',telefono:'',direccion:'La Cuchilla'},
-    {nombre:'Escuela Loma del Viento',codigo:'16-157',sector:'Público',nivel:'Primaria',director:'',telefono:'',direccion:'Loma del Viento'},
-  ];
-  for (const c of cs) await dbAdd('centros', c);
-  centros = await dbGetAll('centros');
 }
 
 function updateClock() {
@@ -1326,7 +1447,8 @@ async function guardarArticulo() {
     await dbPut('articulos', art);
     toast('Artículo actualizado ✅','success');
   } else {
-    await dbAdd('articulos', art);
+    const nuevoId = await dbAdd('articulos', art);
+    art.id = nuevoId;
     toast('Artículo guardado ✅','success');
     await registrarMov(art, 'Entrada', 'Registro inicial');
   }
@@ -1462,8 +1584,8 @@ function nuevoCentro() {
   document.getElementById('form-centro').style.display = 'block';
   document.getElementById('c-id').value = '';
   ['c-nombre','c-codigo','c-director','c-telefono','c-direccion'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('c-sector').value = 'Público';
-  document.getElementById('c-nivel').value = 'Primaria';
+  document.getElementById('c-sector').value = 'Distrito 16-06';
+  document.getElementById('c-nivel').value = 'Administrativo';
 }
 
 async function guardarCentro() {
@@ -1484,7 +1606,7 @@ async function guardarCentro() {
   document.getElementById('form-centro').style.display = 'none';
   renderCentros();
   poblarSelects();
-  toast('Centro guardado ✅','success');
+  toast('Área guardada ✅','success');
 }
 
 function renderCentros() {
@@ -1509,8 +1631,8 @@ async function editarCentro(id) {
   document.getElementById('c-id').value = c.id;
   document.getElementById('c-nombre').value = c.nombre||'';
   document.getElementById('c-codigo').value = c.codigo||'';
-  document.getElementById('c-sector').value = c.sector||'Público';
-  document.getElementById('c-nivel').value = c.nivel||'Primaria';
+  document.getElementById('c-sector').value = c.sector||'Distrito 16-06';
+  document.getElementById('c-nivel').value = c.nivel||'Administrativo';
   document.getElementById('c-director').value = c.director||'';
   document.getElementById('c-telefono').value = c.telefono||'';
   document.getElementById('c-direccion').value = c.direccion||'';
@@ -1522,7 +1644,7 @@ async function eliminarCentro(id) {
   centros = await dbGetAll('centros');
   renderCentros();
   poblarSelects();
-  toast('Centro eliminado','warning');
+  toast('Área eliminada','warning');
 }
 
 // =============================================
@@ -1866,13 +1988,15 @@ async function guardarConfig() {
     telefono: document.getElementById('cfg-telefono').value,
     direccion: document.getElementById('cfg-direccion').value,
   };
-  await dbPut('config',{key:'principal',...cfg});
+  const { error } = await sb.from('config_inv').upsert({ key: 'principal', value: cfg });
+  if (error) { toast('Error guardando configuración: ' + error.message, 'error'); return; }
   toast('Configuración guardada ✅','success');
 }
 
 async function cargarConfig() {
   try {
-    const cfg = await dbGet('config','principal');
+    const { data } = await sb.from('config_inv').select('value').eq('key','principal').maybeSingle();
+    const cfg = data?.value;
     if (cfg) {
       if(cfg.nombre) document.getElementById('cfg-nombre').value = cfg.nombre;
       if(cfg.regional) document.getElementById('cfg-regional').value = cfg.regional;
@@ -1903,10 +2027,11 @@ async function importarDatos(e) {
   reader.onload = async ev => {
     try {
       const backup = JSON.parse(ev.target.result);
-      if (backup.articulos) { await dbClear('articulos'); for(const a of backup.articulos) await dbAdd('articulos',a); }
-      if (backup.centros) { await dbClear('centros'); for(const c of backup.centros) await dbAdd('centros',c); }
-      if (backup.movimientos) { await dbClear('movimientos'); for(const m of backup.movimientos) await dbAdd('movimientos',m); }
-      if (backup.bajas) { await dbClear('bajas'); for(const b of backup.bajas) await dbAdd('bajas',b); }
+      const sinId = (obj) => { const { id, ...resto } = obj; return resto; };
+      if (backup.articulos) { await dbClear('articulos'); for(const a of backup.articulos) await dbAdd('articulos',sinId(a)); }
+      if (backup.centros) { await dbClear('centros'); for(const c of backup.centros) await dbAdd('centros',sinId(c)); }
+      if (backup.movimientos) { await dbClear('movimientos'); for(const m of backup.movimientos) await dbAdd('movimientos',sinId(m)); }
+      if (backup.bajas) { await dbClear('bajas'); for(const b of backup.bajas) await dbAdd('bajas',sinId(b)); }
       await cargarTodos();
       poblarSelects();
       renderDashboard();
@@ -1917,27 +2042,6 @@ async function importarDatos(e) {
   };
   reader.readAsText(file);
   e.target.value='';
-}
-
-// =============================================
-// DATOS DE DEMOSTRACIÓN
-// =============================================
-async function cargarDatosDemostracion() {
-  const demo = [
-    {codigo:'DE1606-2024-0001',nombre:'Escritorio de Madera',categoria:'Mobiliario',subcategoria:'Escritorio',marca:'Nacional',serie:'',color:'Marrón',cantidad:5,unidad:'Unidad',estado:'Bueno',centro:'Liceo Las Clavellinas',aula:'Dirección',responsable:'Juan Pérez',cargo:'Director',cedula:'001-0000001-1',fecha:'2024-01-15',forma:'Compra',valor:4500,valorTotal:22500,proveedor:'Muebles Bonao',factura:'F-0001',garantia:'',observaciones:'Entregado en buen estado'},
-    {codigo:'DE1606-2024-0002',nombre:'Silla Plástica',categoria:'Mobiliario',subcategoria:'Silla',marca:'Rimax',serie:'',color:'Azul',cantidad:50,unidad:'Unidad',estado:'Bueno',centro:'Liceo Las Clavellinas',aula:'Aula 1',responsable:'María García',cargo:'Docente',cedula:'001-0000002-2',fecha:'2024-02-10',forma:'Compra',valor:850,valorTotal:42500,proveedor:'Rimax RD',factura:'F-0002',garantia:'',observaciones:''},
-    {codigo:'DE1606-2024-0003',nombre:'Computadora de Escritorio',categoria:'Equipo Tecnológico',subcategoria:'PC',marca:'Dell',serie:'SN123456',color:'Negro',cantidad:10,unidad:'Unidad',estado:'Bueno',centro:'Escuela Básica El Naranjal',aula:'Lab. Informática',responsable:'Pedro Martínez',cargo:'Maestro TIC',cedula:'001-0000003-3',fecha:'2024-03-20',forma:'Proyecto MINERD',valor:32000,valorTotal:320000,proveedor:'MINERD',factura:'OF-2024-001',garantia:'2026-03-20',observaciones:''},
-    {codigo:'DE1606-2024-0004',nombre:'Proyector Multimedia',categoria:'Equipo Tecnológico',subcategoria:'Proyector',marca:'Epson',serie:'EPS-789',color:'Blanco',cantidad:3,unidad:'Unidad',estado:'Bueno',centro:'Centro Educativo Sabana Grande',aula:'Sala de Reuniones',responsable:'Ana López',cargo:'Directora',cedula:'001-0000004-4',fecha:'2024-04-05',forma:'Donación',valor:18000,valorTotal:54000,proveedor:'PUCMM',factura:'DON-001',garantia:'',observaciones:''},
-    {codigo:'DE1606-2024-0005',nombre:'Pizarrón Acrílico',categoria:'Material Didáctico',subcategoria:'Pizarrón',marca:'Genérico',serie:'',color:'Blanco',cantidad:20,unidad:'Unidad',estado:'Regular',centro:'Escuela La Cuchilla',aula:'Aulas',responsable:'Carlos Rodríguez',cargo:'Director',cedula:'001-0000005-5',fecha:'2023-08-15',forma:'Compra',valor:2200,valorTotal:44000,proveedor:'Librería Central',factura:'F-0005',garantia:'',observaciones:'Varios con rayaduras'},
-    {codigo:'DE1606-2024-0006',nombre:'Impresora Láser',categoria:'Equipo de Oficina',subcategoria:'Impresora',marca:'HP',serie:'HP-LJ-001',color:'Negro/Gris',cantidad:2,unidad:'Unidad',estado:'Regular',centro:'Liceo Las Clavellinas',aula:'Secretaría',responsable:'Rosa Jiménez',cargo:'Secretaria',cedula:'001-0000006-6',fecha:'2022-05-10',forma:'Compra',valor:12000,valorTotal:24000,proveedor:'Info-Tech',factura:'F-0006',garantia:'',observaciones:'Necesita toner'},
-    {codigo:'DE1606-2023-0001',nombre:'Silla Rota',categoria:'Mobiliario',subcategoria:'Silla',marca:'',serie:'',color:'Azul',cantidad:8,unidad:'Unidad',estado:'Malo',centro:'Escuela Loma del Viento',aula:'Aula 3',responsable:'',cargo:'',cedula:'',fecha:'2020-01-01',forma:'Compra',valor:600,valorTotal:4800,proveedor:'',factura:'',garantia:'',observaciones:'Rotas, pendiente de reposición'},
-    {codigo:'DE1606-2022-0001',nombre:'Archivador Metálico',categoria:'Equipo de Oficina',subcategoria:'Archivador',marca:'',serie:'',color:'Gris',cantidad:1,unidad:'Unidad',estado:'Baja',centro:'Escuela Básica El Naranjal',aula:'Dirección',responsable:'',cargo:'',cedula:'',fecha:'2018-01-01',forma:'Compra',valor:5000,valorTotal:5000,proveedor:'',factura:'',garantia:'',observaciones:'Dado de baja por daño irreparable'},
-  ];
-  for (const a of demo) await dbAdd('articulos',a);
-  articulos = await dbGetAll('articulos');
-  renderInventario();
-  renderDashboard();
-  toast(demo.length+' artículos de demostración cargados ✅','success');
 }
 
 function confirmarBorrarTodo() {
@@ -1983,7 +2087,9 @@ function toast(msg, tipo='') {
 // =============================================
 // INICIO
 // =============================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  intentarSesionGuardada();
+});
 </script>
 </body>
 </html>
