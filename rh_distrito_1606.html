@@ -6183,7 +6183,10 @@ function imprimirCLActual(){
   setTimeout(()=>w.print(), 400);
 }
 
+const MESES_NOMINA = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 /* ====================== EXPEDIENTE DEL EMPLEADO ====================== */
+
 async function renderExpediente(){
   const main = document.getElementById('main-content');
   main.innerHTML = `
