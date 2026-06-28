@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Portal — Distrito Educativo 16-06</title>
+<link rel="icon" type="image/jpeg" href="escudo.jpg"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -49,8 +50,9 @@ input{font-family:inherit}
   background:linear-gradient(160deg,#fff,#eef2f7);
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 10px 30px rgba(7,30,61,.35), inset 0 0 0 4px rgba(220,38,38,.08);
-  position:relative;
+  position:relative; overflow:hidden;
 }
+.seal img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .seal::after{
   content:'';position:absolute;inset:-7px;border-radius:50%;
   border:1.5px dashed rgba(255,255,255,.35);
@@ -135,7 +137,9 @@ input{font-family:inherit}
 .portal-top .seal-sm{
   width:42px;height:42px;border-radius:50%;background:#fff;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25);
+  overflow:hidden;
 }
+.portal-top .seal-sm img{width:100%;height:100%;object-fit:cover;}
 .portal-top .seal-sm svg{width:25px;height:25px}
 .portal-top .tt{flex:1;min-width:0}
 .portal-top .tt h1{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
@@ -238,17 +242,7 @@ input{font-family:inherit}
 <div id="login-screen">
   <div class="login-card">
     <div class="seal">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="32" cy="32" r="30" fill="#071e3d"/>
-        <path d="M16 28 L32 16 L48 28" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <rect x="18" y="28" width="28" height="3" fill="#fff"/>
-        <rect x="20" y="32" width="3" height="14" fill="#fff"/>
-        <rect x="27" y="32" width="3" height="14" fill="#fff"/>
-        <rect x="34" y="32" width="3" height="14" fill="#fff"/>
-        <rect x="41" y="32" width="3" height="14" fill="#fff"/>
-        <rect x="16" y="46" width="32" height="3" fill="#fff"/>
-        <rect x="14" y="49" width="36" height="3" fill="#dc2626"/>
-      </svg>
+      <img src="escudo.jpg" alt="Escudo Distrito 16-06">
     </div>
     <div class="brand-eyebrow">MINERD · Distrito Educativo 16-06</div>
     <h1>Portal Institucional</h1>
@@ -268,16 +262,7 @@ input{font-family:inherit}
 <div id="portal-screen">
   <header class="portal-top">
     <div class="seal-sm">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 28 L32 16 L48 28" stroke="#071e3d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <rect x="18" y="28" width="28" height="3" fill="#071e3d"/>
-        <rect x="20" y="32" width="3" height="14" fill="#071e3d"/>
-        <rect x="27" y="32" width="3" height="14" fill="#071e3d"/>
-        <rect x="34" y="32" width="3" height="14" fill="#071e3d"/>
-        <rect x="41" y="32" width="3" height="14" fill="#071e3d"/>
-        <rect x="16" y="46" width="32" height="3" fill="#071e3d"/>
-        <rect x="14" y="49" width="36" height="3" fill="#dc2626"/>
-      </svg>
+      <img src="escudo.jpg" alt="Escudo Distrito 16-06">
     </div>
     <div class="tt">
       <h1>Portal — Distrito Educativo 16-06</h1>
@@ -309,11 +294,7 @@ input{font-family:inherit}
   <div class="login-card">
     <button class="btn-back-tec" onclick="volverAlPortal()">← Volver al portal</button>
     <div class="seal seal-tec">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 19.5V5a2 2 0 012-2h11a1 1 0 011 1v14" stroke="#1976d2" stroke-width="1.6" stroke-linejoin="round"/>
-        <path d="M4 19.5A2.5 2.5 0 016.5 17H18" stroke="#1976d2" stroke-width="1.6" stroke-linejoin="round"/>
-        <path d="M9 7h6M9 10.5h4" stroke="#1976d2" stroke-width="1.6" stroke-linecap="round"/>
-      </svg>
+      <img src="escudo.jpg" alt="Escudo Distrito 16-06">
     </div>
     <div class="brand-eyebrow">Distrito Educativo 16-06</div>
     <h1>Técnico Pedagógico</h1>
@@ -430,7 +411,7 @@ const MODULOS = [
   {
     id:'inventario', num:'02', clase:'mc-inventario', estado:'live',
     titulo:'Inventario', desc:'Control de activos, catálogos y existencias de los centros educativos.',
-    url:'inventario_DE1606-1.html',
+    url:'inventario_DE1606.html',
     icon:'<path d="M3 7l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 7v10l9 4 9-4V7" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v10" stroke="currentColor" stroke-width="2"/>'
   },
   {
