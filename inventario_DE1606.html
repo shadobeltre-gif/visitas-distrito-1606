@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --azul: #003087;
@@ -269,12 +270,176 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 #qr-output { text-align: center; margin-top: 10px; }
 .action-btns-row { display: flex; gap: 4px; }
+
+/* ===== LOGIN SCREEN ===== */
+#login-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #001A5C 0%, #003087 40%, #0057B8 70%, #001A5C 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow-y: auto;
+}
+#login-screen.hidden { display: none; }
+
+.login-bg-pattern {
+  position: absolute; inset: 0; opacity: 0.06;
+  background-image: repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%);
+  background-size: 28px 28px; pointer-events: none;
+}
+.login-accent-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, var(--rojo), var(--dorado), var(--rojo));
+}
+
+.login-card {
+  background: rgba(255,255,255,0.97); border-radius: 18px;
+  width: 100%; max-width: 420px; overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+  position: relative; animation: loginFadeIn 0.5s ease;
+}
+@keyframes loginFadeIn { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+
+.login-header {
+  background: linear-gradient(135deg, var(--azul) 0%, #0057B8 100%);
+  padding: 32px 28px 24px; text-align: center; position: relative;
+}
+.login-header::after {
+  content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  width: 48px; height: 48px; background: var(--dorado); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.login-escudo { font-size: 56px; line-height: 1; display: block; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); }
+.login-title { color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 10px; line-height: 1.2; }
+.login-subtitle { color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+.login-body { padding: 36px 28px 28px; }
+
+.login-welcome { text-align: center; margin-bottom: 24px; }
+.login-welcome h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--azul); text-transform: uppercase; }
+.login-welcome p { font-size: 13px; color: var(--gris-texto); margin-top: 4px; }
+
+.login-form-group { margin-bottom: 16px; }
+.login-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--azul); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.login-input-wrap { position: relative; }
+.login-input-wrap .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+.login-input { width: 100%; padding: 11px 14px 11px 40px; border: 2px solid var(--gris-medio); border-radius: 10px; font-size: 15px; font-family: 'Barlow', sans-serif; color: var(--negro); background: var(--blanco); outline: none; transition: all 0.2s; }
+.login-input:focus { border-color: var(--azul-claro); box-shadow: 0 0 0 3px rgba(0,87,184,0.12); }
+.toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--gris-texto); }
+
+.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--azul), var(--azul-claro)); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.login-btn:hover { background: linear-gradient(135deg, var(--azul-claro), var(--azul)); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,48,135,0.3); }
+.login-btn:active { transform: translateY(0); }
+
+.login-error { background: #FEE2E2; border: 1.5px solid #FECACA; color: #991B1B; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 14px; display: none; text-align: center; }
+.login-error.show { display: block; animation: shake 0.4s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+.login-attempts { text-align: center; font-size: 12px; color: var(--gris-texto); margin-top: 12px; }
+.login-attempts span { color: var(--rojo); font-weight: 700; }
+
+.login-footer { padding: 14px 28px 20px; border-top: 1px solid var(--gris-claro); text-align: center; }
+.login-footer p { font-size: 11px; color: var(--gris-texto); }
+.login-footer strong { color: var(--azul); }
+
+/* Nivel badges en topbar */
+.nivel-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+.nivel-admin { background: #FEF3C7; color: #92400E; border: 1.5px solid #F59E0B; }
+.nivel-editor { background: #DBEAFE; color: #1E40AF; border: 1.5px solid #3B82F6; }
+.nivel-consulta { background: #D1FAE5; color: #065F46; border: 1.5px solid #10B981; }
+
+/* User menu */
+.user-menu-wrap { position: relative; }
+.user-btn { display: flex; align-items: center; gap: 8px; background: var(--gris-claro); border: 1.5px solid var(--gris-medio); border-radius: 8px; padding: 5px 12px 5px 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--negro); transition: all 0.2s; }
+.user-btn:hover { border-color: var(--azul); }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.user-dropdown { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border-radius: 10px; box-shadow: var(--sombra-fuerte); border: 1px solid var(--gris-medio); min-width: 200px; z-index: 500; display: none; overflow: hidden; }
+.user-dropdown.open { display: block; animation: fadeDown 0.2s ease; }
+@keyframes fadeDown { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+.user-dropdown-header { padding: 14px 16px; background: var(--gris-claro); border-bottom: 1px solid var(--gris-medio); }
+.user-dropdown-header .ud-name { font-weight: 700; color: var(--azul); font-size: 14px; }
+.user-dropdown-header .ud-role { font-size: 11px; color: var(--gris-texto); margin-top: 2px; }
+.user-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13px; color: var(--negro); cursor: pointer; transition: background 0.15s; }
+.user-dd-item:hover { background: var(--gris-claro); }
+.user-dd-item.danger { color: var(--rojo); }
+
+/* Panel usuarios (admin) */
+.user-table-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--gris-medio); margin-bottom: 8px; background: var(--blanco); }
+.user-table-row:hover { background: var(--gris-claro); }
+
+/* Locked overlay for restricted pages */
+.access-denied { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; text-align: center; padding: 40px; }
+.access-denied .ad-icon { font-size: 60px; margin-bottom: 16px; }
+.access-denied h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 800; color: var(--rojo); text-transform: uppercase; }
+.access-denied p { color: var(--gris-texto); margin-top: 8px; font-size: 14px; }
+
+/* Bloqueado */
+#login-screen.bloqueado .login-card { border: 3px solid var(--rojo); }
+.lock-msg { background: var(--rojo); color: #fff; padding: 10px 14px; text-align: center; font-size: 13px; font-weight: 700; }
 </style>
 </head>
 <body>
 
 <div id="overlay" onclick="closeSidebar()"></div>
 <div id="toast"></div>
+
+<!-- ===== PANTALLA DE LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-bg-pattern"></div>
+  <div class="login-accent-bar"></div>
+  <div class="login-card">
+    <div class="login-header">
+      <span class="login-escudo">🏛️</span>
+      <div class="login-title">Sistema de Inventario</div>
+      <div class="login-subtitle">Distrito Educativo 16-06 · Bonao Nordeste</div>
+    </div>
+    <div class="login-body">
+      <div class="login-welcome">
+        <h3>Bienvenido</h3>
+        <p>Ingrese sus credenciales para acceder al sistema</p>
+      </div>
+      <div id="login-error" class="login-error">Usuario o contraseña incorrectos</div>
+      <div id="lock-msg" class="lock-msg" style="display:none;">🔒 Cuenta bloqueada temporalmente por múltiples intentos fallidos. Espere 60 segundos.</div>
+      <div class="login-form-group">
+        <div class="login-label"><span>👤</span> Usuario</div>
+        <div class="login-input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="login-user" class="login-input" placeholder="Nombre de usuario" autocomplete="username" onkeydown="if(event.key==='Enter')loginSubmit()">
+        </div>
+      </div>
+      <div class="login-form-group">
+        <div class="login-label"><span>🔑</span> Contraseña</div>
+        <div class="login-input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginSubmit()">
+          <button class="toggle-pass" type="button" onclick="togglePassVis()" title="Mostrar/ocultar contraseña">👁️</button>
+        </div>
+      </div>
+      <button class="login-btn" onclick="loginSubmit()">🔓 Ingresar al Sistema</button>
+      <div class="login-attempts" id="login-attempts-msg"></div>
+    </div>
+    <div class="login-footer">
+      <p>Ministerio de Educación · Rep. Dominicana</p>
+      <p style="margin-top:4px;"><strong>DE 16-06 Bonao Nordeste</strong> · v1.0 · 2026</p>
+      <p style="margin-top:8px;font-size:10px;color:#aaa;">Acceso restringido al personal autorizado</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div id="cambiar-pass-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:5000;align-items:center;justify-content:center;padding:16px;">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-header"><h3>🔑 Cambiar Contraseña</h3><button class="modal-close" onclick="cerrarCambioPass()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:12px;"><label>Contraseña actual</label><input type="password" id="cp-actual" class="login-input" style="padding-left:12px;" placeholder="Contraseña actual"></div>
+      <div class="form-group" style="margin-bottom:12px;"><label>Nueva contraseña</label><input type="password" id="cp-nueva" class="login-input" style="padding-left:12px;" placeholder="Mínimo 6 caracteres"></div>
+      <div class="form-group"><label>Confirmar nueva contraseña</label><input type="password" id="cp-confirmar" class="login-input" style="padding-left:12px;" placeholder="Repita la contraseña"></div>
+      <div id="cp-error" style="color:var(--rojo);font-size:13px;margin-top:10px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarCambioPass()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNuevaPass()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- SCANNER MODAL -->
 <div id="scanner-modal">
@@ -401,6 +566,21 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
       <div class="topbar-right">
         <span id="current-time"></span>
         <button class="btn-top" onclick="window.print()">🖨️ Imprimir</button>
+        <div class="user-menu-wrap">
+          <button class="user-btn" onclick="toggleUserMenu()" id="user-btn">
+            <div class="user-avatar" id="user-avatar" style="background:var(--azul);">A</div>
+            <span id="user-display-name">Admin</span>
+            <span id="nivel-badge-top" class="nivel-badge nivel-admin">👑 Admin</span>
+            <span style="font-size:10px;color:var(--gris-texto);">▼</span>
+          </button>
+          <div class="user-dropdown" id="user-dropdown">
+            <div class="user-dropdown-header">
+              <div class="ud-name" id="ud-full-name">Administrador</div>
+              <div class="ud-role" id="ud-role-text">Nivel: Administrador</div>
+            </div>
+            <div class="user-dd-item danger" onclick="cerrarSesion()">🚪 Cerrar sesión</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -930,77 +1110,86 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 <script>
 // =============================================
-// BASE DE DATOS - IndexedDB
+// BASE DE DATOS - Supabase (en línea, compartida entre dispositivos)
 // =============================================
-let db;
-const DB_NAME = 'InventarioDE1606';
-const DB_VER = 1;
+const SUPABASE_URL = 'https://ejkvehnzjkxbymuvejoh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa3ZlaG56amt4YnltdXZlam9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc4MDIsImV4cCI6MjA5NTk0MzgwMn0.FI0Z_Mx1FQ4hpA6JYkYJ4X9CoVDHgK_bDq_qiak3WOU';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('articulos')) {
-        const s = d.createObjectStore('articulos', { keyPath: 'id', autoIncrement: true });
-        s.createIndex('codigo','codigo',{unique:false});
-        s.createIndex('categoria','categoria',{unique:false});
-        s.createIndex('centro','centro',{unique:false});
-        s.createIndex('estado','estado',{unique:false});
-      }
-      if (!d.objectStoreNames.contains('centros')) d.createObjectStore('centros',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('movimientos')) d.createObjectStore('movimientos',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('bajas')) d.createObjectStore('bajas',{keyPath:'id',autoIncrement:true});
-      if (!d.objectStoreNames.contains('config')) d.createObjectStore('config',{keyPath:'key'});
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(); };
-    req.onerror = e => reject(e.target.error);
-  });
+// Mapa de nombre lógico (usado en todo el código existente) -> tabla real en Supabase.
+const TABLA_REAL = {
+  articulos: 'articulos_inv',
+  centros: 'centros_inv',
+  movimientos: 'movimientos_inv',
+  bajas: 'bajas_inv',
+};
+
+// Mapa de columnas: nombre usado en JS (camelCase) -> columna real en Postgres (snake_case).
+// Solo se listan las que difieren; el resto se asume igual.
+const COLUMNA_REAL = {
+  articuloId: 'articulo_id',
+  valorTotal: 'valor_total',
+  fechaRegistro: 'creado_en',
+};
+const COLUMNA_JS = Object.fromEntries(Object.entries(COLUMNA_REAL).map(([js,real])=>[real,js]));
+
+function aColumnasSupabase(obj){
+  const out = {};
+  for (const [k,v] of Object.entries(obj)){
+    if (k === 'id' && (v===undefined || v===null || v==='')) continue; // deja que Supabase autogenere el id
+    out[COLUMNA_REAL[k] || k] = (v === '' ? null : v);
+  }
+  return out;
+}
+function aCamposJS(row){
+  if (!row) return row;
+  const out = {};
+  for (const [k,v] of Object.entries(row)){
+    out[COLUMNA_JS[k] || k] = v;
+  }
+  return out;
 }
 
-function dbGet(store, id) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).get(id);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function initDB() {
+  // Ya no se necesita abrir ninguna base local; Supabase ya está listo para usarse.
+  return Promise.resolve();
 }
 
-function dbGetAll(store) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readonly');
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbGet(store, id) {
+  const tabla = TABLA_REAL[store] || store;
+  const { data, error } = await sb.from(tabla).select('*').eq('id', id).maybeSingle();
+  if (error) { console.error(error); toast('Error leyendo datos: '+error.message,'error'); return null; }
+  return aCamposJS(data);
 }
 
-function dbPut(store, item) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).put(item);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbGetAll(store) {
+  const tabla = TABLA_REAL[store] || store;
+  const { data, error } = await sb.from(tabla).select('*').order('id');
+  if (error) { console.error(error); toast('Error cargando datos: '+error.message,'error'); return []; }
+  return (data||[]).map(aCamposJS);
 }
 
-function dbAdd(store, item) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).add(item);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbPut(store, item) {
+  const tabla = TABLA_REAL[store] || store;
+  const payload = aColumnasSupabase(item);
+  const { data, error } = await sb.from(tabla).update(payload).eq('id', item.id).select().maybeSingle();
+  if (error) { console.error(error); toast('Error guardando: '+error.message,'error'); throw error; }
+  return data?.id;
 }
 
-function dbDelete(store, id) {
-  return new Promise((res,rej) => {
-    const tx = db.transaction(store,'readwrite');
-    const req = tx.objectStore(store).delete(id);
-    req.onsuccess = e => res();
-    req.onerror = e => rej(e.target.error);
-  });
+async function dbAdd(store, item) {
+  const tabla = TABLA_REAL[store] || store;
+  const payload = aColumnasSupabase(item);
+  const { data, error } = await sb.from(tabla).insert(payload).select().maybeSingle();
+  if (error) { console.error(error); toast('Error guardando: '+error.message,'error'); throw error; }
+  if (data) Object.assign(item, aCamposJS(data)); // refleja el id generado en el objeto original
+  return data?.id;
+}
+
+async function dbDelete(store, id) {
+  const tabla = TABLA_REAL[store] || store;
+  const { error } = await sb.from(tabla).delete().eq('id', id);
+  if (error) { console.error(error); toast('Error eliminando: '+error.message,'error'); throw error; }
 }
 
 function dbClear(store) {
@@ -1030,8 +1219,52 @@ let charts = {};
 // =============================================
 // INIT
 // =============================================
+let usuarioActual = null; // { usuario, nombre, rol } del usuario autenticado (usuarios_fin)
+
 async function init() {
   await initDB();
+  // Solo prepara el login; el resto del sistema arranca en arrancarSistema()
+  // una vez el usuario ingrese credenciales válidas.
+  document.getElementById('login-user').focus();
+}
+
+async function loginSubmit(){
+  const usuario = document.getElementById('login-user').value.trim().toLowerCase();
+  const clave = document.getElementById('login-pass').value;
+  const errorEl = document.getElementById('login-error');
+  errorEl.style.display = 'none';
+
+  if(!usuario || !clave){
+    errorEl.textContent = 'Ingresa usuario y contraseña.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('.login-btn');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Verificando…';
+
+  try{
+    const { data, error } = await sb.from('usuarios_fin').select('*');
+    if(error) throw error;
+    const encontrado = (data||[]).find(u => (u.usuario||'').toLowerCase() === usuario && u.pass === clave);
+    if(!encontrado){
+      errorEl.textContent = 'Usuario o contraseña incorrectos.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    usuarioActual = { usuario: encontrado.usuario, nombre: encontrado.nombre, rol: encontrado.rol };
+    document.getElementById('login-screen').classList.add('hidden');
+    await arrancarSistema();
+  }catch(err){
+    errorEl.textContent = 'Error de conexión: '+err.message;
+    errorEl.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = textoOriginal;
+  }
+}
+
+async function arrancarSistema() {
   await cargarTodos();
   poblarSelects();
   renderInventario();
@@ -1045,7 +1278,30 @@ async function init() {
   // Calcular valor total automático
   document.getElementById('f-cantidad').addEventListener('input', calcValorTotal);
   document.getElementById('f-valor').addEventListener('input', calcValorTotal);
+  const nombre = usuarioActual?.nombre || usuarioActual?.usuario || '';
+  const elNombre = document.getElementById('user-display-name');
+  const elFullName = document.getElementById('ud-full-name');
+  const elRoleText = document.getElementById('ud-role-text');
+  if(elNombre) elNombre.textContent = nombre;
+  if(elFullName) elFullName.textContent = nombre;
+  if(elRoleText) elRoleText.textContent = 'Rol: ' + (usuarioActual?.rol || 'Administrativo');
+  const elAvatar = document.getElementById('user-avatar');
+  if(elAvatar) elAvatar.textContent = (nombre||'?').trim().charAt(0).toUpperCase();
+  const elBadge = document.getElementById('nivel-badge-top');
+  if(elBadge) elBadge.textContent = usuarioActual?.rol || 'Administrativo';
   toast('Sistema iniciado correctamente ✅','success');
+}
+
+function cerrarSesion(){
+  cerrarSesionInventario();
+}
+
+function cerrarSesionInventario(){
+  usuarioActual = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
 }
 
 async function cargarTodos() {
@@ -1710,280 +1966,4 @@ function tablaReporte(arts) {
 
 function tablaReporte2(rows,tipo) {
   if (tipo==='bajas') return `<div class="table-container"><table><thead><tr><th>Fecha</th><th>Artículo</th><th>Motivo</th><th>Autorizado</th><th>Obs.</th></tr></thead><tbody>${rows.map(b=>`<tr><td>${b.fecha}</td><td>${b.articulo}</td><td>${b.motivo}</td><td>${b.autorizado||'-'}</td><td>${b.obs||'-'}</td></tr>`).join('')}</tbody></table></div>`;
-  if (tipo==='movimientos') return `<div class="table-container"><table><thead><tr><th>Fecha</th><th>Artículo</th><th>Tipo</th><th>Cantidad</th><th>Destino</th><th>Responsable</th></tr></thead><tbody>${rows.map(m=>`<tr><td>${m.fecha}</td><td>${m.articulo}</td><td>${m.tipo}</td><td>${m.cantidad}</td><td>${m.destino||'-'}</td><td>${m.responsable||'-'}</td></tr>`).join('')}</tbody></table></div>`;
-  return tablaReporte(rows);
-}
-
-function exportarReporteCSV(tipo) {
-  let rows=articulos, cols=['codigo','nombre','categoria','cantidad','estado','centro','responsable','valorTotal'];
-  if(tipo==='bajas'){rows=bajas;cols=['fecha','articulo','motivo','autorizado','obs'];}
-  const csv=[cols.join(','),...rows.map(r=>cols.map(c=>'"'+(r[c]||'')+'"').join(','))].join('\n');
-  descargar(csv,'reporte_'+tipo+'.csv','text/csv');
-}
-
-// =============================================
-// CONSULTAS
-// =============================================
-function ejecutarConsulta() {
-  const txt = document.getElementById('q-texto').value.toLowerCase();
-  const cat = document.getElementById('q-cat').value;
-  const est = document.getElementById('q-estado').value;
-  const cen = document.getElementById('q-centro').value;
-  const desde = document.getElementById('q-desde').value;
-  const hasta = document.getElementById('q-hasta').value;
-  const vmin = parseFloat(document.getElementById('q-vmin').value)||0;
-  const vmax = parseFloat(document.getElementById('q-vmax').value)||Infinity;
-  let res = articulos.filter(a => {
-    const matchTxt = !txt || [a.codigo,a.nombre,a.marca,a.serie,a.responsable,a.centro,a.observaciones].join(' ').toLowerCase().includes(txt);
-    const matchCat = !cat || a.categoria===cat;
-    const matchEst = !est || a.estado===est;
-    const matchCen = !cen || a.centro===cen;
-    const matchDesde = !desde || (a.fecha && a.fecha>=desde);
-    const matchHasta = !hasta || (a.fecha && a.fecha<=hasta);
-    const val = a.valorTotal||a.valor||0;
-    const matchVal = val>=vmin && val<=vmax;
-    return matchTxt&&matchCat&&matchEst&&matchCen&&matchDesde&&matchHasta&&matchVal;
-  });
-  const out = document.getElementById('consulta-output');
-  out.innerHTML = `<div class="card"><div class="card-title">Resultados: ${res.length} artículo(s) encontrado(s)</div>${tablaReporte(res)}</div>`;
-  toast(`${res.length} resultado(s) encontrado(s)`,'success');
-}
-
-function limpiarConsulta() {
-  ['q-texto','q-desde','q-hasta','q-vmin','q-vmax'].forEach(id => document.getElementById(id).value='');
-  ['q-cat','q-estado','q-centro'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('consulta-output').innerHTML='';
-}
-
-function exportarConsulta() {
-  const txt = document.getElementById('q-texto').value.toLowerCase();
-  const cat = document.getElementById('q-cat').value;
-  const est = document.getElementById('q-estado').value;
-  const cen = document.getElementById('q-centro').value;
-  let res = articulos.filter(a => {
-    const matchTxt = !txt||[a.codigo,a.nombre,a.marca,a.serie].join(' ').toLowerCase().includes(txt);
-    return matchTxt&&(!cat||a.categoria===cat)&&(!est||a.estado===est)&&(!cen||a.centro===cen);
-  });
-  const cols=['codigo','nombre','categoria','cantidad','estado','centro','responsable','valorTotal','fecha'];
-  const csv=[cols.join(','),...res.map(r=>cols.map(c=>'"'+(r[c]||'')+'"').join(','))].join('\n');
-  descargar(csv,'consulta_resultado.csv','text/csv');
-}
-
-// =============================================
-// SCANNER QR/BARRAS
-// =============================================
-let BarcodeDetectorAPI = window.BarcodeDetector || null;
-let jsQR = null;
-
-async function abrirScanner(mode) {
-  scanMode = mode;
-  document.getElementById('scanner-modal').classList.add('open');
-  document.getElementById('scan-result').textContent = 'Iniciando cámara...';
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:scanFacingMode}});
-    const video = document.getElementById('scanner-video');
-    video.srcObject = scanStream;
-    await video.play();
-    startScanning();
-  } catch(e) {
-    document.getElementById('scan-result').textContent = '⚠️ No se pudo acceder a la cámara. Verifique los permisos.';
-  }
-}
-
-function startScanning() {
-  clearInterval(scanInterval);
-  const video = document.getElementById('scanner-video');
-  const canvas = document.getElementById('scanner-canvas');
-  scanInterval = setInterval(async () => {
-    if (video.readyState < 2) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video,0,0);
-    // Try BarcodeDetector API (Chrome/Android)
-    if (BarcodeDetectorAPI) {
-      try {
-        const detector = new BarcodeDetectorAPI({formats:['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','data_matrix','pdf417']});
-        const codes = await detector.detect(canvas);
-        if (codes.length > 0) { handleScanResult(codes[0].rawValue); return; }
-      } catch(e) { BarcodeDetectorAPI = null; }
-    }
-    // Fallback: manual jsQR-like (basic)
-    try {
-      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-      // Simple decode attempt
-    } catch(e) {}
-  }, 300);
-}
-
-function handleScanResult(value) {
-  clearInterval(scanInterval);
-  document.getElementById('scan-result').textContent = '✅ Código detectado: ' + value;
-  stopCamera();
-  if (scanMode === 'codigo') {
-    document.getElementById('f-codigo').value = value;
-    const a = articulos.find(x => x.codigo === value);
-    if (a) { toast('Artículo encontrado: '+a.nombre,'success'); editarArticulo(a.id); }
-    else { closeScanner(); toast('Código escaneado: '+value,'success'); }
-  } else if (scanMode === 'buscar' || scanMode === 'consulta') {
-    closeScanner();
-    const a = articulos.find(x => x.codigo === value);
-    if (a) { toast('Encontrado: '+a.nombre,'success'); verDetalleById(a.id); }
-    else {
-      document.getElementById('search-input').value = value;
-      filtrarInventario();
-      if (scanMode==='consulta') { document.getElementById('q-texto').value = value; ejecutarConsulta(); }
-      toast('Buscando: '+value,'success');
-    }
-  }
-  setTimeout(() => { closeScanner(); }, 1500);
-}
-
-function stopCamera() {
-  clearInterval(scanInterval);
-  if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
-}
-
-function closeScanner() {
-  stopCamera();
-  document.getElementById('scanner-modal').classList.remove('open');
-}
-
-async function switchCamera() {
-  scanFacingMode = scanFacingMode==='environment'?'user':'environment';
-  stopCamera();
-  await abrirScanner(scanMode);
-}
-
-// =============================================
-// CONFIG
-// =============================================
-async function guardarConfig() {
-  const cfg = {
-    nombre: document.getElementById('cfg-nombre').value,
-    regional: document.getElementById('cfg-regional').value,
-    director: document.getElementById('cfg-director').value,
-    telefono: document.getElementById('cfg-telefono').value,
-    direccion: document.getElementById('cfg-direccion').value,
-  };
-  await dbPut('config',{key:'principal',...cfg});
-  toast('Configuración guardada ✅','success');
-}
-
-async function cargarConfig() {
-  try {
-    const cfg = await dbGet('config','principal');
-    if (cfg) {
-      if(cfg.nombre) document.getElementById('cfg-nombre').value = cfg.nombre;
-      if(cfg.regional) document.getElementById('cfg-regional').value = cfg.regional;
-      if(cfg.director) document.getElementById('cfg-director').value = cfg.director;
-      if(cfg.telefono) document.getElementById('cfg-telefono').value = cfg.telefono;
-      if(cfg.direccion) document.getElementById('cfg-direccion').value = cfg.direccion;
-    }
-  } catch(e){}
-}
-
-// =============================================
-// EXPORTAR / IMPORTAR
-// =============================================
-async function exportarDatos() {
-  const backup = {
-    version: '1.0', fecha: new Date().toISOString(),
-    distrito: 'DE-16-06 Bonao Nordeste',
-    articulos, centros, movimientos, bajas
-  };
-  descargar(JSON.stringify(backup,null,2),'backup_DE1606_'+new Date().toISOString().split('T')[0]+'.json','application/json');
-  toast('Backup exportado ✅','success');
-}
-
-async function importarDatos(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    try {
-      const backup = JSON.parse(ev.target.result);
-      if (backup.articulos) { await dbClear('articulos'); for(const a of backup.articulos) await dbAdd('articulos',a); }
-      if (backup.centros) { await dbClear('centros'); for(const c of backup.centros) await dbAdd('centros',c); }
-      if (backup.movimientos) { await dbClear('movimientos'); for(const m of backup.movimientos) await dbAdd('movimientos',m); }
-      if (backup.bajas) { await dbClear('bajas'); for(const b of backup.bajas) await dbAdd('bajas',b); }
-      await cargarTodos();
-      poblarSelects();
-      renderDashboard();
-      renderInventario();
-      renderCentros();
-      toast('Datos importados ✅ — '+backup.articulos?.length+' artículos','success');
-    } catch(err) { toast('Error al importar: archivo inválido','error'); }
-  };
-  reader.readAsText(file);
-  e.target.value='';
-}
-
-// =============================================
-// DATOS DE DEMOSTRACIÓN
-// =============================================
-async function cargarDatosDemostracion() {
-  const demo = [
-    {codigo:'DE1606-2024-0001',nombre:'Escritorio de Madera',categoria:'Mobiliario',subcategoria:'Escritorio',marca:'Nacional',serie:'',color:'Marrón',cantidad:5,unidad:'Unidad',estado:'Bueno',centro:'Liceo Las Clavellinas',aula:'Dirección',responsable:'Juan Pérez',cargo:'Director',cedula:'001-0000001-1',fecha:'2024-01-15',forma:'Compra',valor:4500,valorTotal:22500,proveedor:'Muebles Bonao',factura:'F-0001',garantia:'',observaciones:'Entregado en buen estado'},
-    {codigo:'DE1606-2024-0002',nombre:'Silla Plástica',categoria:'Mobiliario',subcategoria:'Silla',marca:'Rimax',serie:'',color:'Azul',cantidad:50,unidad:'Unidad',estado:'Bueno',centro:'Liceo Las Clavellinas',aula:'Aula 1',responsable:'María García',cargo:'Docente',cedula:'001-0000002-2',fecha:'2024-02-10',forma:'Compra',valor:850,valorTotal:42500,proveedor:'Rimax RD',factura:'F-0002',garantia:'',observaciones:''},
-    {codigo:'DE1606-2024-0003',nombre:'Computadora de Escritorio',categoria:'Equipo Tecnológico',subcategoria:'PC',marca:'Dell',serie:'SN123456',color:'Negro',cantidad:10,unidad:'Unidad',estado:'Bueno',centro:'Escuela Básica El Naranjal',aula:'Lab. Informática',responsable:'Pedro Martínez',cargo:'Maestro TIC',cedula:'001-0000003-3',fecha:'2024-03-20',forma:'Proyecto MINERD',valor:32000,valorTotal:320000,proveedor:'MINERD',factura:'OF-2024-001',garantia:'2026-03-20',observaciones:''},
-    {codigo:'DE1606-2024-0004',nombre:'Proyector Multimedia',categoria:'Equipo Tecnológico',subcategoria:'Proyector',marca:'Epson',serie:'EPS-789',color:'Blanco',cantidad:3,unidad:'Unidad',estado:'Bueno',centro:'Centro Educativo Sabana Grande',aula:'Sala de Reuniones',responsable:'Ana López',cargo:'Directora',cedula:'001-0000004-4',fecha:'2024-04-05',forma:'Donación',valor:18000,valorTotal:54000,proveedor:'PUCMM',factura:'DON-001',garantia:'',observaciones:''},
-    {codigo:'DE1606-2024-0005',nombre:'Pizarrón Acrílico',categoria:'Material Didáctico',subcategoria:'Pizarrón',marca:'Genérico',serie:'',color:'Blanco',cantidad:20,unidad:'Unidad',estado:'Regular',centro:'Escuela La Cuchilla',aula:'Aulas',responsable:'Carlos Rodríguez',cargo:'Director',cedula:'001-0000005-5',fecha:'2023-08-15',forma:'Compra',valor:2200,valorTotal:44000,proveedor:'Librería Central',factura:'F-0005',garantia:'',observaciones:'Varios con rayaduras'},
-    {codigo:'DE1606-2024-0006',nombre:'Impresora Láser',categoria:'Equipo de Oficina',subcategoria:'Impresora',marca:'HP',serie:'HP-LJ-001',color:'Negro/Gris',cantidad:2,unidad:'Unidad',estado:'Regular',centro:'Liceo Las Clavellinas',aula:'Secretaría',responsable:'Rosa Jiménez',cargo:'Secretaria',cedula:'001-0000006-6',fecha:'2022-05-10',forma:'Compra',valor:12000,valorTotal:24000,proveedor:'Info-Tech',factura:'F-0006',garantia:'',observaciones:'Necesita toner'},
-    {codigo:'DE1606-2023-0001',nombre:'Silla Rota',categoria:'Mobiliario',subcategoria:'Silla',marca:'',serie:'',color:'Azul',cantidad:8,unidad:'Unidad',estado:'Malo',centro:'Escuela Loma del Viento',aula:'Aula 3',responsable:'',cargo:'',cedula:'',fecha:'2020-01-01',forma:'Compra',valor:600,valorTotal:4800,proveedor:'',factura:'',garantia:'',observaciones:'Rotas, pendiente de reposición'},
-    {codigo:'DE1606-2022-0001',nombre:'Archivador Metálico',categoria:'Equipo de Oficina',subcategoria:'Archivador',marca:'',serie:'',color:'Gris',cantidad:1,unidad:'Unidad',estado:'Baja',centro:'Escuela Básica El Naranjal',aula:'Dirección',responsable:'',cargo:'',cedula:'',fecha:'2018-01-01',forma:'Compra',valor:5000,valorTotal:5000,proveedor:'',factura:'',garantia:'',observaciones:'Dado de baja por daño irreparable'},
-  ];
-  for (const a of demo) await dbAdd('articulos',a);
-  articulos = await dbGetAll('articulos');
-  renderInventario();
-  renderDashboard();
-  toast(demo.length+' artículos de demostración cargados ✅','success');
-}
-
-function confirmarBorrarTodo() {
-  document.getElementById('confirm-msg').textContent = '⚠️ ¿Está SEGURO que desea BORRAR TODOS los datos del sistema? Esta acción es IRREVERSIBLE.';
-  document.getElementById('confirm-ok-btn').onclick = borrarTodo;
-  document.getElementById('confirm-ok-btn').textContent = '⚠️ Sí, borrar todo';
-  document.getElementById('confirm-modal').classList.add('open');
-}
-
-async function borrarTodo() {
-  await dbClear('articulos'); await dbClear('movimientos'); await dbClear('bajas');
-  articulos=[]; movimientos=[]; bajas=[];
-  closeConfirm();
-  renderInventario(); renderDashboard(); renderMovimientos(); renderBajas();
-  toast('Todos los datos han sido eliminados','warning');
-}
-
-// =============================================
-// UTILIDADES
-// =============================================
-function formatMoney(v) {
-  if (!v && v!==0) return 'RD$ 0.00';
-  return 'RD$ ' + parseFloat(v).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-
-function descargar(contenido, nombre, tipo) {
-  const blob = new Blob([contenido],{type:tipo});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download=nombre; a.click();
-  URL.revokeObjectURL(url);
-}
-
-function toast(msg, tipo='') {
-  const cont = document.getElementById('toast');
-  const el = document.createElement('div');
-  el.className = 'toast-item ' + tipo;
-  el.textContent = msg;
-  cont.appendChild(el);
-  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.4s'; setTimeout(()=>el.remove(),400); }, 3000);
-}
-
-// =============================================
-// INICIO
-// =============================================
-document.addEventListener('DOMContentLoaded', init);
-</script>
-</body>
-</html>
+  i
