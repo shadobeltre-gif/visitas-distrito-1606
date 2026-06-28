@@ -490,6 +490,9 @@ const MENU_ADMIN = [
     { id:'centros', icono:'🏫', label:'Centros educativos' },
     { id:'relacioncentros', icono:'📊', label:'Relación de centros' },
   ]},
+  { grupo:'Reportes y Consultas', items:[
+    { id:'expediente', icono:'🗂', label:'Expediente del empleado' },
+  ]},
   { grupo:'Nómina MINERD', items:[
     { id:'nominas', icono:'💵', label:'Nóminas' },
   ]},
@@ -579,6 +582,7 @@ const TITULOS = {
   personal:['Personal','Empleados del Distrito 16-06'],
   centros:['Centros educativos','Catálogo de centros del distrito'],
   relacioncentros:['Relación de centros','Listado de centros con personal de contacto'],
+  expediente:['Expediente del empleado','Historial completo de un empleado en todos los módulos del sistema'],
   nominas:['Nóminas MINERD','Control de nómina recibida de Contraloría'],
   manual:['Manual del sistema','Guía completa de uso para el usuario'],
   usuarios:['Usuarios y permisos','Crear usuarios y controlar el acceso a cada módulo'],
@@ -623,6 +627,7 @@ async function irAVista(id){
     else if(id === 'personal') await renderPersonal();
     else if(id === 'centros') await renderCentros();
     else if(id === 'relacioncentros') await renderRelacionCentros();
+    else if(id === 'expediente') await renderExpediente();
     else if(id === 'nominas') await renderNominas();
     else if(id === 'manual') await renderManual();
     else if(id === 'usuarios'){
@@ -6178,8 +6183,252 @@ function imprimirCLActual(){
   setTimeout(()=>w.print(), 400);
 }
 
-/* ====================== NÓMINAS MINERD ====================== */
-const MESES_NOMINA = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+/* ====================== EXPEDIENTE DEL EMPLEADO ====================== */
+async function renderExpediente(){
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="tarjeta">
+      <div class="tarjeta-header"><h3>Expediente del empleado</h3></div>
+      <div class="tarjeta-body">
+        <div class="campo" style="max-width:480px;">
+          <label>Buscar empleado <span class="requerido">*</span></label>
+          ${htmlAutocompletar('exp-personal','Buscar por nombre o cédula…')}
+        </div>
+        <div id="exp-contenido" style="margin-top:18px;"></div>
+      </div>
+    </div>
+  `;
+  await cargarPersonalSelect('exp-personal');
+  document.getElementById('exp-personal').addEventListener('autocomplete-change', cargarExpediente);
+}
+
+// Definición de cada sección del expediente: tabla a consultar, columnas a
+// mostrar, y cómo formatear cada celda. Centralizado aquí para que agregar
+// un módulo nuevo al expediente en el futuro sea solo añadir un bloque más.
+const SECCIONES_EXPEDIENTE = [
+  { tabla:'telegramas_rh', titulo:'Telegramas', icono:'✉',
+    columnas:[
+      { label:'No.', get:r=>r.no_telegrama||'—' },
+      { label:'Fecha', get:r=>fechaCorta(r.fecha_telegrama) },
+      { label:'Cargo designado', get:r=>r.cargo_designado||'—' },
+      { label:'Jornada', get:r=>r.jornada||'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado_envio) },
+    ]},
+  { tabla:'puestas_disposicion_rh', titulo:'Puestas a disposición', icono:'📤',
+    columnas:[
+      { label:'Fecha', get:r=>fechaCorta(r.fecha_oficio) },
+      { label:'Destinatario', get:r=>r.destinatario_nombre||'—' },
+      { label:'Distrito destino', get:r=>r.distrito_destino||'—' },
+      { label:'Cargo', get:r=>r.cargo_designado||'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'cartas_aceptacion_rh', titulo:'Cartas de aceptación', icono:'📥',
+    columnas:[
+      { label:'Fecha', get:r=>fechaCorta(r.fecha_oficio) },
+      { label:'Procedencia', get:r=>r.destinatario_nombre||'—' },
+      { label:'Cargo', get:r=>r.cargo_designado||'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'vacaciones_rh', titulo:'Vacaciones', icono:'🏖',
+    columnas:[
+      { label:'Solicitud', get:r=>fechaCorta(r.fecha_solicitud) },
+      { label:'Días año 1', get:r=>`${r.dias_solicitados_anio1||0} (${r.anio1||'—'})` },
+      { label:'Días año 2', get:r=>r.dias_solicitados_anio2 ? `${r.dias_solicitados_anio2} (${r.anio2||'—'})` : '—' },
+      { label:'Disfrute', get:r=>`${fechaCorta(r.fecha_inicio_disfrute)} – ${fechaCorta(r.fecha_fin_disfrute)}` },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'licencias_permisos_rh', titulo:'Licencias y permisos', icono:'📝',
+    columnas:[
+      { label:'Solicitud', get:r=>fechaCorta(r.fecha_solicitud) },
+      { label:'Categoría', get:r=>r.categoria==='licencia'?'Licencia':'Permiso' },
+      { label:'Subtipo', get:r=>labelSubtipoLP(r.subtipo) },
+      { label:'Período', get:r=>r.fecha_inicio ? `${fechaCorta(r.fecha_inicio)} – ${fechaCorta(r.fecha_fin)}` : '—' },
+      { label:'Evidencia', get:r=>r.evidencia_requerida ? (r.evidencia_presentada?'Presentada':'⚠ Pendiente') : 'N/A' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'riesgos_laborales_rh', titulo:'Riesgo laboral (ATR-2/EPR-1)', icono:'⚠',
+    columnas:[
+      { label:'Tipo', get:r=>r.tipo_formulario },
+      { label:'Fecha evento', get:r=>fechaCorta(r.fecha_evento) },
+      { label:'Fecha aviso', get:r=>fechaCorta(r.fecha_aviso) },
+      { label:'Descripción', get:r=>r.descripcion_evento||'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'pensiones_rh', titulo:'Pensiones', icono:'🎓',
+    columnas:[
+      { label:'Solicitud', get:r=>fechaCorta(r.fecha_solicitud) },
+      { label:'Tipo personal', get:r=>r.tipo_personal==='docente'?'Docente':'Administrativo' },
+      { label:'Tipo pensión', get:r=>r.tipo_pension },
+      { label:'Años servicio', get:r=>r.anios_servicio??'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'seguros_salud_rh', titulo:'Seguro de salud', icono:'➕',
+    columnas:[
+      { label:'Tipo', get:r=>r.tipo_formulario },
+      { label:'Solicitud', get:r=>fechaCorta(r.fecha_solicitud) },
+      { label:'Dependiente', get:r=>r.nombre_dependiente||'—' },
+      { label:'Parentesco', get:r=>r.parentesco ? (LABEL_PARENTESCO[r.parentesco]||r.parentesco) : '—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'certificaciones_laborales_rh', titulo:'Certificaciones laborales', icono:'📜',
+    columnas:[
+      { label:'Solicitud', get:r=>fechaCorta(r.fecha_solicitud) },
+      { label:'Emisión', get:r=>fechaCorta(r.fecha_emision) },
+      { label:'Período', get:r=>r.periodo_desde ? `${fechaCorta(r.periodo_desde)} – ${r.periodo_hasta?fechaCorta(r.periodo_hasta):'Actual'}` : '—' },
+      { label:'Motivo', get:r=>r.motivo||'—' },
+      { label:'Estado', get:r=>badgeEstado(r.estado) },
+    ]},
+  { tabla:'movimientos_nomina_rh', titulo:'Movimientos de nómina', icono:'💵',
+    columnas:[
+      { label:'Tipo', get:r=>({nuevo:'Nuevo nombramiento',reingreso:'Reingreso',cancelado:'Cancelado/bloqueado'})[r.tipo_movimiento]||r.tipo_movimiento },
+      { label:'Cédula', get:r=>r.cedula||'—' },
+      { label:'Revisado', get:r=>r.revisado?'Sí':'No' },
+    ]},
+];
+
+async function cargarExpediente(){
+  const personalId = document.getElementById('exp-personal-id').value;
+  const cont = document.getElementById('exp-contenido');
+  if(!personalId){ cont.innerHTML = ''; return; }
+
+  cont.innerHTML = '<div class="vacio">Cargando expediente…</div>';
+
+  const { data: p, error: errP } = await sb.from('personal_rh')
+    .select('*, centros_rh(nombre_centro)').eq('id', personalId).single();
+  if(errP){ toast(errP.message,'error'); cont.innerHTML = ''; return; }
+
+  // Trae todas las secciones en paralelo, cada una ordenada por la fecha más reciente disponible.
+  const resultados = await Promise.all(SECCIONES_EXPEDIENTE.map(s=>
+    sb.from(s.tabla).select('*').eq('personal_id', personalId).order('id',{ascending:false})
+  ));
+
+  window._expedienteActual = { personal:p, secciones:[] };
+
+  const fichaHtml = `
+    <div class="tarjeta" style="margin-bottom:16px;">
+      <div class="tarjeta-body">
+        <div class="grid-3">
+          <div><div class="texto-ayuda">Nombre completo</div><strong>${escapeHtml(p.nombres+' '+p.apellidos)}</strong></div>
+          <div><div class="texto-ayuda">Cédula</div><strong>${escapeHtml(p.cedula)}</strong></div>
+          <div><div class="texto-ayuda">Estatus</div>${badgeEstado(p.estatus)}</div>
+          <div><div class="texto-ayuda">Cargo actual</div><strong>${escapeHtml(p.cargo_actual||'—')}</strong></div>
+          <div><div class="texto-ayuda">Centro</div><strong>${escapeHtml(p.centros_rh?.nombre_centro||'—')}</strong></div>
+          <div><div class="texto-ayuda">Fecha de ingreso</div><strong>${fechaCorta(p.fecha_ingreso)}</strong></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${botonesExportar('exp')}
+      <button class="btn btn-secundario btn-chico" onclick="window.print()">🖨 Imprimir expediente completo</button>
+    </div>
+  `;
+
+  const seccionesHtml = SECCIONES_EXPEDIENTE.map((s,i)=>{
+    const { data, error } = resultados[i];
+    if(error){ return ''; }
+    window._expedienteActual.secciones.push({ titulo:s.titulo, datos: data||[] });
+    return `
+      <div class="tarjeta" style="margin-bottom:14px;">
+        <div class="tarjeta-header"><h3>${s.icono} ${s.titulo} (${data?.length||0})</h3></div>
+        <div class="tarjeta-body tabla-wrap">
+          ${ (data && data.length) ? `
+          <table>
+            <thead><tr>${s.columnas.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+            <tbody>${data.map(r=>`<tr>${s.columnas.map(c=>`<td>${c.get(r)}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>` : `<div class="vacio" style="padding:14px;">Sin registros en este módulo.</div>` }
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  cont.innerHTML = fichaHtml + seccionesHtml;
+  registrarExportadoresExpediente(p);
+}
+
+// Exportación dedicada del expediente: a diferencia de los demás módulos
+// (una tabla con columnas fijas), aquí cada sección tiene columnas propias,
+// así que CSV/Excel exportan una hoja/bloque por sección, y PDF/Imprimir
+// generan un documento único con todas las secciones en su formato real.
+function registrarExportadoresExpediente(p){
+  const nombreArchivo = `expediente_${p.cedula.replace(/[^0-9]/g,'')}`;
+  const titulo = `Expediente — ${p.nombres} ${p.apellidos} (${p.cedula})`;
+
+  function construirHtmlCompleto(){
+    const secciones = window._expedienteActual.secciones;
+    const bloques = secciones.map(s=>{
+      if(!s.datos.length) return '';
+      const seccionDef = SECCIONES_EXPEDIENTE.find(sd=>sd.titulo===s.titulo);
+      const filas = s.datos.map(r=>`<tr>${seccionDef.columnas.map(c=>`<td>${c.get(r).replace(/<[^>]+>/g,'')}</td>`).join('')}</tr>`).join('');
+      return `<h3 style="margin-top:18px;">${seccionDef.icono} ${s.titulo}</h3>
+        <table><thead><tr>${seccionDef.columnas.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>${filas}</tbody></table>`;
+    }).join('');
+    return `<h2>${escapeHtml(titulo)}</h2>${bloques || '<p>Sin registros en ningún módulo.</p>'}`;
+  }
+
+  window._exportHandlers['exp'] = {
+    csv: ()=>{
+      const secciones = window._expedienteActual.secciones;
+      let csv = `"Expediente","${p.nombres} ${p.apellidos}","${p.cedula}"\n\n`;
+      secciones.forEach(s=>{
+        if(!s.datos.length) return;
+        const seccionDef = SECCIONES_EXPEDIENTE.find(sd=>sd.titulo===s.titulo);
+        csv += `"${s.titulo}"\n`;
+        csv += seccionDef.columnas.map(c=>`"${c.label}"`).join(',')+'\n';
+        s.datos.forEach(r=>{
+          csv += seccionDef.columnas.map(c=>`"${c.get(r).replace(/<[^>]+>/g,'').replace(/"/g,'""')}"`).join(',')+'\n';
+        });
+        csv += '\n';
+      });
+      const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${nombreArchivo}.csv`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    },
+    xlsx: ()=>{
+      if(typeof XLSX === 'undefined'){ toast('No se pudo generar el Excel.','error'); return; }
+      const wb = XLSX.utils.book_new();
+      const secciones = window._expedienteActual.secciones;
+      let alMenosUna = false;
+      secciones.forEach(s=>{
+        if(!s.datos.length) return;
+        alMenosUna = true;
+        const seccionDef = SECCIONES_EXPEDIENTE.find(sd=>sd.titulo===s.titulo);
+        const filas = s.datos.map(r=>{
+          const obj = {};
+          seccionDef.columnas.forEach(c=>{ obj[c.label] = c.get(r).replace(/<[^>]+>/g,''); });
+          return obj;
+        });
+        const ws = XLSX.utils.json_to_sheet(filas);
+        XLSX.utils.book_append_sheet(wb, ws, s.titulo.slice(0,31));
+      });
+      if(!alMenosUna){ toast('No hay datos para exportar.','error'); return; }
+      XLSX.writeFile(wb, `${nombreArchivo}.xlsx`);
+    },
+    pdf: ()=>{
+      const w = window.open('', '_blank');
+      w.document.write(`<html><head><meta charset="UTF-8"><title>${escapeHtml(titulo)}</title>
+        <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;}
+        h2{font-size:16px;}h3{font-size:13px;color:#1f3864;}
+        table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+        th,td{border:1px solid #999;padding:4px 7px;text-align:left;}th{background:#eef2f7;}
+        </style></head><body>${construirHtmlCompleto()}</body></html>`);
+      w.document.close();
+      setTimeout(()=>w.print(), 400);
+    },
+    imprimir: ()=>{
+      const w = window.open('', '_blank');
+      w.document.write(`<html><head><meta charset="UTF-8"><title>${escapeHtml(titulo)}</title>
+        <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;}
+        h2{font-size:16px;}h3{font-size:13px;color:#1f3864;}
+        table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+        th,td{border:1px solid #999;padding:4px 7px;text-align:left;}th{background:#eef2f7;}
+        </style></head><body>${construirHtmlCompleto()}</body></html>`);
+      w.document.close();
+      setTimeout(()=>w.print(), 400);
+    },
+  };
+}
 
 async function renderNominas(){
   const main = document.getElementById('main-content');
