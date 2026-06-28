@@ -1267,6 +1267,7 @@ async function renderCentros(){
             <div class="texto-ayuda">
               Columnas reconocidas (los nombres pueden variar, el sistema intenta detectarlos): nombre del centro, código SIGERD, matrícula, nivel, tanda, número de dependencia, director/a, sexo del director/a.
               Si el código SIGERD de una fila ya existe, se actualiza ese centro en vez de duplicarlo.
+              <a href="#" onclick="descargarPlantillaCentros();return false;">Descargar plantilla de ejemplo</a>.
             </div>
           </div>
           <div id="centros-resumen-preview"></div>
@@ -1397,6 +1398,18 @@ async function procesarImportacionCentros(){
   }
 }
 
+function descargarPlantillaCentros(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Nombre del Centro':'ESC PRIM JUAN PABLO DUARTE', 'Código SIGERD':'04400', 'Matrícula':250,
+      'Nivel':'Primario', 'Tanda':'Extendida', 'Dependencia':'7900', 'Director/a':'Rosa Almonte Pérez', 'Sexo Director/a':'F' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Centros');
+  XLSX.writeFile(wb, 'plantilla_centros.xlsx');
+}
+
 function abrirModalCentro(c){
   document.getElementById('titulo-modal-centro').textContent = c ? 'Editar centro' : 'Agregar centro';
   document.getElementById('centro-id').value = c?.id || '';
@@ -1525,6 +1538,7 @@ async function renderPersonal(){
             <input type="file" id="personal-archivo" accept=".xlsx,.xls,.csv">
             <div class="texto-ayuda">
               Columnas reconocidas: cédula, nombres, apellidos, sexo, cargo, teléfono, dirección, nivel académico, dependencia, estatus. Si la cédula ya existe, se actualiza ese empleado.
+              <a href="#" onclick="descargarPlantillaPersonal();return false;">Descargar plantilla de ejemplo</a>.
             </div>
           </div>
           <div id="personal-resumen-preview"></div>
@@ -1645,6 +1659,19 @@ async function procesarImportacionPersonal(){
     btn.disabled = false;
     btn.textContent = 'Importar';
   }
+}
+
+function descargarPlantillaPersonal(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula':'001-1234567-8', 'Nombres':'María Cristina', 'Apellidos':'Peña Fernández', 'Sexo':'F',
+      'Cargo':'MAESTRO BASICA J.E.', 'Teléfono':'809-555-0001', 'Dirección':'El Cruce, Bonao',
+      'Nivel académico':'Licenciatura', 'Dependencia':'7900', 'Estatus':'activo' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Personal');
+  XLSX.writeFile(wb, 'plantilla_personal.xlsx');
 }
 
 function filtrarPersonal(){
@@ -1773,11 +1800,11 @@ async function renderSolicitudes(){
             <label>Archivo Excel o CSV <span class="requerido">*</span></label>
             <input type="file" id="ap-archivo" accept=".xlsx,.xls,.csv">
             <div class="texto-ayuda">
-              Columnas reconocidas: no. de solicitud, fecha, motivo, observaciones, estado. El centro debe seleccionarse para todas las filas del archivo (se asigna el mismo centro a cada solicitud importada). Si el no. de solicitud ya existe, se actualiza esa solicitud.
+              Columnas reconocidas: no. de solicitud, fecha, motivo, centro, código SIGERD (opcional), nombres y apellidos del candidato, cédula, sexo, cargo propuesto, observaciones, estado.
+              Por cada fila se crea automáticamente el centro (si no existe) y un Candidato vinculado a la solicitud. Si el no. de solicitud ya existe, se actualiza esa solicitud.
+              <a href="#" onclick="descargarPlantillaAP();return false;">Descargar plantilla de ejemplo</a>.
             </div>
           </div>
-          <div class="campo"><label>Centro educativo para todas las filas <span class="requerido">*</span></label>
-            ${htmlAutocompletar('ap-import-centro','Buscar centro por nombre o código…')}</div>
           <div id="ap-resumen-preview"></div>
         </div>
         <div class="modal-footer">
@@ -1855,49 +1882,165 @@ async function eliminarSeleccionAP(){
   renderSolicitudes();
 }
 
-async function abrirModalImportarAP(){
+function abrirModalImportarAP(){
   document.getElementById('ap-archivo').value = '';
   document.getElementById('ap-resumen-preview').innerHTML = '';
-  await cargarCentrosSelect('ap-import-centro');
   abrirModal('modal-importar-ap');
+}
+
+function descargarPlantillaAP(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'No. de solicitud':'2024-015', 'Fecha (AAAA-MM-DD)':'2024-02-10', 'Motivo':'PLAZA_VACANTE',
+      'Nombre del centro educativo':'ESC PRIM LUPERON', 'Código SIGERD del centro (opcional)':'04412',
+      'Nombres del candidato':'Carmen', 'Apellidos del candidato':'Valdez Ureña', 'Cédula del candidato':'001-1234567-8',
+      'Sexo (M/F)':'F', 'Cargo propuesto':'MAESTRA INICIAL J.E.', 'Observaciones':'', 'Estado':'nombrado' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Solicitudes AP');
+  XLSX.writeFile(wb, 'plantilla_solicitudes_ap.xlsx');
 }
 
 async function procesarImportacionAP(){
   const archivo = document.getElementById('ap-archivo').files[0];
-  const centroId = document.getElementById('ap-import-centro-id').value;
   if(!archivo){ toast('Selecciona el archivo.','error'); return; }
-  if(!centroId){ toast('Selecciona el centro para las filas importadas.','error'); return; }
 
   const btn = document.getElementById('btn-importar-ap');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Procesando…';
 
   try{
-    const resultado = await importarConUpsert({
-      archivo, tabla:'solicitudes_ap', claveUnica:'no_solicitud',
-      patrones: {
-        no_solicitud: /solicitud|no\.?\s*ap/,
-        fecha_solicitud: /fecha/,
-        motivo_solicitud: /motivo/,
-        observaciones: /observ/,
-        estado: /estado/,
-      },
-      transformarFila: (base)=>{
-        base.centro_id = centroId;
-        if(base.motivo_solicitud) base.motivo_solicitud = base.motivo_solicitud.toUpperCase().replace(/\s+/g,'_');
-        if(base.estado) base.estado = base.estado.toLowerCase().replace(/\s+/g,'_');
-        if(!base.fecha_solicitud) delete base.fecha_solicitud;
-        return base;
-      },
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/solicitud|no\.?\s*ap/.test(n) && mapa.no_solicitud===undefined) mapa.no_solicitud = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      else if(/motivo/.test(n) && mapa.motivo===undefined) mapa.motivo = i;
+      else if(/sigerd|codigo.*centro/.test(n) && mapa.sigerd===undefined) mapa.sigerd = i;
+      else if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/nombres?\b.*candidato|^nombres?$/.test(n) && mapa.nombres===undefined) mapa.nombres = i;
+      else if(/apellidos?\b.*candidato|^apellidos?$/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
+      else if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/sexo/.test(n) && mapa.sexo===undefined) mapa.sexo = i;
+      else if(/cargo/.test(n) && mapa.cargo===undefined) mapa.cargo = i;
+      else if(/observ/.test(n) && mapa.observaciones===undefined) mapa.observaciones = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
     });
+    if(mapa.nombres===undefined || mapa.apellidos===undefined){
+      throw new Error('No se pudo detectar las columnas de nombres/apellidos del candidato.');
+    }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.nombres] && String(f[mapa.nombres]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con nombres de candidato.');
+
+    let creados = 0, actualizados = 0, errores = 0;
+    const detalleErrores = [];
+    const motivosValidos = ['SUSTITUCION_FALLECIMIENTO','SUSTITUCION_DECISION_ADMINISTRATIVA','SUSTITUCION_ABANDONO',
+                             'SUSTITUCION_RENUNCIA','CAMBIO_DESIGNACION','COMPLETACION_TANDA','PLAZA_VACANTE'];
+    const estadosValidos = ['borrador','enviado','expediente_incompleto','incidencias','aprobado','nombrado','rechazado'];
+
+    for(const f of registros){
+      try{
+        const nombreCentro = mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : '';
+        const sigerd = mapa.sigerd!==undefined ? String(f[mapa.sigerd]||'').trim() : '';
+        const nombreCentroFinal = nombreCentro || 'Centro no especificado (importación histórica)';
+
+        let centroId;
+        {
+          let centroExistente = null;
+          if(sigerd){
+            const { data } = await sb.from('centros_rh').select('id').eq('codigo_sigerd', sigerd).maybeSingle();
+            centroExistente = data;
+          }
+          if(!centroExistente){
+            const { data } = await sb.from('centros_rh').select('id').eq('nombre_centro', nombreCentroFinal).maybeSingle();
+            centroExistente = data;
+          }
+          if(centroExistente){
+            centroId = centroExistente.id;
+          } else {
+            const { data: nuevoCentro, error: errCentro } = await sb.from('centros_rh')
+              .insert({ nombre_centro: nombreCentroFinal, codigo_sigerd: sigerd || null }).select('id').single();
+            if(errCentro) throw errCentro;
+            centroId = nuevoCentro.id;
+          }
+        }
+
+        let motivo = mapa.motivo!==undefined ? String(f[mapa.motivo]||'').trim().toUpperCase().replace(/\s+/g,'_') : '';
+        if(!motivosValidos.includes(motivo)) motivo = 'PLAZA_VACANTE';
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase().replace(/\s+/g,'_') : '';
+        if(!estadosValidos.includes(estado)) estado = 'enviado';
+        const fecha = mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+        const noSolicitud = mapa.no_solicitud!==undefined ? (String(f[mapa.no_solicitud]||'').trim() || null) : null;
+
+        const payloadSolicitud = {
+          centro_id: centroId,
+          fecha_solicitud: fecha,
+          motivo_solicitud: motivo,
+          observaciones: mapa.observaciones!==undefined ? (String(f[mapa.observaciones]||'').trim() || null) : null,
+          estado,
+        };
+        if(noSolicitud) payloadSolicitud.no_solicitud = noSolicitud;
+
+        let solicitudId;
+        if(noSolicitud){
+          const { data: existente } = await sb.from('solicitudes_ap').select('id').eq('no_solicitud', noSolicitud).maybeSingle();
+          if(existente){
+            const { error: errUpd } = await sb.from('solicitudes_ap').update(payloadSolicitud).eq('id', existente.id);
+            if(errUpd) throw errUpd;
+            solicitudId = existente.id;
+            actualizados++;
+          }
+        }
+        if(!solicitudId){
+          const { data: nuevaSolicitud, error: errSol } = await sb.from('solicitudes_ap').insert(payloadSolicitud).select('id').single();
+          if(errSol) throw errSol;
+          solicitudId = nuevaSolicitud.id;
+          creados++;
+        }
+
+        // Candidato vinculado a la solicitud (uno por fila importada).
+        const sexo = mapa.sexo!==undefined ? (String(f[mapa.sexo]||'').trim().toUpperCase().startsWith('F') ? 'F' : 'M') : 'M';
+        const cedulaCandidato = mapa.cedula!==undefined ? String(f[mapa.cedula]||'').trim() : '';
+        const cargoCandidato = mapa.cargo!==undefined ? String(f[mapa.cargo]||'').trim() : '';
+        const { error: errCand } = await sb.from('candidatos_ap').insert({
+          solicitud_ap_id: solicitudId,
+          nombres: String(f[mapa.nombres]||'').trim(),
+          apellidos: String(f[mapa.apellidos]||'').trim(),
+          cedula: cedulaCandidato || '000-0000000-0',
+          sexo,
+          cargo_propuesto: cargoCandidato || 'No especificado',
+          estado: estado === 'nombrado' ? 'nombrado' : 'pendiente',
+        });
+        if(errCand) throw errCand;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con candidato "${f[mapa.nombres]||'?'}": ${errFila.message}`);
+      }
+    }
+
     document.getElementById('ap-resumen-preview').innerHTML = `
       <div class="texto-ayuda" style="margin-top:10px;">
-        <strong>${resultado.total}</strong> filas procesadas ·
-        <span style="color:var(--verde-600);font-weight:600;">${resultado.creados} creadas</span> ·
-        <span style="color:var(--azul-600);font-weight:600;">${resultado.actualizados} actualizadas</span>
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span> ·
+        <span style="color:var(--azul-600);font-weight:600;">${actualizados} actualizadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
       </div>`;
-    toast('Solicitudes AP importadas correctamente.','exito');
-    renderSolicitudes();
+
+    if(creados || actualizados){
+      toast('Solicitudes AP importadas correctamente.','exito');
+      renderSolicitudes();
+    } else {
+      toast('No se pudo importar ninguna solicitud. Revisa los errores.','error');
+    }
   }catch(err){
     toast(err.message,'error');
   }finally{
@@ -2157,6 +2300,7 @@ async function renderTelegramas(){
         <h3>Telegramas (${data?.length||0})</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('telegramas')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarTelegramas()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionTelegramas()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalTelegrama()">+ Generar telegrama</button>
         </div>
@@ -2239,6 +2383,29 @@ async function renderTelegramas(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-telegrama')">Cerrar</button>
           <button class="btn btn-primario" onclick="imprimirTelegramaActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-telegramas">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar telegramas desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-telegramas')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="tel-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: no. de telegrama, fecha, nombres y apellidos del candidato, cédula, sexo, cargo designado, nombre del centro, código SIGERD (opcional), jornada, destinatario, estado.
+              Por cada fila, el sistema crea automáticamente una Solicitud AP y un Candidato básicos (si aún no existen) para vincular el telegrama. Si el centro no existe, se crea con el nombre indicado.
+              <a href="#" onclick="descargarPlantillaTelegramas();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="tel-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-telegramas')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-telegramas" onclick="procesarImportacionTelegramas()">Importar telegramas</button>
         </div>
       </div>
     </div>
@@ -2405,6 +2572,182 @@ async function guardarTelegrama(){
   renderTelegramas();
 }
 
+/* ---- Importación masiva de telegramas (datos viejos en papel) ----
+   Por cada fila del Excel: busca o crea el centro, crea una Solicitud AP
+   y un Candidato básicos (para cumplir la referencia obligatoria de la
+   base de datos), genera el texto del telegrama, y guarda el registro. */
+function abrirModalImportarTelegramas(){
+  document.getElementById('tel-import-archivo').value = '';
+  document.getElementById('tel-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-telegramas');
+}
+
+function descargarPlantillaTelegramas(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'No. de telegrama':'123', 'Fecha (AAAA-MM-DD)':'2024-03-15', 'Nombres del candidato':'Rosa',
+      'Apellidos del candidato':'Núñez', 'Cédula del candidato':'001-1234567-8', 'Sexo (M/F)':'F',
+      'Cargo designado':'MAESTRA BASICA J.E.', 'Nombre del centro educativo':'ESC PRIM LUPERON',
+      'Código SIGERD del centro (opcional)':'04412', 'Jornada':'Matutina',
+      'Destinatario (Director/a)':'Carlos Mejía Reyes', 'Estado':'entregado' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Telegramas');
+  XLSX.writeFile(wb, 'plantilla_telegramas.xlsx');
+}
+
+async function procesarImportacionTelegramas(){
+  const archivo = document.getElementById('tel-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-telegramas');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/telegrama|no\.?\s*tel/.test(n) && mapa.numero===undefined) mapa.numero = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      else if(/nombres?\b.*candidato|^nombres?$/.test(n) && mapa.nombres===undefined) mapa.nombres = i;
+      else if(/apellidos?\b.*candidato|^apellidos?$/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
+      else if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/sexo/.test(n) && mapa.sexo===undefined) mapa.sexo = i;
+      else if(/cargo/.test(n) && mapa.cargo===undefined) mapa.cargo = i;
+      else if(/sigerd|codigo.*centro/.test(n) && mapa.sigerd===undefined) mapa.sigerd = i;
+      else if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/jornada/.test(n) && mapa.jornada===undefined) mapa.jornada = i;
+      else if(/destinatario|director/.test(n) && mapa.destinatario===undefined) mapa.destinatario = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.nombres===undefined || mapa.apellidos===undefined){
+      throw new Error('No se pudo detectar las columnas de nombres/apellidos del candidato.');
+    }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.nombres] && String(f[mapa.nombres]).trim());
+
+    if(!registros.length) throw new Error('No se encontraron filas válidas con nombres de candidato.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+
+    for(const f of registros){
+      try{
+        const nombreCentro = mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : '';
+        const sigerd = mapa.sigerd!==undefined ? String(f[mapa.sigerd]||'').trim() : '';
+        let centroId = null;
+        const nombreCentroFinal = nombreCentro || 'Centro no especificado (importación histórica)';
+
+        {
+          let centroExistente = null;
+          if(sigerd){
+            const { data } = await sb.from('centros_rh').select('id').eq('codigo_sigerd', sigerd).maybeSingle();
+            centroExistente = data;
+          }
+          if(!centroExistente){
+            const { data } = await sb.from('centros_rh').select('id').eq('nombre_centro', nombreCentroFinal).maybeSingle();
+            centroExistente = data;
+          }
+          if(centroExistente){
+            centroId = centroExistente.id;
+          } else {
+            const { data: nuevoCentro, error: errCentro } = await sb.from('centros_rh')
+              .insert({ nombre_centro: nombreCentroFinal, codigo_sigerd: sigerd || null }).select('id').single();
+            if(errCentro) throw errCentro;
+            centroId = nuevoCentro.id;
+          }
+        }
+
+        // Crear Solicitud AP básica (cada importación genera la suya, ya que
+        // representa el trámite histórico real de ese telegrama en papel).
+        const { data: nuevaSolicitud, error: errSol } = await sb.from('solicitudes_ap')
+          .insert({ centro_id: centroId, motivo_solicitud:'PLAZA_VACANTE', estado:'nombrado',
+                    observaciones:'Importado desde Excel — telegrama histórico en papel.' })
+          .select('id').single();
+        if(errSol) throw errSol;
+
+        // Crear Candidato básico vinculado a esa solicitud.
+        const sexo = mapa.sexo!==undefined ? (String(f[mapa.sexo]||'').trim().toUpperCase().startsWith('F') ? 'F' : 'M') : 'M';
+        const cedulaCandidato = mapa.cedula!==undefined ? String(f[mapa.cedula]||'').trim() : '';
+        const cargoCandidato = mapa.cargo!==undefined ? String(f[mapa.cargo]||'').trim() : '';
+        const { data: nuevoCandidato, error: errCand } = await sb.from('candidatos_ap')
+          .insert({
+            solicitud_ap_id: nuevaSolicitud.id,
+            nombres: String(f[mapa.nombres]||'').trim(),
+            apellidos: String(f[mapa.apellidos]||'').trim(),
+            cedula: cedulaCandidato || '000-0000000-0',
+            sexo,
+            cargo_propuesto: cargoCandidato || 'No especificado',
+            estado: 'nombrado',
+          }).select('id').single();
+        if(errCand) throw errCand;
+
+        const fecha = mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+        const cargoDesignado = mapa.cargo!==undefined ? (String(f[mapa.cargo]||'').trim() || '________') : '________';
+        const destinatario = mapa.destinatario!==undefined ? (String(f[mapa.destinatario]||'').trim() || '________') : '________';
+        const jornada = mapa.jornada!==undefined ? (String(f[mapa.jornada]||'').trim() || 'Extendida') : 'Extendida';
+
+        const texto = generarTextoTelegrama({
+          destinatarioNombre: destinatario,
+          centroNombre: nombreCentroFinal,
+          candidatoNombre: String(f[mapa.nombres]).trim()+' '+String(f[mapa.apellidos]).trim(),
+          candidatoCedula: mapa.cedula!==undefined ? String(f[mapa.cedula]||'').trim() : '',
+          candidatoSexo: sexo,
+          cargoDesignado,
+          jornada,
+          fecha,
+        });
+
+        const { error: errTel } = await sb.from('telegramas_rh').insert({
+          candidato_ap_id: nuevoCandidato.id,
+          centro_id: centroId,
+          no_telegrama: mapa.numero!==undefined ? (String(f[mapa.numero]||'').trim() || null) : null,
+          fecha_telegrama: fecha,
+          destinatario_nombre: destinatario,
+          cargo_designado: cargoDesignado,
+          jornada,
+          texto_generado: texto,
+          estado_envio: mapa.estado!==undefined ? (String(f[mapa.estado]||'').trim().toLowerCase() || 'generado') : 'generado',
+        });
+        if(errTel) throw errTel;
+
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con candidato "${f[mapa.nombres]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('tel-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} telegramas creados</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} telegrama(s) importado(s) correctamente.`,'exito');
+      renderTelegramas();
+    } else {
+      toast('No se pudo importar ningún telegrama. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar telegramas';
+  }
+}
+
 function verTelegrama(id){
   const t = (window._telegramasData||[]).find(x=>x.id===id);
   if(!t) return;
@@ -2469,6 +2812,7 @@ async function renderPuestasDisposicion(){
         <h3>Puestas a disposición</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('pd')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarPD()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPuestasDisp()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalPuestaDisp()">+ Nuevo oficio</button>
         </div>
@@ -2538,6 +2882,29 @@ async function renderPuestasDisposicion(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-pd')">Cerrar</button>
           <button class="btn btn-primario" onclick="imprimirPDActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-pd">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar puestas a disposición desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-pd')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="pd-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, nombres, apellidos, fecha del oficio, destinatario, cargo del destinatario, distrito destino, analista, cargo designado, motivo, estado.
+              Si la cédula no corresponde a ningún empleado registrado, se crea un registro básico en Personal automáticamente.
+              <a href="#" onclick="descargarPlantillaPD();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="pd-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-pd')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-pd" onclick="procesarImportacionPD()">Importar</button>
         </div>
       </div>
     </div>
@@ -2692,6 +3059,136 @@ function imprimirPDActual(){
   setTimeout(()=>w.print(), 400);
 }
 
+function abrirModalImportarPD(){
+  document.getElementById('pd-import-archivo').value = '';
+  document.getElementById('pd-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-pd');
+}
+
+function descargarPlantillaPD(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Nombres (si el empleado no existe aún)':'María',
+      'Apellidos (si el empleado no existe aún)':'Pérez Gómez', 'Fecha del oficio (AAAA-MM-DD)':'2024-04-02',
+      'Destinatario (Director/a que recibe)':'Estanislao Peralta', 'Cargo del destinatario':'Director Distrito Educativo 16-04',
+      'Distrito destino':'16-04', 'Analista (Vía)':'Vickiana Pérez Peralta',
+      'Cargo designado':'MAESTRA BASICA J.E.', 'Motivo':'Reubicación solicitada por la empleada', 'Estado':'enviado' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Puestas a Disposicion');
+  XLSX.writeFile(wb, 'plantilla_puesta_disposicion.xlsx');
+}
+
+async function procesarImportacionPD(){
+  const archivo = document.getElementById('pd-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-pd');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/nombres?\b.*emplea|^nombres?\b/.test(n) && mapa.nombres===undefined) mapa.nombres = i;
+      else if(/apellidos?\b.*emplea|^apellidos?\b/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      else if(/destinatario\b.*cargo|cargo\b.*destinatario/.test(n) && mapa.destinatarioCargo===undefined) mapa.destinatarioCargo = i;
+      else if(/destinatario/.test(n) && mapa.destinatario===undefined) mapa.destinatario = i;
+      else if(/distrito/.test(n) && mapa.distrito===undefined) mapa.distrito = i;
+      else if(/analista|via/.test(n) && mapa.analista===undefined) mapa.analista = i;
+      else if(/cargo.*design|design.*cargo/.test(n) && mapa.cargoDesignado===undefined) mapa.cargoDesignado = i;
+      else if(/motivo/.test(n) && mapa.motivo===undefined) mapa.motivo = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const estadosValidos = ['borrador','enviado','aceptado','rechazado'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        let { data: persona } = await sb.from('personal_rh').select('id,nombres,apellidos,sexo,cargo_actual').eq('cedula', cedula).maybeSingle();
+
+        if(!persona){
+          const nombres = mapa.nombres!==undefined ? String(f[mapa.nombres]||'').trim() : '';
+          const apellidos = mapa.apellidos!==undefined ? String(f[mapa.apellidos]||'').trim() : '';
+          if(!nombres){ throw new Error('Empleado no encontrado por cédula y faltan nombres para crearlo.'); }
+          const { data: nuevaPersona, error: errPer } = await sb.from('personal_rh')
+            .insert({ cedula, nombres, apellidos: apellidos || 'Sin apellido', sexo:'M', estatus:'activo' })
+            .select('id,nombres,apellidos,sexo,cargo_actual').single();
+          if(errPer) throw errPer;
+          persona = nuevaPersona;
+        }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'borrador';
+        const fecha = mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+        const destinatario = mapa.destinatario!==undefined ? (String(f[mapa.destinatario]||'').trim() || '________') : '________';
+        const destinatarioCargo = mapa.destinatarioCargo!==undefined ? (String(f[mapa.destinatarioCargo]||'').trim() || 'Director/a Distrital') : 'Director/a Distrital';
+        const analista = mapa.analista!==undefined ? String(f[mapa.analista]||'').trim() : '';
+        const cargoDesignado = mapa.cargoDesignado!==undefined ? (String(f[mapa.cargoDesignado]||'').trim() || persona.cargo_actual || '________') : (persona.cargo_actual || '________');
+        const motivo = mapa.motivo!==undefined ? (String(f[mapa.motivo]||'').trim() || null) : null;
+
+        const texto = generarTextoPuestaDisposicion({
+          fecha, destinatarioNombre: destinatario, destinatarioCargo,
+          analistaNombre: analista, analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+          asunto: 'Puesta A Disposición',
+          candidatoNombre: persona.nombres+' '+persona.apellidos,
+          candidatoCedula: cedula, candidatoSexo: persona.sexo, cargoDesignado,
+        });
+
+        const { error: errPD } = await sb.from('puestas_disposicion_rh').insert({
+          personal_id: persona.id, fecha_oficio: fecha,
+          destinatario_nombre: destinatario, destinatario_cargo: destinatarioCargo,
+          distrito_destino: mapa.distrito!==undefined ? (String(f[mapa.distrito]||'').trim() || null) : null,
+          analista_nombre: analista || null, cargo_designado: cargoDesignado, motivo, estado,
+          texto_generado: texto,
+        });
+        if(errPD) throw errPD;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('pd-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creados</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} oficio(s) importado(s) correctamente.`,'exito');
+      renderPuestasDisposicion();
+    } else {
+      toast('No se pudo importar ningún oficio. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 /* ====================== CARTA DE ACEPTACIÓN DE PERSONAL ====================== */
 function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCargo, analistaNombre,
                                          analistaCargo, asunto, candidatoNombre, candidatoCedula,
@@ -2740,6 +3237,7 @@ async function renderCartasAceptacion(){
         <h3>Cartas de aceptación de personal</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('ca')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarCA()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCA()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalCA()">+ Nueva carta</button>
         </div>
@@ -2807,6 +3305,29 @@ async function renderCartasAceptacion(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-ca')">Cerrar</button>
           <button class="btn btn-primario" onclick="imprimirCAActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-ca">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar cartas de aceptación desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-ca')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="ca-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, nombres, apellidos, fecha del oficio, procedencia (destinatario), cargo del destinatario, analista, cargo designado, centro donde será ubicado (opcional), estado.
+              Si la cédula no corresponde a ningún empleado registrado, se crea un registro básico en Personal automáticamente.
+              <a href="#" onclick="descargarPlantillaCA();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="ca-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-ca')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-ca" onclick="procesarImportacionCA()">Importar</button>
         </div>
       </div>
     </div>
@@ -2969,6 +3490,149 @@ function imprimirCAActual(){
   setTimeout(()=>w.print(), 400);
 }
 
+function abrirModalImportarCA(){
+  document.getElementById('ca-import-archivo').value = '';
+  document.getElementById('ca-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-ca');
+}
+
+function descargarPlantillaCA(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-9988776-5', 'Nombres (si el empleado no existe aún)':'Mariana',
+      'Apellidos (si el empleado no existe aún)':'Hernández Franco', 'Fecha del oficio (AAAA-MM-DD)':'2024-04-10',
+      'Procedencia (Director/a que envía)':'María Mercedes De La Cruz Valerio',
+      'Cargo del destinatario (procedencia)':'Directora del Distrito Educativo 16-05, Piedra Blanca',
+      'Analista (Vía)':'Humberto Leonardo Gonzales', 'Cargo designado':'AUXILIAR ADMINISTRATIVO',
+      'Centro donde será ubicada (opcional)':'ESC PRIM JUAN PABLO DUARTE', 'Estado':'confirmado' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cartas de Aceptacion');
+  XLSX.writeFile(wb, 'plantilla_carta_aceptacion.xlsx');
+}
+
+async function procesarImportacionCA(){
+  const archivo = document.getElementById('ca-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-ca');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/nombres?\b.*emplea|^nombres?\b/.test(n) && mapa.nombres===undefined) mapa.nombres = i;
+      else if(/apellidos?\b.*emplea|^apellidos?\b/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      else if(/cargo\b.*destinatario|destinatario\b.*cargo/.test(n) && mapa.destinatarioCargo===undefined) mapa.destinatarioCargo = i;
+      else if(/procedencia|destinatario/.test(n) && mapa.destinatario===undefined) mapa.destinatario = i;
+      else if(/analista|via/.test(n) && mapa.analista===undefined) mapa.analista = i;
+      else if(/cargo.*design|design.*cargo/.test(n) && mapa.cargoDesignado===undefined) mapa.cargoDesignado = i;
+      else if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const estadosValidos = ['borrador','enviado','confirmado','rechazado'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        let { data: persona } = await sb.from('personal_rh').select('id,nombres,apellidos,sexo,cargo_actual').eq('cedula', cedula).maybeSingle();
+
+        if(!persona){
+          const nombres = mapa.nombres!==undefined ? String(f[mapa.nombres]||'').trim() : '';
+          const apellidos = mapa.apellidos!==undefined ? String(f[mapa.apellidos]||'').trim() : '';
+          if(!nombres){ throw new Error('Empleado no encontrado por cédula y faltan nombres para crearlo.'); }
+          const { data: nuevaPersona, error: errPer } = await sb.from('personal_rh')
+            .insert({ cedula, nombres, apellidos: apellidos || 'Sin apellido', sexo:'M', estatus:'activo' })
+            .select('id,nombres,apellidos,sexo,cargo_actual').single();
+          if(errPer) throw errPer;
+          persona = nuevaPersona;
+        }
+
+        let centroId = null;
+        const nombreCentro = mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : '';
+        if(nombreCentro){
+          const { data: centroExistente } = await sb.from('centros_rh').select('id').eq('nombre_centro', nombreCentro).maybeSingle();
+          if(centroExistente){
+            centroId = centroExistente.id;
+          } else {
+            const { data: nuevoCentro, error: errCentro } = await sb.from('centros_rh')
+              .insert({ nombre_centro: nombreCentro }).select('id').single();
+            if(errCentro) throw errCentro;
+            centroId = nuevoCentro.id;
+          }
+        }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'borrador';
+        const fecha = mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+        const destinatario = mapa.destinatario!==undefined ? (String(f[mapa.destinatario]||'').trim() || '________') : '________';
+        const destinatarioCargo = mapa.destinatarioCargo!==undefined ? (String(f[mapa.destinatarioCargo]||'').trim() || '________') : '________';
+        const analista = mapa.analista!==undefined ? String(f[mapa.analista]||'').trim() : '';
+        const cargoDesignado = mapa.cargoDesignado!==undefined ? (String(f[mapa.cargoDesignado]||'').trim() || persona.cargo_actual || '________') : (persona.cargo_actual || '________');
+
+        const texto = generarTextoCartaAceptacion({
+          fecha, destinatarioNombre: destinatario, destinatarioCargo,
+          analistaNombre: analista, analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
+          asunto: 'Aceptación De Personal',
+          candidatoNombre: persona.nombres+' '+persona.apellidos,
+          candidatoCedula: cedula, candidatoSexo: persona.sexo, cargoDesignado,
+          centroNombre: nombreCentro || null,
+        });
+
+        const { error: errCA } = await sb.from('cartas_aceptacion_rh').insert({
+          personal_id: persona.id, fecha_oficio: fecha,
+          destinatario_nombre: destinatario, destinatario_cargo: destinatarioCargo,
+          analista_nombre: analista || null, cargo_designado: cargoDesignado,
+          centro_id: centroId, estado, texto_generado: texto,
+        });
+        if(errCA) throw errCA;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('ca-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} carta(s) importada(s) correctamente.`,'exito');
+      renderCartasAceptacion();
+    } else {
+      toast('No se pudo importar ninguna carta. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 /* ====================== VACACIONES ====================== */
 async function renderVacaciones(){
   const main = document.getElementById('main-content');
@@ -2993,6 +3657,7 @@ async function renderVacaciones(){
         <h3>Solicitudes de vacaciones</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('vac')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarVac()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionVacaciones()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalVacacion()">+ Nueva solicitud</button>
         </div>
@@ -3085,6 +3750,29 @@ async function renderVacaciones(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-vacacion')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarVacacion()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-vac">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar vacaciones desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-vac')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="vac-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, fecha de solicitud, años de servicio MINERD, días año 1, año 1, días año 2, año 2, días pendientes, fecha inicio, fecha fin, comentario, pre/post natal (sí/no), estado.
+              El empleado debe existir en el módulo Personal (búsqueda por cédula).
+              <a href="#" onclick="descargarPlantillaVac();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="vac-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-vac')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-vac" onclick="procesarImportacionVac()">Importar</button>
         </div>
       </div>
     </div>
@@ -3328,6 +4016,128 @@ async function guardarVacacion(){
   renderVacaciones();
 }
 
+function abrirModalImportarVac(){
+  document.getElementById('vac-import-archivo').value = '';
+  document.getElementById('vac-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-vac');
+}
+
+function descargarPlantillaVac(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Fecha de solicitud (AAAA-MM-DD)':'2024-04-01',
+      'Años servicio MINERD':8, 'Años servicio otra institución':0, 'Días año 1':15, 'Año 1':2024,
+      'Días año 2':5, 'Año 2':2025, 'Días pendientes':0, 'Fecha inicio disfrute (AAAA-MM-DD)':'2024-04-10',
+      'Fecha fin disfrute (AAAA-MM-DD)':'2024-04-29', 'Comentario':'', 'Pre/post natal (SI/NO)':'NO', 'Estado':'autorizado_rrll' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vacaciones');
+  XLSX.writeFile(wb, 'plantilla_vacaciones.xlsx');
+}
+
+async function procesarImportacionVac(){
+  const archivo = document.getElementById('vac-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-vac');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/fecha.*solicitud/.test(n) && mapa.fechaSolicitud===undefined) mapa.fechaSolicitud = i;
+      else if(/minerd/.test(n) && mapa.aniosMinerd===undefined) mapa.aniosMinerd = i;
+      else if(/otra.*instituc/.test(n) && mapa.aniosOtra===undefined) mapa.aniosOtra = i;
+      else if(/dias.*ano\s*1|dias.*a.o\s*1/.test(n) && mapa.dias1===undefined) mapa.dias1 = i;
+      else if(/^ano\s*1$|^a.o\s*1$/.test(n) && mapa.anio1===undefined) mapa.anio1 = i;
+      else if(/dias.*ano\s*2|dias.*a.o\s*2/.test(n) && mapa.dias2===undefined) mapa.dias2 = i;
+      else if(/^ano\s*2$|^a.o\s*2$/.test(n) && mapa.anio2===undefined) mapa.anio2 = i;
+      else if(/pendient/.test(n) && mapa.pendientes===undefined) mapa.pendientes = i;
+      else if(/inicio/.test(n) && mapa.inicio===undefined) mapa.inicio = i;
+      else if(/fin/.test(n) && mapa.fin===undefined) mapa.fin = i;
+      else if(/comentario/.test(n) && mapa.comentario===undefined) mapa.comentario = i;
+      else if(/natal/.test(n) && mapa.natal===undefined) mapa.natal = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+    if(mapa.inicio===undefined || mapa.fin===undefined){ throw new Error('No se pudo detectar las columnas de fecha de inicio/fin del disfrute.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const estadosValidos = ['solicitado','firmado_supervisor','autorizado_rrll','rechazado'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        const inicio = mapa.inicio!==undefined ? String(f[mapa.inicio]||'').trim() : '';
+        const fin = mapa.fin!==undefined ? String(f[mapa.fin]||'').trim() : '';
+        if(!inicio || !fin){ throw new Error('Faltan fechas de inicio/fin de disfrute.'); }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'solicitado';
+        const natalTexto = mapa.natal!==undefined ? String(f[mapa.natal]||'').trim().toUpperCase() : '';
+
+        const { error: errVac } = await sb.from('vacaciones_rh').insert({
+          personal_id: persona.id,
+          fecha_solicitud: mapa.fechaSolicitud!==undefined ? (String(f[mapa.fechaSolicitud]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          anios_servicio_minerd: mapa.aniosMinerd!==undefined ? (parseFloat(f[mapa.aniosMinerd])||null) : null,
+          anios_servicio_otra_institucion: mapa.aniosOtra!==undefined ? (parseFloat(f[mapa.aniosOtra])||0) : 0,
+          dias_solicitados_anio1: mapa.dias1!==undefined ? (parseInt(f[mapa.dias1])||0) : 0,
+          anio1: mapa.anio1!==undefined ? (parseInt(f[mapa.anio1])||null) : null,
+          dias_solicitados_anio2: mapa.dias2!==undefined ? (parseInt(f[mapa.dias2])||0) : 0,
+          anio2: mapa.anio2!==undefined ? (parseInt(f[mapa.anio2])||null) : null,
+          dias_pendientes: mapa.pendientes!==undefined ? (parseInt(f[mapa.pendientes])||null) : null,
+          fecha_inicio_disfrute: inicio, fecha_fin_disfrute: fin,
+          comentario: mapa.comentario!==undefined ? (String(f[mapa.comentario]||'').trim() || null) : null,
+          en_licencia_pre_post_natal: natalTexto==='SI'||natalTexto==='SÍ'||natalTexto==='YES'||natalTexto==='TRUE',
+          estado,
+        });
+        if(errVac) throw errVac;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('vac-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} solicitud(es) de vacaciones importada(s) correctamente.`,'exito');
+      renderVacaciones();
+    } else {
+      toast('No se pudo importar ninguna solicitud. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 async function cambiarEstadoVacacion(id){
   const v = (window._vacacionesData||[]).find(x=>x.id===id);
   if(!v) return;
@@ -3389,6 +4199,7 @@ async function renderLicenciasPermisos(){
         <h3>Licencias y permisos</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('lp')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarLP()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionLP()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalLP()">+ Nueva solicitud</button>
         </div>
@@ -3463,6 +4274,29 @@ async function renderLicenciasPermisos(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-lp')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarLP()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-lp">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar licencias y permisos desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-lp')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="lp-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, fecha de solicitud, categoría (licencia/permiso), subtipo, detalle (si es "otra"), días, meses, años, fecha inicio, fecha fin, comentario, evidencia presentada (sí/no), estado.
+              El empleado debe existir en el módulo Personal (búsqueda por cédula). El subtipo determina automáticamente si requiere evidencia.
+              <a href="#" onclick="descargarPlantillaLP();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="lp-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-lp')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-lp" onclick="procesarImportacionLP()">Importar</button>
         </div>
       </div>
     </div>
@@ -3603,6 +4437,138 @@ async function guardarLP(){
   renderLicenciasPermisos();
 }
 
+function abrirModalImportarLP(){
+  document.getElementById('lp-import-archivo').value = '';
+  document.getElementById('lp-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-lp');
+}
+
+function descargarPlantillaLP(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Fecha de solicitud (AAAA-MM-DD)':'2024-03-01',
+      'Categoría (licencia/permiso)':'licencia', 'Subtipo':'POR_ENFERMEDAD', 'Detalle (si subtipo es Otra/Otros)':'',
+      'Días':10, 'Meses':0, 'Años':0, 'Fecha inicio (AAAA-MM-DD)':'2024-03-02', 'Fecha fin (AAAA-MM-DD)':'2024-03-11',
+      'Comentario':'Reposo médico', 'Evidencia presentada (SI/NO)':'SI', 'Estado':'aprobado_supervisor' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Licencias y Permisos');
+
+  const ws2 = wb.create_sheet('Valores válidos para Subtipo');
+  ws2.column_dimensions['A'].width = 35; ws2.column_dimensions['B'].width = 35; ws2.column_dimensions['C'].width = 14;
+  ws2.append(['Código a escribir en "Subtipo"', 'Significado', 'Categoría']);
+  SUBTIPOS_LICENCIA.forEach(s=>ws2.append([s[0], s[1], 'licencia']));
+  SUBTIPOS_PERMISO.forEach(s=>ws2.append([s[0], s[1], 'permiso']));
+
+  XLSX.writeFile(wb, 'plantilla_licencias_permisos.xlsx');
+}
+
+async function procesarImportacionLP(){
+  const archivo = document.getElementById('lp-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-lp');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/fecha.*solicitud/.test(n) && mapa.fechaSolicitud===undefined) mapa.fechaSolicitud = i;
+      else if(/categoria/.test(n) && mapa.categoria===undefined) mapa.categoria = i;
+      else if(/subtipo$|^subtipo/.test(n) && !/detalle/.test(n) && mapa.subtipo===undefined) mapa.subtipo = i;
+      else if(/detalle/.test(n) && mapa.detalle===undefined) mapa.detalle = i;
+      else if(/^dias$/.test(n) && mapa.dias===undefined) mapa.dias = i;
+      else if(/^meses$/.test(n) && mapa.meses===undefined) mapa.meses = i;
+      else if(/^anos$|^a.os$/.test(n) && mapa.anios===undefined) mapa.anios = i;
+      else if(/inicio/.test(n) && mapa.inicio===undefined) mapa.inicio = i;
+      else if(/^fecha fin$|fin\)/.test(n) && mapa.fin===undefined) mapa.fin = i;
+      else if(/comentario/.test(n) && mapa.comentario===undefined) mapa.comentario = i;
+      else if(/evidencia/.test(n) && mapa.evidencia===undefined) mapa.evidencia = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+    if(mapa.categoria===undefined || mapa.subtipo===undefined){ throw new Error('No se pudo detectar las columnas de categoría/subtipo.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const estadosValidos = ['solicitado','aprobado_supervisor','rechazado'];
+    const subtiposValidos = [...SUBTIPOS_LICENCIA, ...SUBTIPOS_PERMISO];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        const categoria = String(f[mapa.categoria]||'').trim().toLowerCase();
+        if(categoria !== 'licencia' && categoria !== 'permiso'){ throw new Error('Categoría debe ser "licencia" o "permiso".'); }
+
+        const subtipo = String(f[mapa.subtipo]||'').trim().toUpperCase().replace(/\s+/g,'_');
+        const subtipoRef = subtiposValidos.find(s=>s[0]===subtipo);
+        if(!subtipoRef){ throw new Error(`Subtipo "${subtipo}" no es válido. Revisa la hoja "Valores válidos para Subtipo".`); }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'solicitado';
+        const evidenciaTexto = mapa.evidencia!==undefined ? String(f[mapa.evidencia]||'').trim().toUpperCase() : '';
+
+        const { error: errLP } = await sb.from('licencias_permisos_rh').insert({
+          personal_id: persona.id,
+          fecha_solicitud: mapa.fechaSolicitud!==undefined ? (String(f[mapa.fechaSolicitud]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          categoria, subtipo,
+          subtipo_detalle: mapa.detalle!==undefined ? (String(f[mapa.detalle]||'').trim() || null) : null,
+          duracion_dias: mapa.dias!==undefined ? (parseInt(f[mapa.dias])||0) : 0,
+          duracion_meses: mapa.meses!==undefined ? (parseInt(f[mapa.meses])||0) : 0,
+          duracion_anios: mapa.anios!==undefined ? (parseInt(f[mapa.anios])||0) : 0,
+          fecha_inicio: mapa.inicio!==undefined ? (String(f[mapa.inicio]||'').trim() || null) : null,
+          fecha_fin: mapa.fin!==undefined ? (String(f[mapa.fin]||'').trim() || null) : null,
+          comentario: mapa.comentario!==undefined ? (String(f[mapa.comentario]||'').trim() || null) : null,
+          evidencia_requerida: subtipoRef[2],
+          evidencia_presentada: evidenciaTexto==='SI'||evidenciaTexto==='SÍ'||evidenciaTexto==='YES'||evidenciaTexto==='TRUE',
+          estado,
+        });
+        if(errLP) throw errLP;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('lp-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} solicitud(es) importada(s) correctamente.`,'exito');
+      renderLicenciasPermisos();
+    } else {
+      toast('No se pudo importar ninguna solicitud. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 async function cambiarEstadoLP(id){
   const opciones = ['solicitado','aprobado_supervisor','rechazado'];
   const etiquetas = {solicitado:'Solicitado',aprobado_supervisor:'Aprobado supervisor',rechazado:'Rechazado'};
@@ -3740,6 +4706,7 @@ async function renderRiesgosLaborales(){
         <h3>Avisos de riesgo laboral</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('rl')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarRL()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionRiesgos()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalRiesgo()">+ Nuevo aviso</button>
         </div>
@@ -3803,6 +4770,29 @@ async function renderRiesgosLaborales(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-riesgo')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarRiesgo()">Guardar aviso</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-rl">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar avisos de riesgo laboral desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-rl')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="rl-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, tipo (ATR-2/EPR-1), fecha del evento, fecha del aviso, descripción, lugar, centro (opcional), certificado médico (sí/no), acta policial (sí/no), formulario firmado (sí/no), estado.
+              El empleado debe existir en el módulo Personal (búsqueda por cédula).
+              <a href="#" onclick="descargarPlantillaRL();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="rl-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-rl')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-rl" onclick="procesarImportacionRL()">Importar</button>
         </div>
       </div>
     </div>
@@ -3928,6 +4918,134 @@ async function guardarRiesgo(){
   renderRiesgosLaborales();
 }
 
+function abrirModalImportarRL(){
+  document.getElementById('rl-import-archivo').value = '';
+  document.getElementById('rl-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-rl');
+}
+
+function descargarPlantillaRL(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Tipo (ATR-2/EPR-1)':'ATR-2', 'Fecha del evento (AAAA-MM-DD)':'2024-03-05',
+      'Fecha del aviso (AAAA-MM-DD)':'2024-03-06', 'Descripción':'Caída en las escaleras del centro durante la jornada',
+      'Lugar':'Pasillo principal del centro', 'Centro (opcional)':'ESC PRIM LUPERON',
+      'Certificado médico (SI/NO)':'SI', 'Acta policial (SI/NO)':'NO', 'Formulario firmado (SI/NO)':'SI', 'Estado':'enviado_sisalril' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Riesgos Laborales');
+  XLSX.writeFile(wb, 'plantilla_riesgo_laboral.xlsx');
+}
+
+async function procesarImportacionRL(){
+  const archivo = document.getElementById('rl-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-rl');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/tipo/.test(n) && mapa.tipo===undefined) mapa.tipo = i;
+      else if(/evento/.test(n) && mapa.fechaEvento===undefined) mapa.fechaEvento = i;
+      else if(/aviso/.test(n) && mapa.fechaAviso===undefined) mapa.fechaAviso = i;
+      else if(/descripcion/.test(n) && mapa.descripcion===undefined) mapa.descripcion = i;
+      else if(/lugar/.test(n) && mapa.lugar===undefined) mapa.lugar = i;
+      else if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/certificado/.test(n) && mapa.certMedico===undefined) mapa.certMedico = i;
+      else if(/policial/.test(n) && mapa.actaPolicial===undefined) mapa.actaPolicial = i;
+      else if(/firmado/.test(n) && mapa.firmado===undefined) mapa.firmado = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+    if(mapa.tipo===undefined || mapa.fechaEvento===undefined || mapa.descripcion===undefined){
+      throw new Error('No se pudo detectar las columnas de tipo, fecha del evento o descripción.');
+    }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const esSiNo = v => { const t = String(v||'').trim().toUpperCase(); return t==='SI'||t==='SÍ'||t==='YES'||t==='TRUE'; };
+    const estadosValidos = ['notificado','enviado_sisalril','calificado_AT_EP','rechazado'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        const tipo = String(f[mapa.tipo]||'').trim().toUpperCase();
+        if(tipo !== 'ATR-2' && tipo !== 'EPR-1'){ throw new Error('Tipo debe ser "ATR-2" o "EPR-1".'); }
+
+        const fechaEvento = String(f[mapa.fechaEvento]||'').trim();
+        const descripcion = String(f[mapa.descripcion]||'').trim();
+        if(!fechaEvento || !descripcion){ throw new Error('Faltan fecha del evento o descripción.'); }
+
+        let centroId = null;
+        const nombreCentro = mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : '';
+        if(nombreCentro){
+          const { data: centroExistente } = await sb.from('centros_rh').select('id').eq('nombre_centro', nombreCentro).maybeSingle();
+          centroId = centroExistente ? centroExistente.id : null;
+        }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'notificado';
+
+        const { error: errRL } = await sb.from('riesgos_laborales_rh').insert({
+          personal_id: persona.id, tipo_formulario: tipo,
+          centro_id: centroId,
+          fecha_evento: fechaEvento,
+          fecha_aviso: mapa.fechaAviso!==undefined ? (String(f[mapa.fechaAviso]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          descripcion_evento: descripcion,
+          lugar_evento: mapa.lugar!==undefined ? (String(f[mapa.lugar]||'').trim() || null) : null,
+          tiene_certificado_medico: mapa.certMedico!==undefined ? esSiNo(f[mapa.certMedico]) : false,
+          tiene_acta_policial: mapa.actaPolicial!==undefined ? esSiNo(f[mapa.actaPolicial]) : false,
+          formulario_firmado_rrhh: mapa.firmado!==undefined ? esSiNo(f[mapa.firmado]) : false,
+          estado,
+        });
+        if(errRL) throw errRL;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('rl-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creados</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} aviso(s) importado(s) correctamente.`,'exito');
+      renderRiesgosLaborales();
+    } else {
+      toast('No se pudo importar ningún aviso. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 async function cambiarEstadoRiesgo(id){
   const opciones = ['notificado','enviado_sisalril','calificado_AT_EP','rechazado'];
   const etiquetas = {notificado:'Notificado',enviado_sisalril:'Enviado SISALRIL',calificado_AT_EP:'Calificado AT/EP',rechazado:'Rechazado'};
@@ -3968,6 +5086,7 @@ async function renderPensiones(){
         <h3>Expedientes de pensión / jubilación</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('pen')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarPen()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionPensiones()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalPension()">+ Nuevo expediente</button>
         </div>
@@ -4034,6 +5153,29 @@ async function renderPensiones(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-pension')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarPension()">Guardar expediente</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-pen">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar expedientes de pensión desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-pen')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="pen-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, tipo de personal (docente/administrativo), tipo de pensión, fecha de solicitud, años de servicio, fecha de ingreso al MINERD, certificación de trabajo (sí/no), certificación de Contraloría (sí/no), comunicación al Ministro (sí/no), copia de cédula (sí/no), fotos (sí/no), estado, observaciones.
+              El empleado debe existir en el módulo Personal (búsqueda por cédula).
+              <a href="#" onclick="descargarPlantillaPen();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="pen-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-pen')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-pen" onclick="procesarImportacionPen()">Importar</button>
         </div>
       </div>
     </div>
@@ -4136,6 +5278,132 @@ async function guardarPension(){
   renderPensiones();
 }
 
+function abrirModalImportarPen(){
+  document.getElementById('pen-import-archivo').value = '';
+  document.getElementById('pen-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-pen');
+}
+
+function descargarPlantillaPen(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Tipo de personal (docente/administrativo)':'docente',
+      'Tipo de pensión':'tiempo_servicio', 'Fecha de solicitud (AAAA-MM-DD)':'2024-01-10', 'Años de servicio':30,
+      'Fecha de ingreso al MINERD (AAAA-MM-DD)':'1995-08-01',
+      'Certificación de trabajo (SI/NO)':'SI', 'Certificación de Contraloría (SI/NO)':'SI',
+      'Comunicación al Ministro (SI/NO)':'SI', 'Copia de cédula (SI/NO)':'SI', 'Fotos 2x2 (SI/NO)':'SI',
+      'Estado':'enviado_inabima', 'Observaciones':'Expediente completo' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pensiones');
+  XLSX.writeFile(wb, 'plantilla_pensiones.xlsx');
+}
+
+async function procesarImportacionPen(){
+  const archivo = document.getElementById('pen-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-pen');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/tipo.*personal/.test(n) && mapa.tipoPersonal===undefined) mapa.tipoPersonal = i;
+      else if(/tipo.*pension/.test(n) && mapa.tipoPension===undefined) mapa.tipoPension = i;
+      else if(/fecha.*solicitud/.test(n) && mapa.fechaSolicitud===undefined) mapa.fechaSolicitud = i;
+      else if(/anos.*servicio|a.os.*servicio/.test(n) && mapa.anios===undefined) mapa.anios = i;
+      else if(/ingreso/.test(n) && mapa.fechaIngreso===undefined) mapa.fechaIngreso = i;
+      else if(/certificacion.*trabajo/.test(n) && mapa.certTrabajo===undefined) mapa.certTrabajo = i;
+      else if(/contraloria/.test(n) && mapa.certContraloria===undefined) mapa.certContraloria = i;
+      else if(/ministro/.test(n) && mapa.comunicacionMin===undefined) mapa.comunicacionMin = i;
+      else if(/cedula.*si.*no|copia.*cedula/.test(n) && mapa.copiaCedula===undefined) mapa.copiaCedula = i;
+      else if(/foto/.test(n) && mapa.fotos===undefined) mapa.fotos = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+      else if(/observ/.test(n) && mapa.observaciones===undefined) mapa.observaciones = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+    if(mapa.tipoPersonal===undefined){ throw new Error('No se pudo detectar la columna de tipo de personal.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const esSiNo = v => { const t = String(v||'').trim().toUpperCase(); return t==='SI'||t==='SÍ'||t==='YES'||t==='TRUE'; };
+    const estadosValidos = ['armando_expediente','enviado_minerd','enviado_inabima','decreto_promulgado','rechazado'];
+    const tiposPensionValidos = ['tiempo_servicio','discapacidad','sobrevivencia','otra'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        const tipoPersonal = String(f[mapa.tipoPersonal]||'').trim().toLowerCase();
+        if(tipoPersonal !== 'docente' && tipoPersonal !== 'administrativo'){
+          throw new Error('Tipo de personal debe ser "docente" o "administrativo".');
+        }
+
+        let tipoPension = mapa.tipoPension!==undefined ? String(f[mapa.tipoPension]||'').trim().toLowerCase() : 'tiempo_servicio';
+        if(!tiposPensionValidos.includes(tipoPension)) tipoPension = 'tiempo_servicio';
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'armando_expediente';
+
+        const { error: errPen } = await sb.from('pensiones_rh').insert({
+          personal_id: persona.id, tipo_personal: tipoPersonal, tipo_pension: tipoPension,
+          fecha_solicitud: mapa.fechaSolicitud!==undefined ? (String(f[mapa.fechaSolicitud]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          anios_servicio: mapa.anios!==undefined ? (parseFloat(f[mapa.anios])||null) : null,
+          fecha_ingreso_minerd: mapa.fechaIngreso!==undefined ? (String(f[mapa.fechaIngreso]||'').trim() || null) : null,
+          tiene_certificacion_trabajo: mapa.certTrabajo!==undefined ? esSiNo(f[mapa.certTrabajo]) : false,
+          tiene_certificacion_contraloria: mapa.certContraloria!==undefined ? esSiNo(f[mapa.certContraloria]) : false,
+          tiene_comunicacion_ministro: mapa.comunicacionMin!==undefined ? esSiNo(f[mapa.comunicacionMin]) : false,
+          tiene_copia_cedula: mapa.copiaCedula!==undefined ? esSiNo(f[mapa.copiaCedula]) : false,
+          tiene_fotos: mapa.fotos!==undefined ? esSiNo(f[mapa.fotos]) : false,
+          estado,
+          observaciones: mapa.observaciones!==undefined ? (String(f[mapa.observaciones]||'').trim() || null) : null,
+        });
+        if(errPen) throw errPen;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('pen-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creados</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} expediente(s) importado(s) correctamente.`,'exito');
+      renderPensiones();
+    } else {
+      toast('No se pudo importar ningún expediente. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 async function cambiarEstadoPension(id){
   const opciones = ['armando_expediente','enviado_minerd','enviado_inabima','decreto_promulgado','rechazado'];
   const etiquetas = {armando_expediente:'Armando expediente',enviado_minerd:'Enviado MINERD',enviado_inabima:'Enviado INABIMA',decreto_promulgado:'Decreto promulgado',rechazado:'Rechazado'};
@@ -4178,6 +5446,7 @@ async function renderSegurosSalud(){
         <h3>Afiliaciones de seguro de salud</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('seg')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarSeg()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionSeguros()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalSeguro()">+ Nueva solicitud</button>
         </div>
@@ -4240,6 +5509,29 @@ async function renderSegurosSalud(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-seguro')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarSeguro()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-seg">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar afiliaciones de seguro desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-seg')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="seg-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del titular, tipo (F1/F2), fecha de solicitud, nombre del dependiente, parentesco, cédula del dependiente, copia de cédula (sí/no), acta de nacimiento (sí/no), certificación de estudio (sí/no), formulario de descuento (sí/no), estado, observaciones.
+              El titular debe existir en el módulo Personal (búsqueda por cédula).
+              <a href="#" onclick="descargarPlantillaSeg();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="seg-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-seg')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-seg" onclick="procesarImportacionSeg()">Importar</button>
         </div>
       </div>
     </div>
@@ -4343,6 +5635,133 @@ async function guardarSeguro(){
   renderSegurosSalud();
 }
 
+function abrirModalImportarSeg(){
+  document.getElementById('seg-import-archivo').value = '';
+  document.getElementById('seg-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-seg');
+}
+
+function descargarPlantillaSeg(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del titular':'001-1234567-8', 'Tipo (F1/F2)':'F1', 'Fecha de solicitud (AAAA-MM-DD)':'2024-01-15',
+      'Nombre del dependiente':'Luisito Peña Mercedes', 'Parentesco':'hijo_a', 'Cédula del dependiente':'001-9900112-3',
+      'Copia de cédula (SI/NO)':'SI', 'Acta de nacimiento (SI/NO)':'SI', 'Certificación de estudio (SI/NO)':'NO',
+      'Formulario de descuento (SI/NO)':'NO', 'Estado':'aprobado', 'Observaciones':'' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Seguros de Salud');
+
+  const ws3 = wb.create_sheet('Valores válidos para Parentesco');
+  ws3.column_dimensions['A'].width = 30;
+  ws3.append(['Código a escribir en "Parentesco"']);
+  ['conyuge','hijo_a','hijastro_a','padre','madre','suegro_a'].forEach(p=>ws3.append([p]));
+
+  XLSX.writeFile(wb, 'plantilla_seguro_salud.xlsx');
+}
+
+async function procesarImportacionSeg(){
+  const archivo = document.getElementById('seg-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-seg');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula.*titular|^cedula$/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/tipo/.test(n) && mapa.tipo===undefined) mapa.tipo = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      else if(/nombre.*dependiente/.test(n) && mapa.nombreDep===undefined) mapa.nombreDep = i;
+      else if(/parentesco/.test(n) && mapa.parentesco===undefined) mapa.parentesco = i;
+      else if(/cedula.*dependiente/.test(n) && mapa.cedulaDep===undefined) mapa.cedulaDep = i;
+      else if(/copia.*cedula/.test(n) && mapa.copiaCedula===undefined) mapa.copiaCedula = i;
+      else if(/acta/.test(n) && mapa.actaNac===undefined) mapa.actaNac = i;
+      else if(/certificacion.*estudio/.test(n) && mapa.certEstudio===undefined) mapa.certEstudio = i;
+      else if(/descuento/.test(n) && mapa.formDescuento===undefined) mapa.formDescuento = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+      else if(/observ/.test(n) && mapa.observaciones===undefined) mapa.observaciones = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del titular.'); }
+    if(mapa.tipo===undefined){ throw new Error('No se pudo detectar la columna de tipo (F1/F2).'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const esSiNo = v => { const t = String(v||'').trim().toUpperCase(); return t==='SI'||t==='SÍ'||t==='YES'||t==='TRUE'; };
+    const estadosValidos = ['solicitado','depositado_nomina','aprobado','rechazado'];
+    const parentescosValidos = ['conyuge','hijo_a','hijastro_a','padre','madre','suegro_a'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado titular no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        const tipo = String(f[mapa.tipo]||'').trim().toUpperCase();
+        if(tipo !== 'F1' && tipo !== 'F2'){ throw new Error('Tipo debe ser "F1" o "F2".'); }
+
+        let parentesco = mapa.parentesco!==undefined ? String(f[mapa.parentesco]||'').trim().toLowerCase() : '';
+        if(parentesco && !parentescosValidos.includes(parentesco)) parentesco = null;
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'solicitado';
+
+        const { error: errSeg } = await sb.from('seguros_salud_rh').insert({
+          personal_id: persona.id, tipo_formulario: tipo,
+          fecha_solicitud: mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          nombre_dependiente: mapa.nombreDep!==undefined ? (String(f[mapa.nombreDep]||'').trim() || null) : null,
+          parentesco: parentesco || null,
+          cedula_dependiente: mapa.cedulaDep!==undefined ? (String(f[mapa.cedulaDep]||'').trim() || null) : null,
+          tiene_copia_cedula: mapa.copiaCedula!==undefined ? esSiNo(f[mapa.copiaCedula]) : false,
+          tiene_acta_nacimiento: mapa.actaNac!==undefined ? esSiNo(f[mapa.actaNac]) : false,
+          tiene_certificacion_estudio: mapa.certEstudio!==undefined ? esSiNo(f[mapa.certEstudio]) : false,
+          tiene_formulario_descuento: mapa.formDescuento!==undefined ? esSiNo(f[mapa.formDescuento]) : false,
+          estado,
+          observaciones: mapa.observaciones!==undefined ? (String(f[mapa.observaciones]||'').trim() || null) : null,
+        });
+        if(errSeg) throw errSeg;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('seg-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} solicitud(es) importada(s) correctamente.`,'exito');
+      renderSegurosSalud();
+    } else {
+      toast('No se pudo importar ninguna solicitud. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 async function cambiarEstadoSeguro(id){
   const opciones = ['solicitado','depositado_nomina','aprobado','rechazado'];
   const etiquetas = {solicitado:'Solicitado',depositado_nomina:'Depositado en nómina',aprobado:'Aprobado',rechazado:'Rechazado'};
@@ -4397,6 +5816,7 @@ async function renderCertificacionesLaborales(){
         <h3>Certificaciones laborales</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${botonesExportar('cl')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarCL()">⬆ Importar Excel</button>
           <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionCertLab()">Eliminar selección</button>
           <button class="btn btn-primario btn-chico" onclick="abrirModalCertLab()">+ Nueva certificación</button>
         </div>
@@ -4470,6 +5890,29 @@ async function renderCertificacionesLaborales(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-cl')">Cerrar</button>
           <button class="btn btn-primario" onclick="imprimirCLActual()">Imprimir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-cl">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar certificaciones laborales desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-cl')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="cl-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: cédula del empleado, fecha de solicitud, fecha de emisión, período desde, período hasta, cargo certificado, motivo, solicitado por terceros (sí/no), poder notarial (sí/no), estado.
+              El empleado debe existir en el módulo Personal (búsqueda por cédula).
+              <a href="#" onclick="descargarPlantillaCL();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="cl-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-cl')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-cl" onclick="procesarImportacionCL()">Importar</button>
         </div>
       </div>
     </div>
@@ -4598,6 +6041,124 @@ async function guardarCertLab(){
   renderCertificacionesLaborales();
 }
 
+function abrirModalImportarCL(){
+  document.getElementById('cl-import-archivo').value = '';
+  document.getElementById('cl-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-cl');
+}
+
+function descargarPlantillaCL(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula del empleado':'001-1234567-8', 'Fecha de solicitud (AAAA-MM-DD)':'2024-03-15',
+      'Fecha de emisión (AAAA-MM-DD)':'2024-03-18', 'Período desde (AAAA-MM-DD)':'2015-01-20', 'Período hasta (AAAA-MM-DD, vacío si sigue activo)':'',
+      'Cargo certificado':'MAESTRO MEDIA GENERAL J.E.', 'Motivo':'Trámite migratorio',
+      'Solicitado por terceros (SI/NO)':'NO', 'Poder notarial (SI/NO)':'NO', 'Estado':'emitida' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Certificaciones Laborales');
+  XLSX.writeFile(wb, 'plantilla_certificacion_laboral.xlsx');
+}
+
+async function procesarImportacionCL(){
+  const archivo = document.getElementById('cl-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-cl');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+    const headers = filas[0];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
+      else if(/fecha.*solicitud/.test(n) && mapa.fechaSolicitud===undefined) mapa.fechaSolicitud = i;
+      else if(/emision/.test(n) && mapa.fechaEmision===undefined) mapa.fechaEmision = i;
+      else if(/periodo.*desde/.test(n) && mapa.periodoDesde===undefined) mapa.periodoDesde = i;
+      else if(/periodo.*hasta/.test(n) && mapa.periodoHasta===undefined) mapa.periodoHasta = i;
+      else if(/cargo/.test(n) && mapa.cargo===undefined) mapa.cargo = i;
+      else if(/motivo/.test(n) && mapa.motivo===undefined) mapa.motivo = i;
+      else if(/terceros/.test(n) && mapa.terceros===undefined) mapa.terceros = i;
+      else if(/poder.*notarial/.test(n) && mapa.poder===undefined) mapa.poder = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+    });
+    if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
+
+    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const esSiNo = v => { const t = String(v||'').trim().toUpperCase(); return t==='SI'||t==='SÍ'||t==='YES'||t==='TRUE'; };
+    const estadosValidos = ['solicitado','en_proceso','emitida','entregada','rechazada'];
+
+    for(const f of registros){
+      try{
+        const cedula = String(f[mapa.cedula]).trim();
+        const { data: persona } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual').eq('cedula', cedula).maybeSingle();
+        if(!persona){ throw new Error('Empleado no encontrado en Personal. Impórtalo primero ahí.'); }
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'solicitado';
+
+        const fechaEmision = mapa.fechaEmision!==undefined ? (String(f[mapa.fechaEmision]||'').trim() || null) : null;
+        const periodoDesde = mapa.periodoDesde!==undefined ? (String(f[mapa.periodoDesde]||'').trim() || null) : null;
+        const periodoHasta = mapa.periodoHasta!==undefined ? (String(f[mapa.periodoHasta]||'').trim() || null) : null;
+        const cargo = mapa.cargo!==undefined ? (String(f[mapa.cargo]||'').trim() || persona.cargo_actual || '') : (persona.cargo_actual || '');
+
+        const texto = generarTextoCertificacionLaboral({
+          personalNombre: persona.nombres+' '+persona.apellidos, personalCedula: persona.cedula, cargo,
+          periodoDesde, periodoHasta, fechaEmision: fechaEmision || new Date().toISOString().slice(0,10),
+        });
+
+        const { error: errCL } = await sb.from('certificaciones_laborales_rh').insert({
+          personal_id: persona.id,
+          fecha_solicitud: mapa.fechaSolicitud!==undefined ? (String(f[mapa.fechaSolicitud]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+          fecha_emision: fechaEmision, periodo_desde: periodoDesde, periodo_hasta: periodoHasta,
+          cargo_certificado: cargo,
+          motivo: mapa.motivo!==undefined ? (String(f[mapa.motivo]||'').trim() || null) : null,
+          solicitado_por_terceros: mapa.terceros!==undefined ? esSiNo(f[mapa.terceros]) : false,
+          tiene_poder_notarial: mapa.poder!==undefined ? esSiNo(f[mapa.poder]) : false,
+          estado, texto_generado: texto,
+        });
+        if(errCL) throw errCL;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con cédula "${f[mapa.cedula]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('cl-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creadas</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} certificación(es) importada(s) correctamente.`,'exito');
+      renderCertificacionesLaborales();
+    } else {
+      toast('No se pudo importar ninguna certificación. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
 function verCL(id){
   const c = (window._certLaboralData||[]).find(x=>x.id===id);
   if(!c) return;
@@ -4672,7 +6233,9 @@ async function renderNominas(){
           <div class="campo">
             <label>Archivo Excel, CSV o PDF del MINERD <span class="requerido">*</span></label>
             <input type="file" id="nom-archivo" accept=".xlsx,.xls,.csv,.pdf">
-            <div class="texto-ayuda">Columnas esperadas: cédula, nombre, centro, salario bruto, descuentos, salario neto (los nombres pueden variar, el sistema intenta detectarlos). El PDF debe tener texto seleccionable, no ser un escaneo.</div>
+            <div class="texto-ayuda">Columnas esperadas: cédula, nombre, centro, salario bruto, descuentos, salario neto (los nombres pueden variar, el sistema intenta detectarlos). El PDF debe tener texto seleccionable, no ser un escaneo.
+              <a href="#" onclick="descargarPlantillaNomina();return false;">Descargar plantilla de ejemplo (Excel)</a>.
+            </div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px;">
             <input type="checkbox" id="nom-comparar" checked> Comparar contra el historial de nóminas (detectar nuevos, reingresos y cancelados)
@@ -4973,6 +6536,19 @@ async function procesarImportacionNomina(){
     btn.disabled = false;
     btn.textContent = 'Importar y cruzar con personal';
   }
+}
+
+function descargarPlantillaNomina(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Cédula':'001-1234567-8', 'Nombre':'MARIA CRISTINA PEÑA FERNANDEZ', 'Centro':'ESC PRIM JUAN PABLO DUARTE',
+      'SIGERD':'04400', 'Dependencia':'7900', 'Cargo':'MAESTRO BASICA J.E.', 'Salario Bruto':32000,
+      'Descuentos':2400, 'Salario Neto':29600 },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Nomina');
+  XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
 }
 
 // Compara la nómina recién importada contra TODO el historial acumulado
