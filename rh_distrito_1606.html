@@ -203,6 +203,19 @@ tbody tr:hover{background:var(--gris-100);}
 .toast.error{background:var(--rojo-600);}
 
 .fieldset-doc{border:1px dashed var(--gris-300);border-radius:8px;padding:14px;margin-bottom:14px;}
+
+.autocomplete-wrap{position:relative;}
+.autocomplete-input{width:100%;}
+.autocomplete-lista{
+  display:none;position:absolute;top:100%;left:0;right:0;z-index:50;
+  background:var(--blanco);border:1px solid var(--gris-300);border-radius:8px;
+  max-height:240px;overflow-y:auto;box-shadow:0 6px 16px rgba(0,0,0,.12);margin-top:4px;
+}
+.autocomplete-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--gris-100);font-size:13px;}
+.autocomplete-item:last-child{border-bottom:none;}
+.autocomplete-item:hover,.autocomplete-item:active{background:var(--gris-100);}
+.autocomplete-item .autocomplete-sub{display:block;font-size:11.5px;color:var(--gris-500);margin-top:1px;}
+.autocomplete-vacio{padding:10px 12px;font-size:12.5px;color:var(--gris-500);}
 .fieldset-doc legend{font-size:12px;font-weight:700;color:var(--azul-700);padding:0 6px;}
 
 .menu-hamburguesa{display:none;background:none;border:none;font-size:22px;color:var(--azul-900);}
@@ -836,19 +849,99 @@ function labelMotivo(codigo){
 }
 function esSustitucion(codigo){ return codigo && codigo.startsWith('SUSTITUCION_'); }
 
-async function cargarCentrosSelect(selectEl, valorSeleccionado){
-  const { data, error } = await sb.from('centros_rh').select('id,nombre_centro,codigo_sigerd').order('nombre_centro');
-  if(error){ toast('Error cargando centros: '+error.message,'error'); return; }
-  selectEl.innerHTML = '<option value="">Seleccione un centro…</option>' +
-    (data||[]).map(c=>`<option value="${c.id}" ${String(c.id)===String(valorSeleccionado)?'selected':''}>${escapeHtml(c.nombre_centro)}${c.codigo_sigerd?' — SIGERD '+escapeHtml(c.codigo_sigerd):''}</option>`).join('');
+// ====================== AUTOCOMPLETAR GENÉRICO ======================
+// Convierte un <input> de texto en un buscador con sugerencias, mientras
+// mantiene un <input type="hidden"> paralelo con el id real seleccionado
+// (mismo id+'-id' que ya usaba el .value de los <select> anteriores), así
+// el resto del código que lee getElementById('xxx').value sigue funcionando
+// sin cambios, siempre que se actualicen esas lecturas a 'xxx-id' (ver abajo).
+window._autocompleteData = window._autocompleteData || {};
+
+function inicializarAutocompletar(inputId, datos, formatoTexto, formatoSubtexto, valorInicial){
+  window._autocompleteData[inputId] = datos;
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(inputId+'-id');
+  const lista = document.getElementById(inputId+'-lista');
+  if(!input || !hidden || !lista) return;
+
+  function render(filtro){
+    const f = (filtro||'').toLowerCase().trim();
+    const items = !f ? datos.slice(0,30) : datos.filter(d=>{
+      const texto = (formatoTexto(d)+' '+(formatoSubtexto?formatoSubtexto(d):'')).toLowerCase();
+      return texto.includes(f);
+    }).slice(0,30);
+    if(!items.length){
+      lista.innerHTML = `<div class="autocomplete-vacio">Sin resultados</div>`;
+    } else {
+      lista.innerHTML = items.map(d=>`
+        <div class="autocomplete-item" data-id="${d.id}">
+          <strong>${escapeHtml(formatoTexto(d))}</strong>
+          ${formatoSubtexto ? `<span class="autocomplete-sub">${escapeHtml(formatoSubtexto(d))}</span>` : ''}
+        </div>
+      `).join('');
+    }
+    lista.style.display = 'block';
+  }
+
+  input.oninput = ()=>{ hidden.value=''; render(input.value); };
+  input.onfocus = ()=>render(input.value);
+  input.onblur = ()=>setTimeout(()=>{ lista.style.display='none'; }, 150);
+  lista.onmousedown = lista.ontouchstart = (e)=>{
+    const item = e.target.closest('.autocomplete-item');
+    if(!item) return;
+    const id = item.dataset.id;
+    const d = datos.find(x=>String(x.id)===String(id));
+    if(d){
+      hidden.value = d.id;
+      input.value = formatoTexto(d);
+      lista.style.display = 'none';
+      input.dispatchEvent(new Event('autocomplete-change'));
+    }
+  };
+
+  if(valorInicial){
+    const d = datos.find(x=>String(x.id)===String(valorInicial));
+    if(d){ hidden.value = d.id; input.value = formatoTexto(d); }
+  } else {
+    hidden.value = ''; input.value = '';
+  }
 }
 
-async function cargarPersonalSelect(selectEl, valorSeleccionado){
+// Genera el HTML de un campo autocompletar (input + hidden + lista), para
+// usar en cualquier plantilla en lugar de un <select>.
+function htmlAutocompletar(inputId, placeholder){
+  return `
+    <div class="autocomplete-wrap">
+      <input type="text" id="${inputId}" class="autocomplete-input" placeholder="${escapeHtml(placeholder)}" autocomplete="off">
+      <input type="hidden" id="${inputId}-id">
+      <div class="autocomplete-lista" id="${inputId}-lista"></div>
+    </div>
+  `;
+}
+
+async function cargarCentrosSelect(inputId, valorSeleccionado){
+  const { data, error } = await sb.from('centros_rh').select('id,nombre_centro,codigo_sigerd').order('nombre_centro');
+  if(error){ toast('Error cargando centros: '+error.message,'error'); return; }
+  inicializarAutocompletar(
+    inputId,
+    data||[],
+    c=>c.nombre_centro,
+    c=>c.codigo_sigerd?('SIGERD '+c.codigo_sigerd):'',
+    valorSeleccionado
+  );
+}
+
+async function cargarPersonalSelect(inputId, valorSeleccionado){
   const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso').order('apellidos');
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
-  selectEl.innerHTML = '<option value="">Seleccione un empleado…</option>' +
-    (data||[]).map(p=>`<option value="${p.id}" ${String(p.id)===String(valorSeleccionado)?'selected':''}>${escapeHtml(p.nombres+' '+p.apellidos)} — ${escapeHtml(p.cedula)}</option>`).join('');
+  inicializarAutocompletar(
+    inputId,
+    data||[],
+    p=>p.nombres+' '+p.apellidos,
+    p=>p.cedula,
+    valorSeleccionado
+  );
 }
 
 function abrirModal(id){ document.getElementById(id).classList.add('abierto'); }
@@ -1403,7 +1496,7 @@ async function renderPersonal(){
             <div class="campo" style="grid-column:1/-1;"><label>Dirección</label><input type="text" id="personal-direccion"></div>
             <div class="campo"><label>Nivel académico</label><input type="text" id="personal-nivel"></div>
             <div class="campo"><label>Cargo actual</label><input type="text" id="personal-cargo"></div>
-            <div class="campo"><label>Centro</label><select id="personal-centro"></select></div>
+            <div class="campo"><label>Centro</label>${htmlAutocompletar('personal-centro','Buscar centro por nombre o código…')}</div>
             <div class="campo"><label>No. dependencia nómina</label><input type="text" id="personal-dependencia"></div>
             <div class="campo"><label>Fecha de ingreso</label><input type="date" id="personal-ingreso"></div>
             <div class="campo"><label>Estatus <span class="requerido">*</span></label>
@@ -1443,7 +1536,7 @@ async function renderPersonal(){
       </div>
     </div>
   `;
-  await cargarCentrosSelect(document.getElementById('personal-centro'));
+  await cargarCentrosSelect('personal-centro');
   pintarTablaPersonal(window._personalTodos);
 
   registrarExportadores('personal', ()=>window._personalFiltrado||window._personalTodos||[], [
@@ -1589,7 +1682,7 @@ async function abrirModalPersonal(p){
   document.getElementById('personal-dependencia').value = p?.numero_dependencia_nomina || '';
   document.getElementById('personal-ingreso').value = p?.fecha_ingreso || '';
   document.getElementById('personal-estatus').value = p?.estatus || 'activo';
-  await cargarCentrosSelect(document.getElementById('personal-centro'), p?.centro_id);
+  await cargarCentrosSelect('personal-centro', p?.centro_id);
   abrirModal('modal-personal');
 }
 
@@ -1605,7 +1698,7 @@ async function guardarPersonal(){
     direccion: document.getElementById('personal-direccion').value.trim() || null,
     nivel_academico: document.getElementById('personal-nivel').value.trim() || null,
     cargo_actual: document.getElementById('personal-cargo').value.trim() || null,
-    centro_id: document.getElementById('personal-centro').value || null,
+    centro_id: document.getElementById('personal-centro-id').value || null,
     numero_dependencia_nomina: document.getElementById('personal-dependencia').value.trim() || null,
     fecha_ingreso: document.getElementById('personal-ingreso').value || null,
     estatus: document.getElementById('personal-estatus').value,
@@ -1684,7 +1777,7 @@ async function renderSolicitudes(){
             </div>
           </div>
           <div class="campo"><label>Centro educativo para todas las filas <span class="requerido">*</span></label>
-            <select id="ap-import-centro"></select></div>
+            ${htmlAutocompletar('ap-import-centro','Buscar centro por nombre o código…')}</div>
           <div id="ap-resumen-preview"></div>
         </div>
         <div class="modal-footer">
@@ -1717,7 +1810,7 @@ async function renderSolicitudes(){
                 </select>
               </div>
             </div>
-            <div class="campo"><label>Centro educativo <span class="requerido">*</span></label><select id="sol-centro"></select></div>
+            <div class="campo"><label>Centro educativo <span class="requerido">*</span></label>${htmlAutocompletar('sol-centro','Buscar centro por nombre o código…')}</div>
             <div class="campo"><label>Motivo de solicitud <span class="requerido">*</span></label>
               <select id="sol-motivo" onchange="actualizarVisibilidadSustituido()">
                 ${MOTIVOS_AP.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join('')}
@@ -1765,13 +1858,13 @@ async function eliminarSeleccionAP(){
 async function abrirModalImportarAP(){
   document.getElementById('ap-archivo').value = '';
   document.getElementById('ap-resumen-preview').innerHTML = '';
-  await cargarCentrosSelect(document.getElementById('ap-import-centro'));
+  await cargarCentrosSelect('ap-import-centro');
   abrirModal('modal-importar-ap');
 }
 
 async function procesarImportacionAP(){
   const archivo = document.getElementById('ap-archivo').files[0];
-  const centroId = document.getElementById('ap-import-centro').value;
+  const centroId = document.getElementById('ap-import-centro-id').value;
   if(!archivo){ toast('Selecciona el archivo.','error'); return; }
   if(!centroId){ toast('Selecciona el centro para las filas importadas.','error'); return; }
 
@@ -1868,7 +1961,7 @@ async function abrirModalSolicitud(){
   document.getElementById('sol-motivo').value = 'PLAZA_VACANTE';
   document.getElementById('sol-observaciones').value = '';
   document.getElementById('lista-candidatos').innerHTML = '';
-  await cargarCentrosSelect(document.getElementById('sol-centro'));
+  await cargarCentrosSelect('sol-centro');
   agregarCandidatoForm();
   abrirModal('modal-solicitud');
 }
@@ -1885,7 +1978,7 @@ async function verSolicitud(id){
   document.getElementById('sol-estado').value = s.estado;
   document.getElementById('sol-motivo').value = s.motivo_solicitud;
   document.getElementById('sol-observaciones').value = s.observaciones || '';
-  await cargarCentrosSelect(document.getElementById('sol-centro'), s.centro_id);
+  await cargarCentrosSelect('sol-centro', s.centro_id);
   document.getElementById('lista-candidatos').innerHTML = '';
   if(cands && cands.length){ cands.forEach(c=>agregarCandidatoForm(c)); }
   else { agregarCandidatoForm(); }
@@ -1917,7 +2010,7 @@ async function guardarSolicitud(){
     no_solicitud: document.getElementById('sol-numero').value.trim() || null,
     fecha_solicitud: document.getElementById('sol-fecha').value || new Date().toISOString().slice(0,10),
     estado: document.getElementById('sol-estado').value,
-    centro_id: document.getElementById('sol-centro').value,
+    centro_id: document.getElementById('sol-centro-id').value,
     motivo_solicitud: document.getElementById('sol-motivo').value,
     observaciones: document.getElementById('sol-observaciones').value.trim() || null,
   };
@@ -2083,7 +2176,10 @@ async function renderTelegramas(){
                 <td>${escapeHtml(t.cargo_designado)}</td>
                 <td>${escapeHtml(t.jornada)}</td>
                 <td>${badgeEstado(t.estado_envio)}</td>
-                <td><button class="btn btn-secundario btn-chico" onclick="verTelegrama(${t.id})">Ver / Imprimir</button></td>
+                <td style="display:flex;gap:6px;">
+                  <button class="btn btn-secundario btn-chico" onclick="verTelegrama(${t.id})">Ver / Imprimir</button>
+                  <button class="btn btn-secundario btn-chico" onclick="abrirModalTelegrama(${t.id})">Editar</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -2093,9 +2189,10 @@ async function renderTelegramas(){
 
     <div class="modal-fondo" id="modal-telegrama">
       <div class="modal" style="max-width:720px;">
-        <div class="modal-header"><h3>Generar telegrama</h3>
+        <div class="modal-header"><h3 id="titulo-modal-telegrama">Generar telegrama</h3>
           <button class="modal-cerrar" onclick="cerrarModal('modal-telegrama')">×</button></div>
         <div class="modal-body">
+          <input type="hidden" id="tel-id">
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;">
               <label>Candidato (de una solicitud AP) <span class="requerido">*</span></label>
@@ -2117,12 +2214,15 @@ async function renderTelegramas(){
                 <option>Matutina</option><option>Vespertina</option><option>Nocturna</option><option>Extendida</option>
               </select>
             </div>
+            <div class="campo" style="grid-column:1/-1;"><label>Centro educativo <span class="requerido">*</span></label>
+              ${htmlAutocompletar('tel-centro','Buscar centro por nombre o código…')}
+              <div class="texto-ayuda">Se precarga con el centro de la solicitud del candidato, pero puedes cambiarlo aquí — el telegrama imprimirá el centro que quede seleccionado en este campo.</div>
+            </div>
           </div>
           <div style="margin-top:14px;">
             <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa (se ajusta automáticamente el género del texto)</div>
             <div class="preview-telegrama" id="preview-telegrama" style="white-space:pre-wrap;"></div>
           </div>
-          <input type="hidden" id="tel-centro-id">
         </div>
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-telegrama')">Cancelar</button>
@@ -2169,15 +2269,47 @@ async function eliminarSeleccionTelegramas(){
   renderTelegramas();
 }
 
-function abrirModalTelegrama(){
-  document.getElementById('tel-numero').value = '';
-  document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
-  document.getElementById('tel-destinatario').value = '';
-  document.getElementById('tel-cargo').value = '';
-  document.getElementById('tel-jornada').value = 'Extendida';
-  document.getElementById('tel-candidato').value = '';
+async function abrirModalTelegrama(id){
+  document.getElementById('tel-id').value = id || '';
+  if(id){
+    const t = (window._telegramasData||[]).find(x=>x.id===id);
+    if(!t){ toast('Telegrama no encontrado.','error'); return; }
+    document.getElementById('titulo-modal-telegrama').textContent = 'Editar telegrama';
+    document.getElementById('tel-numero').value = t.no_telegrama || '';
+    document.getElementById('tel-fecha').value = t.fecha_telegrama || '';
+    document.getElementById('tel-destinatario').value = t.destinatario_nombre || '';
+    document.getElementById('tel-cargo').value = t.cargo_designado || '';
+    document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
+    document.getElementById('tel-candidato').value = t.candidato_ap_id || '';
+    await cargarCentrosSelect('tel-centro', t.centro_id);
+  } else {
+    document.getElementById('titulo-modal-telegrama').textContent = 'Generar telegrama';
+    document.getElementById('tel-numero').value = await calcularProximoNumeroTelegrama();
+    document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
+    document.getElementById('tel-destinatario').value = '';
+    document.getElementById('tel-cargo').value = '';
+    document.getElementById('tel-jornada').value = 'Extendida';
+    document.getElementById('tel-candidato').value = '';
+    await cargarCentrosSelect('tel-centro');
+  }
+  document.getElementById('tel-centro').addEventListener('autocomplete-change', actualizarPreviewTelegrama);
   document.getElementById('preview-telegrama').textContent = '';
   abrirModal('modal-telegrama');
+}
+
+// Calcula el siguiente número consecutivo simple, basado en el mayor
+// número puramente numérico ya registrado (ignora formatos como
+// "TEL-2026-001" para el cálculo, pero el campo sigue siendo editable
+// manualmente para cualquier formato que se necesite).
+async function calcularProximoNumeroTelegrama(){
+  const { data, error } = await sb.from('telegramas_rh').select('no_telegrama');
+  if(error || !data){ return ''; }
+  let maximo = 0;
+  data.forEach(t=>{
+    const n = parseInt(String(t.no_telegrama||'').replace(/\D/g,''), 10);
+    if(!isNaN(n) && /^\d+$/.test(String(t.no_telegrama||'').trim()) && n > maximo) maximo = n;
+  });
+  return maximo > 0 ? String(maximo + 1) : '1';
 }
 
 function precargarTelegrama(){
@@ -2187,7 +2319,13 @@ function precargarTelegrama(){
   document.getElementById('tel-cargo').value = c.cargo_propuesto || '';
   document.getElementById('tel-destinatario').value = c.solicitudes_ap?.centros_rh?.director_nombre || '';
   document.getElementById('tel-jornada').value = c.solicitudes_ap?.centros_rh?.tanda || 'Extendida';
-  document.getElementById('tel-centro-id').value = c.solicitudes_ap?.centro_id || '';
+  // Precarga el centro de la solicitud del candidato, pero queda en un campo
+  // visible y editable: si el usuario lo cambia, el telegrama imprimirá ese
+  // centro nuevo, no el de la solicitud original.
+  const centroId = c.solicitudes_ap?.centro_id || '';
+  const centroNombre = c.solicitudes_ap?.centros_rh?.nombre_centro || '';
+  document.getElementById('tel-centro-id').value = centroId;
+  document.getElementById('tel-centro').value = centroNombre;
   actualizarPreviewTelegrama();
 }
 
@@ -2195,9 +2333,12 @@ function actualizarPreviewTelegrama(){
   const id = document.getElementById('tel-candidato').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
   if(!c){ document.getElementById('preview-telegrama').textContent=''; return; }
+  // El centro que se imprime SIEMPRE es el del campo visible (editable),
+  // no el que trae automáticamente la solicitud del candidato.
+  const centroNombreManual = document.getElementById('tel-centro').value;
   const texto = generarTextoTelegrama({
     destinatarioNombre: document.getElementById('tel-destinatario').value || '________',
-    centroNombre: c.solicitudes_ap?.centros_rh?.nombre_centro || '________',
+    centroNombre: centroNombreManual || '________',
     candidatoNombre: c.nombres+' '+c.apellidos,
     candidatoCedula: c.cedula,
     candidatoSexo: c.sexo,
@@ -2213,20 +2354,22 @@ function actualizarPreviewTelegrama(){
 });
 
 async function guardarTelegrama(){
+  const telId = document.getElementById('tel-id').value;
   const candidatoId = document.getElementById('tel-candidato').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(candidatoId));
   const destinatario = document.getElementById('tel-destinatario').value.trim();
   const cargo = document.getElementById('tel-cargo').value.trim();
   const centroId = document.getElementById('tel-centro-id').value;
+  const centroNombre = document.getElementById('tel-centro').value.trim();
 
   if(!c || !destinatario || !cargo || !centroId){
-    toast('Selecciona el candidato y completa destinatario y cargo.','error'); return;
+    toast('Selecciona el candidato, el centro educativo, y completa destinatario y cargo.','error'); return;
   }
 
   const fecha = document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10);
   const texto = generarTextoTelegrama({
     destinatarioNombre: destinatario,
-    centroNombre: c.solicitudes_ap?.centros_rh?.nombre_centro || '',
+    centroNombre: centroNombre || '________',
     candidatoNombre: c.nombres+' '+c.apellidos,
     candidatoCedula: c.cedula,
     candidatoSexo: c.sexo,
@@ -2246,13 +2389,18 @@ async function guardarTelegrama(){
     texto_generado: texto,
   };
 
-  const { error } = await sb.from('telegramas_rh').insert(payload);
-  if(error){ toast(error.message,'error'); return; }
+  if(telId){
+    const { error } = await sb.from('telegramas_rh').update(payload).eq('id', telId);
+    if(error){ toast(error.message,'error'); return; }
+    toast('Telegrama actualizado correctamente.','exito');
+  } else {
+    const { error } = await sb.from('telegramas_rh').insert(payload);
+    if(error){ toast(error.message,'error'); return; }
+    // Marcar candidato como nombrado (solo al crear, no al editar)
+    await sb.from('candidatos_ap').update({ estado:'nombrado' }).eq('id', candidatoId);
+    toast('Telegrama generado correctamente.','exito');
+  }
 
-  // Marcar candidato como nombrado
-  await sb.from('candidatos_ap').update({ estado:'nombrado' }).eq('id', candidatoId);
-
-  toast('Telegrama generado correctamente.','exito');
   cerrarModal('modal-telegrama');
   renderTelegramas();
 }
@@ -2356,7 +2504,7 @@ async function renderPuestasDisposicion(){
         <div class="modal-body">
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
-              <select id="pd-personal" onchange="actualizarPreviewPD()"></select></div>
+              ${htmlAutocompletar('pd-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Fecha del oficio</label><input type="date" id="pd-fecha" onchange="actualizarPreviewPD()"></div>
             <div class="campo"><label>Cargo a designar en el oficio <span class="requerido">*</span></label>
               <input type="text" id="pd-cargo" oninput="actualizarPreviewPD()"></div>
@@ -2464,13 +2612,14 @@ async function abrirModalPuestaDisp(){
   document.getElementById('pd-analista').value = '';
   document.getElementById('pd-asunto').value = 'Puesta A Disposición';
   document.getElementById('pd-motivo').value = '';
-  await cargarPersonalSelect(document.getElementById('pd-personal'));
+  await cargarPersonalSelect('pd-personal');
+  document.getElementById('pd-personal').addEventListener('autocomplete-change', actualizarPreviewPD);
   actualizarPreviewPD();
   abrirModal('modal-puesta-disp');
 }
 
 function actualizarPreviewPD(){
-  const id = document.getElementById('pd-personal')?.value;
+  const id = document.getElementById('pd-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-pd').textContent=''; return; }
   const texto = generarTextoPuestaDisposicion({
@@ -2489,7 +2638,7 @@ function actualizarPreviewPD(){
 }
 
 async function guardarPuestaDisp(){
-  const personalId = document.getElementById('pd-personal').value;
+  const personalId = document.getElementById('pd-personal-id').value;
   const destinatario = document.getElementById('pd-destinatario').value.trim();
   const cargo = document.getElementById('pd-cargo').value.trim();
   if(!personalId || !destinatario || !cargo){ toast('Completa empleado, destinatario y cargo.','error'); return; }
@@ -2625,7 +2774,7 @@ async function renderCartasAceptacion(){
         <div class="modal-body">
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
-              <select id="ca-personal" onchange="actualizarPreviewCA()"></select></div>
+              ${htmlAutocompletar('ca-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Fecha del oficio</label><input type="date" id="ca-fecha" onchange="actualizarPreviewCA()"></div>
             <div class="campo"><label>Cargo con el que se acepta <span class="requerido">*</span></label>
               <input type="text" id="ca-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Docente de Nivel Inicial"></div>
@@ -2636,7 +2785,7 @@ async function renderCartasAceptacion(){
             <div class="campo"><label>Analista RH ("Vía")</label><input type="text" id="ca-analista" oninput="actualizarPreviewCA()"></div>
             <div class="campo"><label>Asunto</label><input type="text" id="ca-asunto" value="Aceptación De Personal" oninput="actualizarPreviewCA()"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Centro educativo donde será ubicado (opcional)</label>
-              <select id="ca-centro" onchange="actualizarPreviewCA()"></select></div>
+              ${htmlAutocompletar('ca-centro','Buscar centro por nombre o código…')}</div>
           </div>
           <div style="margin-top:14px;">
             <div class="texto-ayuda" style="margin-bottom:6px;">Vista previa</div>
@@ -2662,8 +2811,10 @@ async function renderCartasAceptacion(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('ca-personal'));
-  await cargarCentrosSelect(document.getElementById('ca-centro'));
+  await cargarPersonalSelect('ca-personal');
+  await cargarCentrosSelect('ca-centro');
+  document.getElementById('ca-personal').addEventListener('autocomplete-change', actualizarPreviewCA);
+  document.getElementById('ca-centro').addEventListener('autocomplete-change', actualizarPreviewCA);
   pintarTablaCA(window._cartasAceptacionData);
 
   registrarExportadores('ca', ()=>window._caFiltrado||window._cartasAceptacionData||[], [
@@ -2728,18 +2879,21 @@ async function abrirModalCA(){
   document.getElementById('ca-destinatario-cargo').value = '';
   document.getElementById('ca-analista').value = '';
   document.getElementById('ca-asunto').value = 'Aceptación De Personal';
-  await cargarPersonalSelect(document.getElementById('ca-personal'));
-  await cargarCentrosSelect(document.getElementById('ca-centro'));
+  await cargarPersonalSelect('ca-personal');
+  await cargarCentrosSelect('ca-centro');
+  document.getElementById('ca-personal').addEventListener('autocomplete-change', actualizarPreviewCA);
+  document.getElementById('ca-centro').addEventListener('autocomplete-change', actualizarPreviewCA);
   actualizarPreviewCA();
   abrirModal('modal-carta-aceptacion');
 }
 
 function actualizarPreviewCA(){
-  const id = document.getElementById('ca-personal')?.value;
+  const id = document.getElementById('ca-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-ca').textContent=''; return; }
-  const centroSel = document.getElementById('ca-centro');
-  const centroNombre = centroSel?.options[centroSel.selectedIndex]?.textContent?.split(' — SIGERD')[0];
+  const centroInput = document.getElementById('ca-centro');
+  const centroIdVal = document.getElementById('ca-centro-id')?.value;
+  const centroNombre = centroInput?.value || '';
   const texto = generarTextoCartaAceptacion({
     fecha: document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10),
     destinatarioNombre: document.getElementById('ca-destinatario').value || '________________',
@@ -2751,13 +2905,13 @@ function actualizarPreviewCA(){
     candidatoCedula: p.cedula,
     candidatoSexo: p.sexo,
     cargoDesignado: document.getElementById('ca-cargo').value || p.cargo_actual || '________________',
-    centroNombre: (centroSel?.value) ? centroNombre : null,
+    centroNombre: centroIdVal ? centroNombre : null,
   });
   document.getElementById('preview-ca').textContent = texto;
 }
 
 async function guardarCA(){
-  const personalId = document.getElementById('ca-personal').value;
+  const personalId = document.getElementById('ca-personal-id').value;
   const destinatario = document.getElementById('ca-destinatario').value.trim();
   const destinatarioCargo = document.getElementById('ca-destinatario-cargo').value.trim();
   const cargo = document.getElementById('ca-cargo').value.trim();
@@ -2768,9 +2922,8 @@ async function guardarCA(){
   const { data: p, error: errP } = await sb.from('personal_rh').select('*').eq('id', personalId).single();
   if(errP){ toast(errP.message,'error'); return; }
 
-  const centroId = document.getElementById('ca-centro').value || null;
-  const centroSel = document.getElementById('ca-centro');
-  const centroNombre = centroId ? centroSel.options[centroSel.selectedIndex].textContent.split(' — SIGERD')[0] : null;
+  const centroId = document.getElementById('ca-centro-id').value || null;
+  const centroNombre = centroId ? document.getElementById('ca-centro').value : null;
 
   const fecha = document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10);
   const texto = generarTextoCartaAceptacion({
@@ -2877,7 +3030,7 @@ async function renderVacaciones(){
             <legend>Datos generales</legend>
             <div class="grid-3">
               <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
-                <select id="vac-personal" onchange="calcularAniosServicioVacaciones()"></select></div>
+                ${htmlAutocompletar('vac-personal','Buscar empleado por nombre o cédula…')}</div>
               <div class="campo"><label>Fecha de solicitud</label><input type="date" id="vac-fecha-solicitud"></div>
               <div class="campo"><label>Años servicio MINERD</label><input type="number" step="0.5" id="vac-anios-minerd" oninput="actualizarTotalAniosVacaciones()"></div>
               <div class="campo"><label>Años servicio otra institución</label><input type="number" step="0.5" id="vac-anios-otra" value="0" oninput="actualizarTotalAniosVacaciones()"></div>
@@ -2936,7 +3089,8 @@ async function renderVacaciones(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('vac-personal'));
+  await cargarPersonalSelect('vac-personal');
+  document.getElementById('vac-personal').addEventListener('autocomplete-change', calcularAniosServicioVacaciones);
   pintarTablaVacaciones(window._vacacionesData);
 
   registrarExportadores('vac', ()=>window._vacacionesFiltrado||window._vacacionesData||[], [
@@ -3011,7 +3165,8 @@ async function abrirModalVacacion(){
   document.getElementById('vac-dias2-select').value = '0';
   document.getElementById('vac-dias1').style.display = 'none';
   document.getElementById('vac-dias2').style.display = 'none';
-  await cargarPersonalSelect(document.getElementById('vac-personal'));
+  await cargarPersonalSelect('vac-personal');
+  document.getElementById('vac-personal').addEventListener('autocomplete-change', calcularAniosServicioVacaciones);
   abrirModal('modal-vacacion');
 }
 
@@ -3019,7 +3174,7 @@ async function abrirModalVacacion(){
 // empleado hasta la fecha de solicitud, y sugiere automáticamente los
 // días de vacaciones según la tabla oficial (editable después).
 function calcularAniosServicioVacaciones(){
-  const id = document.getElementById('vac-personal').value;
+  const id = document.getElementById('vac-personal-id').value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   const fuenteEl = document.getElementById('vac-fuente-anios');
   if(!p || !p.fecha_ingreso){
@@ -3146,7 +3301,7 @@ function diasLaborablesEntreFechas(ini, fin){
 }
 
 async function guardarVacacion(){
-  const personalId = document.getElementById('vac-personal').value;
+  const personalId = document.getElementById('vac-personal-id').value;
   const ini = document.getElementById('vac-fecha-inicio').value;
   const fin = document.getElementById('vac-fecha-fin').value;
   if(!personalId || !ini || !fin){ toast('Selecciona empleado y fechas de disfrute.','error'); return; }
@@ -3271,7 +3426,7 @@ async function renderLicenciasPermisos(){
           <button class="modal-cerrar" onclick="cerrarModal('modal-lp')">×</button></div>
         <div class="modal-body">
           <div class="grid-2">
-            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="lp-personal"></select></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>${htmlAutocompletar('lp-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Fecha de solicitud</label><input type="date" id="lp-fecha-solicitud"></div>
             <div class="campo"><label>Categoría <span class="requerido">*</span></label>
               <select id="lp-categoria" onchange="actualizarSubtiposLP()">
@@ -3312,7 +3467,7 @@ async function renderLicenciasPermisos(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('lp-personal'));
+  await cargarPersonalSelect('lp-personal');
   pintarTablaLP(window._licenciasPermisosData);
 
   registrarExportadores('lp', ()=>window._lpFiltrado||window._licenciasPermisosData||[], [
@@ -3419,7 +3574,7 @@ function actualizarDetalleLP(){
 }
 
 async function guardarLP(){
-  const personalId = document.getElementById('lp-personal').value;
+  const personalId = document.getElementById('lp-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado.','error'); return; }
 
   const categoria = document.getElementById('lp-categoria').value;
@@ -3623,14 +3778,14 @@ async function renderRiesgosLaborales(){
           <button class="modal-cerrar" onclick="cerrarModal('modal-riesgo')">×</button></div>
         <div class="modal-body">
           <div class="grid-2">
-            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="rl-personal"></select></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>${htmlAutocompletar('rl-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Tipo de formulario <span class="requerido">*</span></label>
               <select id="rl-tipo">
                 <option value="ATR-2">ATR-2 — Aviso de Accidente de Trabajo</option>
                 <option value="EPR-1">EPR-1 — Aviso de Enfermedad Profesional</option>
               </select>
             </div>
-            <div class="campo"><label>Centro educativo</label><select id="rl-centro"></select></div>
+            <div class="campo"><label>Centro educativo</label>${htmlAutocompletar('rl-centro','Buscar centro por nombre o código…')}</div>
             <div class="campo"><label>Fecha del evento <span class="requerido">*</span></label><input type="date" id="rl-fecha-evento"></div>
             <div class="campo"><label>Fecha de aviso</label><input type="date" id="rl-fecha-aviso"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Lugar del evento</label><input type="text" id="rl-lugar" placeholder="Centro educativo, trayecto, etc."></div>
@@ -3652,8 +3807,8 @@ async function renderRiesgosLaborales(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('rl-personal'));
-  await cargarCentrosSelect(document.getElementById('rl-centro'));
+  await cargarPersonalSelect('rl-personal');
+  await cargarCentrosSelect('rl-centro');
   ['rl-fecha-evento','rl-fecha-aviso'].forEach(id=>{
     document.getElementById(id).addEventListener('change', validarPlazoRiesgo);
   });
@@ -3728,8 +3883,8 @@ async function abrirModalRiesgo(){
   document.getElementById('rl-acta-policial').checked = false;
   document.getElementById('rl-firmado-rrhh').checked = false;
   document.getElementById('rl-alerta-plazo').innerHTML = '';
-  await cargarPersonalSelect(document.getElementById('rl-personal'));
-  await cargarCentrosSelect(document.getElementById('rl-centro'));
+  await cargarPersonalSelect('rl-personal');
+  await cargarCentrosSelect('rl-centro');
   abrirModal('modal-riesgo');
 }
 
@@ -3749,7 +3904,7 @@ function validarPlazoRiesgo(){
 }
 
 async function guardarRiesgo(){
-  const personalId = document.getElementById('rl-personal').value;
+  const personalId = document.getElementById('rl-personal-id').value;
   const fEvento = document.getElementById('rl-fecha-evento').value;
   const descripcion = document.getElementById('rl-descripcion').value.trim();
   if(!personalId || !fEvento || !descripcion){ toast('Completa empleado, fecha del evento y descripción.','error'); return; }
@@ -3757,7 +3912,7 @@ async function guardarRiesgo(){
   const payload = {
     personal_id: personalId,
     tipo_formulario: document.getElementById('rl-tipo').value,
-    centro_id: document.getElementById('rl-centro').value || null,
+    centro_id: document.getElementById('rl-centro-id').value || null,
     fecha_evento: fEvento,
     fecha_aviso: document.getElementById('rl-fecha-aviso').value || new Date().toISOString().slice(0,10),
     descripcion_evento: descripcion,
@@ -3851,7 +4006,7 @@ async function renderPensiones(){
           <button class="modal-cerrar" onclick="cerrarModal('modal-pension')">×</button></div>
         <div class="modal-body">
           <div class="grid-2">
-            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label><select id="pen-personal"></select></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>${htmlAutocompletar('pen-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Tipo de personal <span class="requerido">*</span></label>
               <select id="pen-tipo-personal"><option value="docente">Docente</option><option value="administrativo">Administrativo</option></select></div>
             <div class="campo"><label>Tipo de pensión</label>
@@ -3883,7 +4038,7 @@ async function renderPensiones(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('pen-personal'));
+  await cargarPersonalSelect('pen-personal');
   pintarTablaPensiones(window._pensionesData);
 
   registrarExportadores('pen', ()=>window._pensionesFiltrado||window._pensionesData||[], [
@@ -3953,12 +4108,12 @@ async function abrirModalPension(){
   ['pen-cert-trabajo','pen-cert-contraloria','pen-comunicacion-min','pen-copia-cedula','pen-fotos'].forEach(id=>{
     document.getElementById(id).checked = false;
   });
-  await cargarPersonalSelect(document.getElementById('pen-personal'));
+  await cargarPersonalSelect('pen-personal');
   abrirModal('modal-pension');
 }
 
 async function guardarPension(){
-  const personalId = document.getElementById('pen-personal').value;
+  const personalId = document.getElementById('pen-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado.','error'); return; }
 
   const payload = {
@@ -4061,7 +4216,7 @@ async function renderSegurosSalud(){
           <button class="modal-cerrar" onclick="cerrarModal('modal-seguro')">×</button></div>
         <div class="modal-body">
           <div class="grid-2">
-            <div class="campo" style="grid-column:1/-1;"><label>Empleado titular <span class="requerido">*</span></label><select id="seg-personal"></select></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado titular <span class="requerido">*</span></label>${htmlAutocompletar('seg-personal','Buscar empleado titular por nombre o cédula…')}</div>
             <div class="campo"><label>Tipo de formulario <span class="requerido">*</span></label>
               <select id="seg-tipo" onchange="actualizarAyudaSeguro()">
                 <option value="F1">F1 — Titular / dependientes directos</option>
@@ -4089,7 +4244,7 @@ async function renderSegurosSalud(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('seg-personal'));
+  await cargarPersonalSelect('seg-personal');
   actualizarAyudaSeguro();
   pintarTablaSeguros(window._segurosData);
 
@@ -4161,13 +4316,13 @@ async function abrirModalSeguro(){
   ['seg-copia-cedula','seg-acta-nacimiento','seg-cert-estudio','seg-form-descuento'].forEach(id=>{
     document.getElementById(id).checked = false;
   });
-  await cargarPersonalSelect(document.getElementById('seg-personal'));
+  await cargarPersonalSelect('seg-personal');
   actualizarAyudaSeguro();
   abrirModal('modal-seguro');
 }
 
 async function guardarSeguro(){
-  const personalId = document.getElementById('seg-personal').value;
+  const personalId = document.getElementById('seg-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado titular.','error'); return; }
 
   const payload = {
@@ -4281,7 +4436,7 @@ async function renderCertificacionesLaborales(){
         <div class="modal-body">
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>
-              <select id="cl-personal" onchange="actualizarPreviewCL()"></select></div>
+              ${htmlAutocompletar('cl-personal','Buscar empleado por nombre o cédula…')}</div>
             <div class="campo"><label>Período desde</label><input type="date" id="cl-periodo-desde" onchange="actualizarPreviewCL()"></div>
             <div class="campo"><label>Período hasta</label><input type="date" id="cl-periodo-hasta" onchange="actualizarPreviewCL()"></div>
             <div class="campo"><label>Cargo a certificar</label><input type="text" id="cl-cargo" oninput="actualizarPreviewCL()"></div>
@@ -4319,7 +4474,8 @@ async function renderCertificacionesLaborales(){
       </div>
     </div>
   `;
-  await cargarPersonalSelect(document.getElementById('cl-personal'));
+  await cargarPersonalSelect('cl-personal');
+  document.getElementById('cl-personal').addEventListener('autocomplete-change', actualizarPreviewCL);
   pintarTablaCertLab(window._certLaboralData);
 
   registrarExportadores('cl', ()=>window._clFiltrado||window._certLaboralData||[], [
@@ -4388,13 +4544,14 @@ async function abrirModalCertLab(){
   document.getElementById('cl-terceros').checked = false;
   document.getElementById('cl-poder-notarial').checked = false;
   document.getElementById('cl-poder-wrap').style.display = 'none';
-  await cargarPersonalSelect(document.getElementById('cl-personal'));
+  await cargarPersonalSelect('cl-personal');
+  document.getElementById('cl-personal').addEventListener('autocomplete-change', actualizarPreviewCL);
   actualizarPreviewCL();
   abrirModal('modal-cert-laboral');
 }
 
 function actualizarPreviewCL(){
-  const id = document.getElementById('cl-personal')?.value;
+  const id = document.getElementById('cl-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-cl').textContent=''; return; }
   const texto = generarTextoCertificacionLaboral({
@@ -4409,7 +4566,7 @@ function actualizarPreviewCL(){
 }
 
 async function guardarCertLab(){
-  const personalId = document.getElementById('cl-personal').value;
+  const personalId = document.getElementById('cl-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado.','error'); return; }
 
   const { data: p, error: errP } = await sb.from('personal_rh').select('*').eq('id', personalId).single();
