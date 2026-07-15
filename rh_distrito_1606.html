@@ -1292,12 +1292,13 @@ async function renderCentros(){
 
   registrarExportadores('centros', ()=>window._centrosData||[], [
     { label:'Nombre del Centro', key:'nombre_centro' },
-    { label:'SIGERD', key:'codigo_sigerd' },
+    { label:'Código SIGERD', key:'codigo_sigerd' },
     { label:'Matrícula', key:'matricula' },
     { label:'Nivel', key:'nivel' },
     { label:'Tanda', key:'tanda' },
     { label:'Dependencia', key:'numero_dependencia_nomina' },
     { label:'Director/a', key:'director_nombre' },
+    { label:'Sexo Director/a', key:'director_sexo' },
   ], 'centros_1606', 'Centros Educativos - Distrito 16-06', 'chk-centros');
 }
 
@@ -1569,8 +1570,10 @@ async function renderPersonal(){
     { label:'Apellidos', key:'apellidos' },
     { label:'Sexo', key:'sexo' },
     { label:'Cargo', key:'cargo_actual' },
-    { label:'Centro', get:p=>p.centros_rh?.nombre_centro||'' },
     { label:'Teléfono', key:'telefono' },
+    { label:'Dirección', key:'direccion' },
+    { label:'Nivel académico', key:'nivel_academico' },
+    { label:'Dependencia', key:'numero_dependencia' },
     { label:'Estatus', key:'estatus' },
   ], 'personal_1606', 'Personal - Distrito 16-06', 'chk-personal');
 }
@@ -1871,11 +1874,17 @@ async function renderSolicitudes(){
   `;
 
   registrarExportadores('ap', ()=>window._solicitudesData||[], [
-    { label:'No. Solicitud', key:'no_solicitud' },
-    { label:'Fecha', get:s=>fechaCorta(s.fecha_solicitud) },
-    { label:'Centro', get:s=>s.centros_rh?.nombre_centro||'' },
-    { label:'Motivo', get:s=>labelMotivo(s.motivo_solicitud) },
-    { label:'Candidatos', get:s=>(s.candidatos_ap||[]).map(c=>c.nombres+' '+c.apellidos).join(', ') },
+    { label:'No. de solicitud', key:'no_solicitud' },
+    { label:'Fecha (AAAA-MM-DD)', get:s=>s.fecha_solicitud||'' },
+    { label:'Motivo', key:'motivo_solicitud' },
+    { label:'Nombre del centro educativo', get:s=>s.centros_rh?.nombre_centro||'' },
+    { label:'Código SIGERD del centro (opcional)', get:s=>s.centros_rh?.codigo_sigerd||'' },
+    { label:'Nombres del candidato', get:s=>(s.candidatos_ap||[])[0]?.nombres||'' },
+    { label:'Apellidos del candidato', get:s=>(s.candidatos_ap||[])[0]?.apellidos||'' },
+    { label:'Cédula del candidato', get:s=>(s.candidatos_ap||[])[0]?.cedula||'' },
+    { label:'Sexo (M/F)', get:s=>(s.candidatos_ap||[])[0]?.sexo||'' },
+    { label:'Cargo propuesto', get:s=>(s.candidatos_ap||[])[0]?.cargo_propuesto||'' },
+    { label:'Observaciones', key:'observaciones' },
     { label:'Estado', key:'estado' },
   ], 'solicitudes_ap_1606', 'Solicitudes AP - Distrito 16-06', 'chk-ap');
 }
@@ -2295,7 +2304,7 @@ function generarTextoTelegrama({ destinatarioNombre, centroNombre, candidatoNomb
 async function renderTelegramas(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('telegramas_rh')
-    .select('*, centros_rh(nombre_centro), candidatos_ap(nombres,apellidos,cedula,sexo)')
+    .select('*, centros_rh(nombre_centro,codigo_sigerd), candidatos_ap(nombres,apellidos,cedula,sexo)')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
 
@@ -2361,6 +2370,8 @@ async function renderTelegramas(){
             <div class="campo"><label>Fecha</label><input type="date" id="tel-fecha"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Destinatario (Director/a) <span class="requerido">*</span></label>
               <input type="text" id="tel-destinatario"></div>
+            <div class="campo"><label>Teléfono del destinatario</label>
+              <input type="tel" id="tel-destinatario-telefono" placeholder="809-000-0000"></div>
             <div class="campo"><label>Cargo en que se designa <span class="requerido">*</span></label>
               <input type="text" id="tel-cargo"></div>
             <div class="campo"><label>Jornada <span class="requerido">*</span></label>
@@ -2424,12 +2435,18 @@ async function renderTelegramas(){
   window._telegramasData = data || [];
 
   registrarExportadores('telegramas', ()=>window._telegramasData||[], [
-    { label:'No. Telegrama', key:'no_telegrama' },
-    { label:'Fecha', get:t=>fechaCorta(t.fecha_telegrama) },
-    { label:'Candidato', get:t=>(t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||'') },
-    { label:'Centro', get:t=>t.centros_rh?.nombre_centro||'' },
-    { label:'Cargo', key:'cargo_designado' },
+    { label:'No. de telegrama', key:'no_telegrama' },
+    { label:'Fecha (AAAA-MM-DD)', get:t=>t.fecha_telegrama||'' },
+    { label:'Nombres del candidato', get:t=>t.candidatos_ap?.nombres||'' },
+    { label:'Apellidos del candidato', get:t=>t.candidatos_ap?.apellidos||'' },
+    { label:'Cédula del candidato', get:t=>t.candidatos_ap?.cedula||'' },
+    { label:'Sexo (M/F)', get:t=>t.candidatos_ap?.sexo||'' },
+    { label:'Cargo designado', key:'cargo_designado' },
+    { label:'Nombre del centro educativo', get:t=>t.centros_rh?.nombre_centro||'' },
+    { label:'Código SIGERD del centro (opcional)', get:t=>t.centros_rh?.codigo_sigerd||'' },
     { label:'Jornada', key:'jornada' },
+    { label:'Destinatario (Director/a)', key:'destinatario_nombre' },
+    { label:'Teléfono del destinatario', key:'destinatario_telefono' },
     { label:'Estado', key:'estado_envio' },
   ], 'telegramas_1606', 'Telegramas - Distrito 16-06', 'chk-telegramas');
 }
@@ -2455,6 +2472,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-numero').value = t.no_telegrama || '';
     document.getElementById('tel-fecha').value = t.fecha_telegrama || '';
     document.getElementById('tel-destinatario').value = t.destinatario_nombre || '';
+    document.getElementById('tel-destinatario-telefono').value = t.destinatario_telefono || '';
     document.getElementById('tel-cargo').value = t.cargo_designado || '';
     document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
     document.getElementById('tel-candidato').value = t.candidato_ap_id || '';
@@ -2464,6 +2482,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-numero').value = await calcularProximoNumeroTelegrama();
     document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
     document.getElementById('tel-destinatario').value = '';
+    document.getElementById('tel-destinatario-telefono').value = '';
     document.getElementById('tel-cargo').value = '';
     document.getElementById('tel-jornada').value = 'Extendida';
     document.getElementById('tel-candidato').value = '';
@@ -2561,6 +2580,7 @@ async function guardarTelegrama(){
     no_telegrama: document.getElementById('tel-numero').value.trim() || null,
     fecha_telegrama: fecha,
     destinatario_nombre: destinatario,
+    destinatario_telefono: document.getElementById('tel-destinatario-telefono').value.trim() || null,
     cargo_designado: cargo,
     jornada: document.getElementById('tel-jornada').value,
     texto_generado: texto,
@@ -2599,7 +2619,8 @@ function descargarPlantillaTelegramas(){
       'Apellidos del candidato':'Núñez', 'Cédula del candidato':'001-1234567-8', 'Sexo (M/F)':'F',
       'Cargo designado':'MAESTRA BASICA J.E.', 'Nombre del centro educativo':'ESC PRIM LUPERON',
       'Código SIGERD del centro (opcional)':'04412', 'Jornada':'Matutina',
-      'Destinatario (Director/a)':'Carlos Mejía Reyes', 'Estado':'entregado' },
+      'Destinatario (Director/a)':'Carlos Mejía Reyes', 'Teléfono del destinatario':'809-555-0001',
+      'Estado':'entregado' },
   ];
   const ws = XLSX.utils.json_to_sheet(datos);
   const wb = XLSX.utils.book_new();
@@ -2627,24 +2648,45 @@ async function procesarImportacionTelegramas(){
       const n = norm(h);
       if(/telegrama|no\.?\s*tel/.test(n) && mapa.numero===undefined) mapa.numero = i;
       else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+      // Acepta tanto columnas separadas (nombres/apellidos) como nombre completo en una sola columna
       else if(/nombres?\b.*candidato|^nombres?$/.test(n) && mapa.nombres===undefined) mapa.nombres = i;
       else if(/apellidos?\b.*candidato|^apellidos?$/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
+      else if(/(nombre|designado|designad[ao])\b/.test(n) && mapa.nombreCompleto===undefined) mapa.nombreCompleto = i;
       else if(/cedula/.test(n) && mapa.cedula===undefined) mapa.cedula = i;
       else if(/sexo/.test(n) && mapa.sexo===undefined) mapa.sexo = i;
       else if(/cargo/.test(n) && mapa.cargo===undefined) mapa.cargo = i;
       else if(/sigerd|codigo.*centro/.test(n) && mapa.sigerd===undefined) mapa.sigerd = i;
-      else if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/centro.*educ|centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
       else if(/jornada/.test(n) && mapa.jornada===undefined) mapa.jornada = i;
       else if(/destinatario|director/.test(n) && mapa.destinatario===undefined) mapa.destinatario = i;
+      else if(/telefono/.test(n) && mapa.telefono===undefined) mapa.telefono = i;
+      else if(/notas|contacto|observ/.test(n) && mapa.notas===undefined) mapa.notas = i;
       else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
     });
-    if(mapa.nombres===undefined || mapa.apellidos===undefined){
-      throw new Error('No se pudo detectar las columnas de nombres/apellidos del candidato.');
+    // Acepta nombre completo en una columna (formato de tu planilla) O nombres/apellidos separados
+    const tieneNombreCompleto = mapa.nombreCompleto !== undefined;
+    const tieneNombresSeparados = mapa.nombres !== undefined || mapa.apellidos !== undefined;
+    if(!tieneNombreCompleto && !tieneNombresSeparados){
+      throw new Error('No se pudo detectar la columna de nombre del candidato (acepta: "Nombre del Designado", "Nombres", "Apellidos").');
     }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.nombres] && String(f[mapa.nombres]).trim());
+    // Para formato con nombre completo: determinar qué columna tiene datos válidos
+    const colNombreCheck = tieneNombreCompleto ? mapa.nombreCompleto : (mapa.nombres ?? mapa.apellidos);
+    const registros = filas.slice(1).filter(f=>f[colNombreCheck] && String(f[colNombreCheck]).trim());
 
-    if(!registros.length) throw new Error('No se encontraron filas válidas con nombres de candidato.');
+    // Función para extraer teléfono del campo de notas (ej: "Tel: 829-387-8120.")
+    function extraerTelDeNotas(notas){
+      if(!notas) return null;
+      const m = String(notas).match(/Tel[eé]?[fono]*[.:]\s*([\d\-\s]+)/i);
+      return m ? m[1].trim() : null;
+    }
+    // Función para separar nombre completo en nombres y apellidos
+    function separarNombre(nombreCompleto){
+      const partes = String(nombreCompleto).trim().split(/\s+/);
+      if(partes.length >= 4) return [partes.slice(0,2).join(' '), partes.slice(2).join(' ')];
+      if(partes.length === 3) return [partes[0], partes.slice(1).join(' ')];
+      return [nombreCompleto.trim(), 'Sin apellido'];
+    }
 
     let creados = 0, errores = 0;
     const detalleErrores = [];
@@ -2688,11 +2730,22 @@ async function procesarImportacionTelegramas(){
         const sexo = mapa.sexo!==undefined ? (String(f[mapa.sexo]||'').trim().toUpperCase().startsWith('F') ? 'F' : 'M') : 'M';
         const cedulaCandidato = mapa.cedula!==undefined ? String(f[mapa.cedula]||'').trim() : '';
         const cargoCandidato = mapa.cargo!==undefined ? String(f[mapa.cargo]||'').trim() : '';
+        // Soporte para nombre completo en una sola columna ("Nombre del Designado")
+        let nombresIns, apellidosIns, nombreCompletoParaTexto;
+        if(tieneNombreCompleto){
+          const nc = String(f[mapa.nombreCompleto]||'').trim();
+          [nombresIns, apellidosIns] = separarNombre(nc);
+          nombreCompletoParaTexto = nc;
+        } else {
+          nombresIns = String(f[mapa.nombres]||'').trim();
+          apellidosIns = String(f[mapa.apellidos]||'').trim();
+          nombreCompletoParaTexto = (nombresIns+' '+apellidosIns).trim();
+        }
         const { data: nuevoCandidato, error: errCand } = await sb.from('candidatos_ap')
           .insert({
             solicitud_ap_id: nuevaSolicitud.id,
-            nombres: String(f[mapa.nombres]||'').trim(),
-            apellidos: String(f[mapa.apellidos]||'').trim(),
+            nombres: nombresIns,
+            apellidos: apellidosIns || 'Sin apellido',
             cedula: cedulaCandidato || '000-0000000-0',
             sexo,
             cargo_propuesto: cargoCandidato || 'No especificado',
@@ -2704,12 +2757,15 @@ async function procesarImportacionTelegramas(){
         const cargoDesignado = mapa.cargo!==undefined ? (String(f[mapa.cargo]||'').trim() || '________') : '________';
         const destinatario = mapa.destinatario!==undefined ? (String(f[mapa.destinatario]||'').trim() || '________') : '________';
         const jornada = mapa.jornada!==undefined ? (String(f[mapa.jornada]||'').trim() || 'Extendida') : 'Extendida';
+        // Teléfono: del campo directo o extraído de notas
+        let telFinal = mapa.telefono!==undefined ? (String(f[mapa.telefono]||'').trim() || null) : null;
+        if(!telFinal && mapa.notas!==undefined) telFinal = extraerTelDeNotas(f[mapa.notas]);
 
         const texto = generarTextoTelegrama({
           destinatarioNombre: destinatario,
           centroNombre: nombreCentroFinal,
-          candidatoNombre: String(f[mapa.nombres]).trim()+' '+String(f[mapa.apellidos]).trim(),
-          candidatoCedula: mapa.cedula!==undefined ? String(f[mapa.cedula]||'').trim() : '',
+          candidatoNombre: nombreCompletoParaTexto,
+          candidatoCedula: cedulaCandidato,
           candidatoSexo: sexo,
           cargoDesignado,
           jornada,
@@ -2722,6 +2778,7 @@ async function procesarImportacionTelegramas(){
           no_telegrama: mapa.numero!==undefined ? (String(f[mapa.numero]||'').trim() || null) : null,
           fecha_telegrama: fecha,
           destinatario_nombre: destinatario,
+          destinatario_telefono: telFinal,
           cargo_designado: cargoDesignado,
           jornada,
           texto_generado: texto,
@@ -2922,11 +2979,16 @@ async function renderPuestasDisposicion(){
   pintarTablaPuestasDisp(window._puestasDisposicionData);
 
   registrarExportadores('pd', ()=>window._puestasDispFiltrado||window._puestasDisposicionData||[], [
-    { label:'Fecha', get:p=>fechaCorta(p.fecha_oficio) },
-    { label:'Empleado', get:p=>(p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'') },
-    { label:'Cargo', key:'cargo_designado' },
-    { label:'Destinatario', key:'destinatario_nombre' },
+    { label:'Cédula del empleado', get:p=>p.personal_rh?.cedula||'' },
+    { label:'Nombres (si el empleado no existe aún)', get:p=>p.personal_rh?.nombres||'' },
+    { label:'Apellidos (si el empleado no existe aún)', get:p=>p.personal_rh?.apellidos||'' },
+    { label:'Fecha del oficio (AAAA-MM-DD)', get:p=>p.fecha_oficio||'' },
+    { label:'Destinatario (Director/a que recibe)', key:'destinatario_nombre' },
+    { label:'Cargo del destinatario', key:'destinatario_cargo' },
     { label:'Distrito destino', key:'distrito_destino' },
+    { label:'Analista (Vía)', key:'analista_nombre' },
+    { label:'Cargo designado', key:'cargo_designado' },
+    { label:'Motivo', key:'motivo' },
     { label:'Estado', key:'estado' },
   ], 'puestas_disposicion_1606', 'Puestas a Disposición - Distrito 16-06', 'chk-pd');
 }
@@ -3349,11 +3411,15 @@ async function renderCartasAceptacion(){
   pintarTablaCA(window._cartasAceptacionData);
 
   registrarExportadores('ca', ()=>window._caFiltrado||window._cartasAceptacionData||[], [
-    { label:'Fecha', get:c=>fechaCorta(c.fecha_oficio) },
-    { label:'Empleado', get:c=>(c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'') },
-    { label:'Cargo', key:'cargo_designado' },
-    { label:'Procedencia', key:'destinatario_nombre' },
-    { label:'Centro destino', get:c=>c.centros_rh?.nombre_centro||'' },
+    { label:'Cédula del empleado', get:c=>c.personal_rh?.cedula||'' },
+    { label:'Nombres (si el empleado no existe aún)', get:c=>c.personal_rh?.nombres||'' },
+    { label:'Apellidos (si el empleado no existe aún)', get:c=>c.personal_rh?.apellidos||'' },
+    { label:'Fecha del oficio (AAAA-MM-DD)', get:c=>c.fecha_oficio||'' },
+    { label:'Procedencia (Director/a que envía)', key:'destinatario_nombre' },
+    { label:'Cargo del destinatario (procedencia)', key:'destinatario_cargo' },
+    { label:'Analista (Vía)', key:'analista_nombre' },
+    { label:'Cargo designado', key:'cargo_designado' },
+    { label:'Centro donde será ubicada (opcional)', get:c=>c.centros_rh?.nombre_centro||'' },
     { label:'Estado', key:'estado' },
   ], 'cartas_aceptacion_1606', 'Cartas de Aceptación - Distrito 16-06', 'chk-ca');
 }
@@ -3792,14 +3858,19 @@ async function renderVacaciones(){
   pintarTablaVacaciones(window._vacacionesData);
 
   registrarExportadores('vac', ()=>window._vacacionesFiltrado||window._vacacionesData||[], [
-    { label:'Empleado', get:v=>(v.personal_rh?.nombres||'')+' '+(v.personal_rh?.apellidos||'') },
-    { label:'Centro', get:v=>v.personal_rh?.centros_rh?.nombre_centro||'' },
-    { label:'Días Año 1', key:'dias_solicitados_anio1' },
+    { label:'Cédula del empleado', get:v=>v.personal_rh?.cedula||'' },
+    { label:'Fecha de solicitud (AAAA-MM-DD)', get:v=>v.fecha_solicitud||'' },
+    { label:'Años servicio MINERD', key:'anios_servicio_minerd' },
+    { label:'Años servicio otra institución', key:'anios_servicio_otra_institucion' },
+    { label:'Días año 1', key:'dias_solicitados_anio1' },
     { label:'Año 1', key:'anio1' },
-    { label:'Días Año 2', key:'dias_solicitados_anio2' },
+    { label:'Días año 2', key:'dias_solicitados_anio2' },
     { label:'Año 2', key:'anio2' },
-    { label:'Desde', get:v=>fechaCorta(v.fecha_inicio_disfrute) },
-    { label:'Hasta', get:v=>fechaCorta(v.fecha_fin_disfrute) },
+    { label:'Días pendientes', key:'dias_pendientes' },
+    { label:'Fecha inicio disfrute (AAAA-MM-DD)', get:v=>v.fecha_inicio_disfrute||'' },
+    { label:'Fecha fin disfrute (AAAA-MM-DD)', get:v=>v.fecha_fin_disfrute||'' },
+    { label:'Comentario', key:'comentario' },
+    { label:'Pre/post natal (SI/NO)', get:v=>v.en_licencia_pre_post_natal?'SI':'NO' },
     { label:'Estado', key:'estado' },
   ], 'vacaciones_1606', 'Vacaciones - Distrito 16-06', 'chk-vac');
 }
@@ -4315,13 +4386,18 @@ async function renderLicenciasPermisos(){
   pintarTablaLP(window._licenciasPermisosData);
 
   registrarExportadores('lp', ()=>window._lpFiltrado||window._licenciasPermisosData||[], [
-    { label:'Empleado', get:x=>(x.personal_rh?.nombres||'')+' '+(x.personal_rh?.apellidos||'') },
-    { label:'Categoría', get:x=>x.categoria==='licencia'?'Licencia':'Permiso' },
-    { label:'Subtipo', get:x=>labelSubtipoLP(x.subtipo)+(x.subtipo_detalle?': '+x.subtipo_detalle:'') },
-    { label:'Duración', get:x=>`${x.duracion_dias||0}d ${x.duracion_meses||0}m ${x.duracion_anios||0}a` },
-    { label:'Desde', get:x=>fechaCorta(x.fecha_inicio) },
-    { label:'Hasta', get:x=>fechaCorta(x.fecha_fin) },
-    { label:'Evidencia', get:x=>x.evidencia_requerida ? (x.evidencia_presentada?'Presentada':'Pendiente') : 'N/A' },
+    { label:'Cédula del empleado', get:l=>l.personal_rh?.cedula||'' },
+    { label:'Fecha de solicitud (AAAA-MM-DD)', get:l=>l.fecha_solicitud||'' },
+    { label:'Categoría (licencia/permiso)', key:'categoria' },
+    { label:'Subtipo', key:'subtipo' },
+    { label:'Detalle (si subtipo es Otra/Otros)', key:'subtipo_detalle' },
+    { label:'Días', key:'duracion_dias' },
+    { label:'Meses', key:'duracion_meses' },
+    { label:'Años', key:'duracion_anios' },
+    { label:'Fecha inicio (AAAA-MM-DD)', get:l=>l.fecha_inicio||'' },
+    { label:'Fecha fin (AAAA-MM-DD)', get:l=>l.fecha_fin||'' },
+    { label:'Comentario', key:'comentario' },
+    { label:'Evidencia presentada (SI/NO)', get:l=>l.evidencia_presentada?'SI':'NO' },
     { label:'Estado', key:'estado' },
   ], 'licencias_permisos_1606', 'Licencias y Permisos - Distrito 16-06', 'chk-lp');
 }
@@ -4815,13 +4891,18 @@ async function renderRiesgosLaborales(){
   pintarTablaRiesgos(window._riesgosData);
 
   registrarExportadores('rl', ()=>window._riesgosFiltrado||window._riesgosData||[], [
-    { label:'Tipo', key:'tipo_formulario' },
-    { label:'Empleado', get:r=>(r.personal_rh?.nombres||'')+' '+(r.personal_rh?.apellidos||'') },
-    { label:'Fecha evento', get:r=>fechaCorta(r.fecha_evento) },
-    { label:'Fecha aviso', get:r=>fechaCorta(r.fecha_aviso) },
+    { label:'Cédula del empleado', get:r=>r.personal_rh?.cedula||'' },
+    { label:'Tipo (ATR-2/EPR-1)', key:'tipo_formulario' },
+    { label:'Fecha del evento (AAAA-MM-DD)', get:r=>r.fecha_evento||'' },
+    { label:'Fecha del aviso (AAAA-MM-DD)', get:r=>r.fecha_aviso||'' },
     { label:'Descripción', key:'descripcion_evento' },
+    { label:'Lugar', key:'lugar_evento' },
+    { label:'Centro (opcional)', get:r=>r.centros_rh?.nombre_centro||'' },
+    { label:'Certificado médico (SI/NO)', get:r=>r.tiene_certificado_medico?'SI':'NO' },
+    { label:'Acta policial (SI/NO)', get:r=>r.tiene_acta_policial?'SI':'NO' },
+    { label:'Formulario firmado (SI/NO)', get:r=>r.formulario_firmado_rrhh?'SI':'NO' },
     { label:'Estado', key:'estado' },
-  ], 'riesgos_laborales_1606', 'Riesgos Laborales (ATR-2/EPR-1) - Distrito 16-06', 'chk-rl');
+  ], 'riesgos_laborales_1606', 'Riesgos Laborales - Distrito 16-06', 'chk-rl');
 }
 
 function pintarTablaRiesgos(lista){
@@ -5194,12 +5275,20 @@ async function renderPensiones(){
   pintarTablaPensiones(window._pensionesData);
 
   registrarExportadores('pen', ()=>window._pensionesFiltrado||window._pensionesData||[], [
-    { label:'Empleado', get:p=>(p.personal_rh?.nombres||'')+' '+(p.personal_rh?.apellidos||'') },
-    { label:'Tipo personal', get:p=>p.tipo_personal==='docente'?'Docente':'Administrativo' },
-    { label:'Tipo pensión', key:'tipo_pension' },
-    { label:'Años servicio', key:'anios_servicio' },
+    { label:'Cédula del empleado', get:p=>p.personal_rh?.cedula||'' },
+    { label:'Tipo de personal (docente/administrativo)', key:'tipo_personal' },
+    { label:'Tipo de pensión', key:'tipo_pension' },
+    { label:'Fecha de solicitud (AAAA-MM-DD)', get:p=>p.fecha_solicitud||'' },
+    { label:'Años de servicio', key:'anios_servicio' },
+    { label:'Fecha de ingreso al MINERD (AAAA-MM-DD)', get:p=>p.fecha_ingreso_minerd||'' },
+    { label:'Certificación de trabajo (SI/NO)', get:p=>p.tiene_certificacion_trabajo?'SI':'NO' },
+    { label:'Certificación de Contraloría (SI/NO)', get:p=>p.tiene_certificacion_contraloria?'SI':'NO' },
+    { label:'Comunicación al Ministro (SI/NO)', get:p=>p.tiene_comunicacion_ministro?'SI':'NO' },
+    { label:'Copia de cédula (SI/NO)', get:p=>p.tiene_copia_cedula?'SI':'NO' },
+    { label:'Fotos 2x2 (SI/NO)', get:p=>p.tiene_fotos?'SI':'NO' },
     { label:'Estado', key:'estado' },
-  ], 'pensiones_1606', 'Pensiones y Jubilaciones - Distrito 16-06', 'chk-pen');
+    { label:'Observaciones', key:'observaciones' },
+  ], 'pensiones_1606', 'Pensiones - Distrito 16-06', 'chk-pen');
 }
 
 function pintarTablaPensiones(lista){
@@ -5551,12 +5640,19 @@ async function renderSegurosSalud(){
   pintarTablaSeguros(window._segurosData);
 
   registrarExportadores('seg', ()=>window._segurosFiltrado||window._segurosData||[], [
-    { label:'Titular', get:s=>(s.personal_rh?.nombres||'')+' '+(s.personal_rh?.apellidos||'') },
-    { label:'Tipo', key:'tipo_formulario' },
-    { label:'Dependiente', key:'nombre_dependiente' },
-    { label:'Parentesco', get:s=>s.parentesco?(LABEL_PARENTESCO[s.parentesco]||s.parentesco):'' },
+    { label:'Cédula del titular', get:s=>s.personal_rh?.cedula||'' },
+    { label:'Tipo (F1/F2)', key:'tipo_formulario' },
+    { label:'Fecha de solicitud (AAAA-MM-DD)', get:s=>s.fecha_solicitud||'' },
+    { label:'Nombre del dependiente', key:'nombre_dependiente' },
+    { label:'Parentesco', key:'parentesco' },
+    { label:'Cédula del dependiente', key:'cedula_dependiente' },
+    { label:'Copia de cédula (SI/NO)', get:s=>s.tiene_copia_cedula?'SI':'NO' },
+    { label:'Acta de nacimiento (SI/NO)', get:s=>s.tiene_acta_nacimiento?'SI':'NO' },
+    { label:'Certificación de estudio (SI/NO)', get:s=>s.tiene_certificacion_estudio?'SI':'NO' },
+    { label:'Formulario de descuento (SI/NO)', get:s=>s.tiene_formulario_descuento?'SI':'NO' },
     { label:'Estado', key:'estado' },
-  ], 'seguros_salud_1606', 'Seguros de Salud (SeNaSa) - Distrito 16-06', 'chk-seg');
+    { label:'Observaciones', key:'observaciones' },
+  ], 'seguros_salud_1606', 'Seguros de Salud - Distrito 16-06', 'chk-seg');
 }
 
 function actualizarAyudaSeguro(){
@@ -5932,13 +6028,17 @@ async function renderCertificacionesLaborales(){
   pintarTablaCertLab(window._certLaboralData);
 
   registrarExportadores('cl', ()=>window._clFiltrado||window._certLaboralData||[], [
-    { label:'Empleado', get:c=>(c.personal_rh?.nombres||'')+' '+(c.personal_rh?.apellidos||'') },
-    { label:'Período desde', get:c=>fechaCorta(c.periodo_desde) },
-    { label:'Período hasta', get:c=>c.periodo_hasta?fechaCorta(c.periodo_hasta):'Actual' },
+    { label:'Cédula del empleado', get:c=>c.personal_rh?.cedula||'' },
+    { label:'Fecha de solicitud (AAAA-MM-DD)', get:c=>c.fecha_solicitud||'' },
+    { label:'Fecha de emisión (AAAA-MM-DD)', get:c=>c.fecha_emision||'' },
+    { label:'Período desde (AAAA-MM-DD)', get:c=>c.periodo_desde||'' },
+    { label:'Período hasta (AAAA-MM-DD, vacío si sigue activo)', get:c=>c.periodo_hasta||'' },
+    { label:'Cargo certificado', key:'cargo_certificado' },
     { label:'Motivo', key:'motivo' },
-    { label:'Terceros', get:c=>c.solicitado_por_terceros?'Sí':'No' },
+    { label:'Solicitado por terceros (SI/NO)', get:c=>c.solicitado_por_terceros?'SI':'NO' },
+    { label:'Poder notarial (SI/NO)', get:c=>c.tiene_poder_notarial?'SI':'NO' },
     { label:'Estado', key:'estado' },
-  ], 'certificaciones_laborales_1606', 'Certificaciones Laborales - Distrito 16-06', 'chk-cl');
+  ], 'cert_laborales_1606', 'Certificaciones Laborales - Distrito 16-06', 'chk-cl');
 }
 
 function pintarTablaCertLab(lista){
