@@ -1328,7 +1328,7 @@ function detectarColumnasCentros(headers){
   const mapa = {};
   headers.forEach((h,i)=>{
     const n = norm(h);
-    if(/sigerd/.test(n)) mapa.sigerd = i;
+    if(/sigerd|codigo/.test(n)) mapa.sigerd = i;
     else if(/matricula/.test(n)) mapa.matricula = i;
     else if(/nivel/.test(n)) mapa.nivel = i;
     else if(/tanda|jornada/.test(n)) mapa.tanda = i;
@@ -1352,11 +1352,22 @@ async function procesarImportacionCentros(){
     const filas = await leerArchivoNomina(archivo); // reutiliza el lector genérico CSV/Excel/PDF
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
 
-    const headers = filas[0];
+    // Detecta automáticamente la fila de encabezados reales (por si el archivo trae
+    // un título y/o filas en blanco antes de los nombres de columna)
+    const normCentros = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const patronesEncabezadoCentros = [/sigerd|codigo/, /matricula/, /nivel/, /tanda|jornada/, /dependencia/,
+      /director/, /centro|nombre/, /telefono/, /zona/];
+    let headerRowIdxCentros = 0, mejorCoincidenciasCentros = -1;
+    for(let i=0; i<Math.min(filas.length,10); i++){
+      const coincidencias = filas[i].filter(c=>{ const n=normCentros(c); return n && patronesEncabezadoCentros.some(p=>p.test(n)); }).length;
+      if(coincidencias > mejorCoincidenciasCentros){ mejorCoincidenciasCentros = coincidencias; headerRowIdxCentros = i; }
+    }
+    const headers = filas[headerRowIdxCentros];
     const mapa = detectarColumnasCentros(headers);
     if(mapa.nombre === undefined) throw new Error('No se pudo detectar la columna con el nombre del centro.');
 
-    const registros = filas.slice(1)
+    const registros = filas.slice(headerRowIdxCentros+1)
       .filter(f=>f[mapa.nombre] && String(f[mapa.nombre]).trim())
       .map(f=>({
         nombre_centro: String(f[mapa.nombre]).trim(),
