@@ -7116,15 +7116,13 @@ async function compararConHistorial(nominaNuevaId, registrosNuevos, mapaPersonal
     .order('anio',{ascending:false}).order('mes',{ascending:false}).limit(1).maybeSingle();
 
   // Todo el historial de cédulas que han aparecido en CUALQUIER nómina anterior
-  const { data: historico } = await sb.from('detalle_nomina_rh')
-    .select('cedula_archivo, nomina_id').neq('nomina_id', nominaNuevaId);
+  const historico = await fetchTodasLasFilas('detalle_nomina_rh', 'cedula_archivo, nomina_id', q=>q.neq('nomina_id', nominaNuevaId));
 
   const cedulasHistoricas = new Set((historico||[]).map(h=>h.cedula_archivo.replace(/[^0-9]/g,'')));
 
   let cedulasNominaAnterior = new Set();
   if(nominaAnterior){
-    const { data: detAnterior } = await sb.from('detalle_nomina_rh')
-      .select('cedula_archivo, nombre_archivo, personal_id').eq('nomina_id', nominaAnterior.id);
+    const detAnterior = await fetchTodasLasFilas('detalle_nomina_rh', 'cedula_archivo, nombre_archivo, personal_id', q=>q.eq('nomina_id', nominaAnterior.id));
     cedulasNominaAnterior = new Set((detAnterior||[]).map(d=>d.cedula_archivo.replace(/[^0-9]/g,'')));
     window._detAnteriorCache = detAnterior || [];
   }
@@ -7174,8 +7172,11 @@ async function compararConHistorial(nominaNuevaId, registrosNuevos, mapaPersonal
   }
 
   if(movimientos.length){
-    const { error } = await sb.from('movimientos_nomina_rh').insert(movimientos);
-    if(error) console.error('Error guardando movimientos:', error.message);
+    for(let i=0; i<movimientos.length; i+=500){
+      const lote = movimientos.slice(i, i+500);
+      const { error } = await sb.from('movimientos_nomina_rh').insert(lote);
+      if(error) console.error('Error guardando movimientos:', error.message);
+    }
 
     // Marcar automáticamente como inactivo/cancelado en personal_rh a quienes
     // ya no aparecen en la nómina nueva
@@ -7485,10 +7486,10 @@ async function verDetalleNomina(nominaId, periodo){
 /* ---- Reporte de movimientos (nuevos / reingresos / cancelados) ---- */
 async function verMovimientosNomina(nominaId, periodo){
   document.getElementById('titulo-movimientos-nomina').textContent = `Movimientos de personal — ${periodo}`;
-  const { data, error } = await sb.from('movimientos_nomina_rh')
-    .select('*, personal_rh(nombres,apellidos,cargo_actual)').eq('nomina_id', nominaId)
-    .order('tipo_movimiento');
-  if(error){ toast(error.message,'error'); return; }
+  let data;
+  try{
+    data = await fetchTodasLasFilas('movimientos_nomina_rh', '*, personal_rh(nombres,apellidos,cargo_actual)', q=>q.eq('nomina_id', nominaId).order('tipo_movimiento'));
+  }catch(err){ toast(err.message,'error'); return; }
 
   window._movimientosActuales = data || [];
 
