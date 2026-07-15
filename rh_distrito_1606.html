@@ -6880,7 +6880,7 @@ async function procesarImportacionNomina(){
     // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
     // .range() amplía el límite de 1000 filas que Supabase aplica por defecto,
     // necesario porque el personal del distrito puede superar esa cifra.
-    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,cargo_actual,centro_id');
+    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,cargo_actual,centro_id', q=>q.order('id'));
     const mapaPersonal = {};
     (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
 
@@ -6929,7 +6929,7 @@ async function procesarImportacionNomina(){
     }
 
     // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
-    const personalFinal = await fetchTodasLasFilas('personal_rh', 'id,cedula');
+    const personalFinal = await fetchTodasLasFilas('personal_rh', 'id,cedula', q=>q.order('id'));
     const mapaPersonalFinal = {};
     (personalFinal||[]).forEach(p=>{ mapaPersonalFinal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
 
