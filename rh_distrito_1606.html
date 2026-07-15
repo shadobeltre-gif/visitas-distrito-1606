@@ -1005,7 +1005,7 @@ async function renderPanel(){
 
   main.innerHTML = `<div class="vacio">Cargando panel general…</div>`;
 
-  const [sol, tel, pd, ca, vac, lp, riesgo, pen, seg, cl, per, cen, nom, movRecientes] = await Promise.all([
+  const [sol, tel, pd, ca, vac, lp, riesgo, pen, seg, cl, per, cen, nom, movRecientes, perActivoCount, perInactivoCount] = await Promise.all([
     sb.from('solicitudes_ap').select('id,estado', {count:'exact'}),
     sb.from('telegramas_rh').select('id,estado_envio', {count:'exact'}),
     sb.from('puestas_disposicion_rh').select('id,estado', {count:'exact'}),
@@ -1020,13 +1020,16 @@ async function renderPanel(){
     sb.from('centros_rh').select('id', {count:'exact'}),
     sb.from('nominas_rh').select('id,mes,anio').order('anio',{ascending:false}).order('mes',{ascending:false}).limit(1),
     sb.from('movimientos_nomina_rh').select('id,tipo_movimiento,nomina_id').order('creado_en',{ascending:false}).limit(500),
+    sb.from('personal_rh').select('id', {count:'exact', head:true}).eq('estatus','activo'),
+    sb.from('personal_rh').select('id', {count:'exact', head:true}).in('estatus', ['inactivo','sustituido','renunciado','fallecido','cancelado']),
   ]);
 
   const pendientesAP = (sol.data||[]).filter(s=>['enviado','expediente_incompleto','incidencias'].includes(s.estado)).length;
   const nombradosAP = (sol.data||[]).filter(s=>s.estado==='nombrado').length;
 
-  const personalActivo = (per.data||[]).filter(p=>p.estatus==='activo').length;
-  const personalInactivo = (per.data||[]).filter(p=>['inactivo','sustituido','renunciado','fallecido','cancelado'].includes(p.estatus)).length;
+  // Conteos exactos vía consulta al servidor (evita el límite de 1000 filas por consulta de Supabase)
+  const personalActivo = perActivoCount.count ?? 0;
+  const personalInactivo = perInactivoCount.count ?? 0;
 
   const vacPendientes = (vac.data||[]).filter(v=>['solicitado','firmado_supervisor'].includes(v.estado)).length;
   const licPendientes = (lp.data||[]).filter(l=>l.estado==='solicitado').length;
