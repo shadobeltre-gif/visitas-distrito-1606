@@ -2372,6 +2372,8 @@ async function renderTelegramas(){
               <input type="text" id="tel-destinatario"></div>
             <div class="campo"><label>Teléfono del destinatario</label>
               <input type="tel" id="tel-destinatario-telefono" placeholder="809-000-0000"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Notas / Contacto</label>
+              <textarea id="tel-notas" rows="2" placeholder="Ej: Trasladada desde el Centro Educativo Nieves Peña."></textarea></div>
             <div class="campo"><label>Cargo en que se designa <span class="requerido">*</span></label>
               <input type="text" id="tel-cargo"></div>
             <div class="campo"><label>Jornada <span class="requerido">*</span></label>
@@ -2417,8 +2419,8 @@ async function renderTelegramas(){
             <label>Archivo Excel o CSV <span class="requerido">*</span></label>
             <input type="file" id="tel-import-archivo" accept=".xlsx,.xls,.csv">
             <div class="texto-ayuda">
-              Columnas reconocidas: no. de telegrama, fecha, nombres y apellidos del candidato, cédula, sexo, cargo designado, nombre del centro, código SIGERD (opcional), jornada, destinatario, estado.
-              Por cada fila, el sistema crea automáticamente una Solicitud AP y un Candidato básicos (si aún no existen) para vincular el telegrama. Si el centro no existe, se crea con el nombre indicado.
+              Columnas reconocidas: no. de telegrama, fecha, nombres y apellidos del candidato, cédula, sexo, cargo designado, nombre del centro, código SIGERD (opcional), jornada, destinatario, teléfono, notas/contacto, estado.
+              Por cada fila, el sistema crea automáticamente una Solicitud AP y un Candidato básicos (si aún no existen) para vincular el telegrama. Si el centro no existe, se crea con el nombre indicado. La columna de notas/contacto se guarda completa y, si no hay columna de teléfono aparte, el teléfono se extrae automáticamente de ahí (ej: "Tel: 809-555-0001.").
               <a href="#" onclick="descargarPlantillaTelegramas();return false;">Descargar plantilla de ejemplo</a>.
             </div>
           </div>
@@ -2447,6 +2449,7 @@ async function renderTelegramas(){
     { label:'Jornada', key:'jornada' },
     { label:'Destinatario (Director/a)', key:'destinatario_nombre' },
     { label:'Teléfono del destinatario', key:'destinatario_telefono' },
+    { label:'Notas / Contacto', key:'notas' },
     { label:'Estado', key:'estado_envio' },
   ], 'telegramas_1606', 'Telegramas - Distrito 16-06', 'chk-telegramas');
 }
@@ -2473,6 +2476,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-fecha').value = t.fecha_telegrama || '';
     document.getElementById('tel-destinatario').value = t.destinatario_nombre || '';
     document.getElementById('tel-destinatario-telefono').value = t.destinatario_telefono || '';
+    document.getElementById('tel-notas').value = t.notas || '';
     document.getElementById('tel-cargo').value = t.cargo_designado || '';
     document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
     document.getElementById('tel-candidato').value = t.candidato_ap_id || '';
@@ -2483,6 +2487,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
     document.getElementById('tel-destinatario').value = '';
     document.getElementById('tel-destinatario-telefono').value = '';
+    document.getElementById('tel-notas').value = '';
     document.getElementById('tel-cargo').value = '';
     document.getElementById('tel-jornada').value = 'Extendida';
     document.getElementById('tel-candidato').value = '';
@@ -2581,6 +2586,7 @@ async function guardarTelegrama(){
     fecha_telegrama: fecha,
     destinatario_nombre: destinatario,
     destinatario_telefono: document.getElementById('tel-destinatario-telefono').value.trim() || null,
+    notas: document.getElementById('tel-notas').value.trim() || null,
     cargo_designado: cargo,
     jornada: document.getElementById('tel-jornada').value,
     texto_generado: texto,
@@ -2639,10 +2645,24 @@ async function procesarImportacionTelegramas(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+
+    // Detecta automáticamente la fila de encabezados reales (por si el archivo trae
+    // un título y/o filas en blanco antes de los nombres de columna, como "REGISTRO
+    // GENERAL DE TELEGRAMAS (141 REGISTROS COMPLETOS)")
+    const patronesEncabezado = [/telegrama|no\.?\s*tel/, /fecha/, /nombres?\b.*candidato|^nombres?$/,
+      /apellidos?\b.*candidato|^apellidos?$/, /(nombre|designado|designad[ao])\b/, /cedula/, /sexo/, /cargo/,
+      /sigerd|codigo.*centro/, /centro.*educ|centro/, /jornada/, /destinatario|director/, /telefono/,
+      /notas|contacto|observ/, /estado/];
+    let headerRowIdx = 0, mejorCoincidencias = -1;
+    for(let i=0; i<Math.min(filas.length,10); i++){
+      const coincidencias = filas[i].filter(c=>{ const n=norm(c); return n && patronesEncabezado.some(p=>p.test(n)); }).length;
+      if(coincidencias > mejorCoincidencias){ mejorCoincidencias = coincidencias; headerRowIdx = i; }
+    }
+    const headers = filas[headerRowIdx];
+
     const mapa = {};
     headers.forEach((h,i)=>{
       const n = norm(h);
@@ -2672,7 +2692,7 @@ async function procesarImportacionTelegramas(){
 
     // Para formato con nombre completo: determinar qué columna tiene datos válidos
     const colNombreCheck = tieneNombreCompleto ? mapa.nombreCompleto : (mapa.nombres ?? mapa.apellidos);
-    const registros = filas.slice(1).filter(f=>f[colNombreCheck] && String(f[colNombreCheck]).trim());
+    const registros = filas.slice(headerRowIdx+1).filter(f=>f[colNombreCheck] && String(f[colNombreCheck]).trim());
 
     // Función para extraer teléfono del campo de notas (ej: "Tel: 829-387-8120.")
     function extraerTelDeNotas(notas){
@@ -2760,6 +2780,9 @@ async function procesarImportacionTelegramas(){
         // Teléfono: del campo directo o extraído de notas
         let telFinal = mapa.telefono!==undefined ? (String(f[mapa.telefono]||'').trim() || null) : null;
         if(!telFinal && mapa.notas!==undefined) telFinal = extraerTelDeNotas(f[mapa.notas]);
+        // Notas / Contacto: se guarda el texto completo tal cual venía en el Excel,
+        // aparte del teléfono ya extraído por separado
+        const notasFinal = mapa.notas!==undefined ? (String(f[mapa.notas]||'').trim() || null) : null;
 
         const texto = generarTextoTelegrama({
           destinatarioNombre: destinatario,
@@ -2779,6 +2802,7 @@ async function procesarImportacionTelegramas(){
           fecha_telegrama: fecha,
           destinatario_nombre: destinatario,
           destinatario_telefono: telFinal,
+          notas: notasFinal,
           cargo_designado: cargoDesignado,
           jornada,
           texto_generado: texto,
