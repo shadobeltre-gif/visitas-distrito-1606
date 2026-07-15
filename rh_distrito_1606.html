@@ -6885,7 +6885,7 @@ async function procesarImportacionNomina(){
     // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
     // .range() amplía el límite de 1000 filas que Supabase aplica por defecto,
     // necesario porque el personal del distrito puede superar esa cifra.
-    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,cargo_actual,centro_id', q=>q.order('id'));
+    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,nombres,apellidos,sexo,cargo_actual,centro_id', q=>q.order('id'));
     const mapaPersonal = {};
     (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
 
@@ -6913,9 +6913,15 @@ async function procesarImportacionNomina(){
           || (centroId && centroId !== existente.centro_id)
           || existente.estatus !== 'activo';
         if(necesitaActualizar){
+          // Se manda la fila completa (no solo lo que cambia): el upsert de Supabase
+          // arma un INSERT ... ON CONFLICT por debajo, y cualquier columna obligatoria
+          // que falte en el payload rompe esa validación antes de llegar al UPDATE.
           personalActualizar.push({
             id: existente.id,
             cedula: existente.cedula,
+            nombres: existente.nombres,
+            apellidos: existente.apellidos,
+            sexo: existente.sexo,
             cargo_actual: r.cargo_archivo || existente.cargo_actual,
             centro_id: centroId || existente.centro_id,
             estatus: 'activo',
