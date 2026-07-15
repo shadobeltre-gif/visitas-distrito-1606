@@ -1049,8 +1049,10 @@ async function renderPanel(){
 
   // ---- Datos agrupados para las gráficas ----
   const ESTATUS_PERSONAL_LABELS = {activo:'Activo',inactivo:'Inactivo',sustituido:'Sustituido',renunciado:'Renunciado',fallecido:'Fallecido',cancelado:'Cancelado'};
+  // Usa los mismos conteos exactos de arriba (no el array per.data, que Supabase limita a 1000 filas)
   const conteoPorEstatus = {};
-  (per.data||[]).forEach(p=>{ conteoPorEstatus[p.estatus] = (conteoPorEstatus[p.estatus]||0)+1; });
+  if(personalActivo) conteoPorEstatus.activo = personalActivo;
+  if(personalInactivo) conteoPorEstatus.inactivo = personalInactivo;
   const labelsPersonal = Object.keys(conteoPorEstatus).map(k=>ESTATUS_PERSONAL_LABELS[k]||k);
   const valoresPersonal = Object.values(conteoPorEstatus);
 
@@ -6926,9 +6928,12 @@ async function procesarImportacionNomina(){
       if(errPersNuevo) throw errPersNuevo;
       (insertadosP||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = { id:p.id }; });
     }
-    for(const upd of personalActualizar){
-      const { id, ...campos } = upd;
-      await sb.from('personal_rh').update(campos).eq('id', id);
+    // Actualiza en lotes de 500 (en vez de una solicitud por empleado, que con miles
+    // de registros podía tardar varios minutos y parecer que la pantalla se congeló)
+    for(let i=0; i<personalActualizar.length; i+=500){
+      const lote = personalActualizar.slice(i, i+500);
+      const { error: errActualizar } = await sb.from('personal_rh').upsert(lote, { onConflict: 'id' });
+      if(errActualizar) throw errActualizar;
     }
 
     // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
