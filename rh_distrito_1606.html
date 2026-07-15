@@ -6730,13 +6730,14 @@ function detectarColumnas(headers){
   headers.forEach((h,i)=>{
     const n = norm(h);
     if(/cedula/.test(n)) mapa.cedula = i;
+    else if(/nombres?\s*(y|\/)\s*apellidos?|nombre completo|nombre empleado/.test(n)) mapa.nombre = i;
     else if(/apellido/.test(n)) mapa.apellidos = i;
-    else if(/^nombre|nombres?$|nombre completo|nombre empleado/.test(n)) mapa.nombre = i;
+    else if(/^nombre|nombres?$/.test(n)) mapa.nombre = i;
     else if(/cargo|posicion|puesto/.test(n)) mapa.cargo = i;
     else if(/sigerd/.test(n)) mapa.sigerd = i;
     else if(/dependencia/.test(n)) mapa.dependencia = i;
     else if(/centro/.test(n)) mapa.centro = i;
-    else if(/bruto/.test(n)) mapa.bruto = i;
+    else if(/bruto|sueldo\s*base/.test(n)) mapa.bruto = i;
     else if(/descuent/.test(n)) mapa.descuentos = i;
     else if(/neto/.test(n)) mapa.neto = i;
   });
@@ -6761,11 +6762,22 @@ async function procesarImportacionNomina(){
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
 
-    const headers = filas[0];
+    // Detecta automáticamente la fila de encabezados reales (por si el archivo trae
+    // títulos como "DIRECCION DE RECURSOS HUMANOS" / "DEPARTAMENTO DE NOMINA" antes)
+    const normNom = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const patronesEncabezadoNom = [/cedula/, /nombres?|apellidos?/, /cargo|posicion|puesto/, /sigerd/,
+      /dependencia/, /centro/, /bruto|sueldo\s*base/, /descuent/, /neto/, /fecha/];
+    let headerRowIdxNom = 0, mejorCoincidenciasNom = -1;
+    for(let i=0; i<Math.min(filas.length,15); i++){
+      const coincidencias = filas[i].filter(c=>{ const n=normNom(c); return n && patronesEncabezadoNom.some(p=>p.test(n)); }).length;
+      if(coincidencias > mejorCoincidenciasNom){ mejorCoincidenciasNom = coincidencias; headerRowIdxNom = i; }
+    }
+    const headers = filas[headerRowIdxNom];
     const mapa = detectarColumnas(headers);
     if(mapa.cedula === undefined) throw new Error('No se pudo detectar la columna de cédula en el archivo.');
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula]).map(f=>{
+    const registros = filas.slice(headerRowIdxNom+1).filter(f=>f[mapa.cedula]).map(f=>{
       const nombreCol = mapa.nombre!==undefined ? String(f[mapa.nombre]||'').trim() : '';
       const apellidosCol = mapa.apellidos!==undefined ? String(f[mapa.apellidos]||'').trim() : '';
       const nombreCompleto = apellidosCol ? (nombreCol+' '+apellidosCol).trim() : nombreCol;
