@@ -6915,6 +6915,7 @@ async function procesarImportacionNomina(){
         if(necesitaActualizar){
           personalActualizar.push({
             id: existente.id,
+            cedula: existente.cedula,
             cargo_actual: r.cargo_archivo || existente.cargo_actual,
             centro_id: centroId || existente.centro_id,
             estatus: 'activo',
@@ -6942,7 +6943,7 @@ async function procesarImportacionNomina(){
       const lote = personalActualizar.slice(i, i+500);
       btn.innerHTML = `<span class="spinner"></span> Actualizando personal ${Math.min(i+500,personalActualizar.length)}/${personalActualizar.length}…`;
       const { error: errActualizar } = await sb.from('personal_rh').upsert(lote, { onConflict: 'id' });
-      if(errActualizar) throw errActualizar;
+      if(errActualizar) throw new Error(`Actualizando personal (lote ${i+1}-${Math.min(i+500,personalActualizar.length)}): ${errActualizar.message}`);
     }
 
     // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
