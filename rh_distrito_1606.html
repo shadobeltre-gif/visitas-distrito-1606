@@ -6932,6 +6932,7 @@ async function procesarImportacionNomina(){
     // de registros podía tardar varios minutos y parecer que la pantalla se congeló)
     for(let i=0; i<personalActualizar.length; i+=500){
       const lote = personalActualizar.slice(i, i+500);
+      btn.innerHTML = `<span class="spinner"></span> Actualizando personal ${Math.min(i+500,personalActualizar.length)}/${personalActualizar.length}…`;
       const { error: errActualizar } = await sb.from('personal_rh').upsert(lote, { onConflict: 'id' });
       if(errActualizar) throw errActualizar;
     }
@@ -6958,8 +6959,12 @@ async function procesarImportacionNomina(){
       };
     });
 
-    const { error: errDet } = await sb.from('detalle_nomina_rh').insert(detalle);
-    if(errDet) throw errDet;
+    for(let i=0; i<detalle.length; i+=500){
+      const lote = detalle.slice(i, i+500);
+      btn.innerHTML = `<span class="spinner"></span> Guardando ${Math.min(i+500,detalle.length)}/${detalle.length}…`;
+      const { error: errDet } = await sb.from('detalle_nomina_rh').insert(lote);
+      if(errDet) throw errDet;
+    }
 
     const encontrados = detalle.filter(d=>d.match_estado==='encontrado').length;
     const noEncontrados = detalle.length - encontrados;
