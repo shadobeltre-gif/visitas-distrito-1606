@@ -6801,6 +6801,19 @@ function formatearFechaCelda(valor){
   return String(valor).trim() || null;
 }
 
+function normalizarNombreCentro(nombre){
+  if(!nombre) return '';
+  let n = String(nombre).toUpperCase()
+    .replace(/[ÁÀÄ]/g,'A').replace(/[ÉÈË]/g,'E').replace(/[ÍÌÏ]/g,'I').replace(/[ÓÒÖ]/g,'O').replace(/[ÚÙÜ]/g,'U').replace(/Ñ/g,'N')
+    .replace(/[.,()]/g,' ');
+  // Quita prefijos típicos de nivel/tipo de centro
+  n = n.replace(/^(ESC\s*PRIM|ESC\s*NOCT|ESCUELA\s*PRIMARIA|LIC\s*SEC\s*VESP|LIC\s*SEC|LICEO|LIC|CEB|CENTRO\s*EDUC(ATIVO)?|POLITECNICO|POLIT|ESC\b|PROF\s+)+/,'');
+  // Quita sufijos típicos de jornada/matrícula/código de distrito
+  n = n.replace(/\b(MAT|VESP|NOCT|ADULTOS|PREPARA|J\s*E\s*E|JEE|16-06|1606)\b/g,'');
+  n = n.replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  return n;
+}
+
 function detectarColumnas(headers){
   const norm = h => h.toString().toLowerCase().trim()
     .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -6909,12 +6922,17 @@ async function procesarImportacionNomina(){
     if(errNom) throw errNom;
 
     // ---- PASO 1: UPSERT de centros (por dependencia, o por SIGERD si no hay dependencia) ----
-    const { data: centrosExistentes } = await sb.from('centros_rh').select('id,codigo_sigerd,numero_dependencia_nomina');
+    const { data: centrosExistentes } = await sb.from('centros_rh').select('id,codigo_sigerd,numero_dependencia_nomina,nombre_centro');
     const mapaCentroPorDependencia = {};
     const mapaCentroPorSigerd = {};
+    const mapaCentroPorNombre = {};
     (centrosExistentes||[]).forEach(c=>{
       if(c.numero_dependencia_nomina) mapaCentroPorDependencia[c.numero_dependencia_nomina] = c.id;
       if(c.codigo_sigerd) mapaCentroPorSigerd[c.codigo_sigerd] = c.id;
+      if(c.nombre_centro){
+        const clave = normalizarNombreCentro(c.nombre_centro);
+        if(clave) mapaCentroPorNombre[clave] = c.id;
+      }
     });
 
     const centrosNuevos = [];
@@ -6945,6 +6963,15 @@ async function procesarImportacionNomina(){
     function resolverCentroId(r){
       if(r.dependencia_archivo && mapaCentroPorDependencia[r.dependencia_archivo]) return mapaCentroPorDependencia[r.dependencia_archivo];
       if(r.sigerd_archivo && mapaCentroPorSigerd[r.sigerd_archivo]) return mapaCentroPorSigerd[r.sigerd_archivo];
+      if(r.centro_archivo){
+        const clave = normalizarNombreCentro(r.centro_archivo);
+        if(clave && mapaCentroPorNombre[clave]) return mapaCentroPorNombre[clave];
+        // Si no hay coincidencia exacta, busca el nombre de centro guardado que esté
+        // contenido dentro del texto del archivo (o viceversa)
+        for(const nombreClave in mapaCentroPorNombre){
+          if(nombreClave.length>3 && (clave.includes(nombreClave) || nombreClave.includes(clave))) return mapaCentroPorNombre[nombreClave];
+        }
+      }
       return null;
     }
 
