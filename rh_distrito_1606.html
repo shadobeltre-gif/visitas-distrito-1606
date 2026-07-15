@@ -352,6 +352,27 @@ const SUPABASE_URL = 'https://ejkvehnzjkxbymuvejoh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa3ZlaG56amt4YnltdXZlam9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc4MDIsImV4cCI6MjA5NTk0MzgwMn0.FI0Z_Mx1FQ4hpA6JYkYJ4X9CoVDHgK_bDq_qiak3WOU';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Supabase limita cada consulta a un máximo de filas configurado en el servidor
+// (normalmente 1000), sin importar el .range() que se pida. Esta función trae
+// TODAS las filas de una tabla paginando en bloques, para tablas que puedan
+// superar ese límite (ej. personal_rh con miles de empleados).
+async function fetchTodasLasFilas(nombreTabla, columnas, construirQuery){
+  let todas = [];
+  let desde = 0;
+  const tam = 1000;
+  while(true){
+    let q = sb.from(nombreTabla).select(columnas).range(desde, desde+tam-1);
+    if(construirQuery) q = construirQuery(q);
+    const { data, error } = await q;
+    if(error) throw error;
+    if(!data || !data.length) break;
+    todas = todas.concat(data);
+    if(data.length < tam) break;
+    desde += tam;
+  }
+  return todas;
+}
+
 let sesion = { tipo:null, usuario:null }; // tipo: 'admin' | 'tecnico'
 // Usuario administrativo autorizado a ver el botón "Compartir sistema" (en minúsculas).
 const USUARIO_CREADOR = 'admin';
@@ -942,7 +963,10 @@ async function cargarCentrosSelect(inputId, valorSeleccionado){
 }
 
 async function cargarPersonalSelect(inputId, valorSeleccionado){
-  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso').order('apellidos').range(0, 19999);
+  let data, error;
+  try{
+    data = await fetchTodasLasFilas('personal_rh', 'id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso', q=>q.order('apellidos'));
+  }catch(e){ error = e; }
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
   inicializarAutocompletar(
@@ -1471,7 +1495,10 @@ async function guardarCentro(){
 /* ====================== PERSONAL ====================== */
 async function renderPersonal(){
   const main = document.getElementById('main-content');
-  const { data, error } = await sb.from('personal_rh').select('*, centros_rh(nombre_centro)').order('apellidos').range(0, 19999);
+  let data, error;
+  try{
+    data = await fetchTodasLasFilas('personal_rh', '*, centros_rh(nombre_centro)', q=>q.order('apellidos'));
+  }catch(e){ error = e; }
   if(error){ toast(error.message,'error'); }
   window._personalTodos = data || [];
 
@@ -6853,7 +6880,7 @@ async function procesarImportacionNomina(){
     // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
     // .range() amplía el límite de 1000 filas que Supabase aplica por defecto,
     // necesario porque el personal del distrito puede superar esa cifra.
-    const { data: personalExistente } = await sb.from('personal_rh').select('id,cedula,cargo_actual,centro_id').range(0, 19999);
+    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,cargo_actual,centro_id');
     const mapaPersonal = {};
     (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
 
@@ -6902,7 +6929,7 @@ async function procesarImportacionNomina(){
     }
 
     // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
-    const { data: personalFinal } = await sb.from('personal_rh').select('id,cedula').range(0, 19999);
+    const personalFinal = await fetchTodasLasFilas('personal_rh', 'id,cedula');
     const mapaPersonalFinal = {};
     (personalFinal||[]).forEach(p=>{ mapaPersonalFinal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
 
