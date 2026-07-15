@@ -6924,9 +6924,17 @@ async function procesarImportacionNomina(){
     });
 
     if(personalNuevo.length){
-      const { data: insertadosP, error: errPersNuevo } = await sb.from('personal_rh').insert(personalNuevo).select('id,cedula');
-      if(errPersNuevo) throw errPersNuevo;
-      (insertadosP||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = { id:p.id }; });
+      const sinCedula = personalNuevo.filter(p=>!p.cedula || !String(p.cedula).trim());
+      if(sinCedula.length){
+        throw new Error(`${sinCedula.length} registro(s) nuevo(s) sin cédula válida antes de guardar (ej: nombre "${sinCedula[0].nombres} ${sinCedula[0].apellidos}"). Revisa esas filas en el Excel.`);
+      }
+      for(let i=0; i<personalNuevo.length; i+=500){
+        const lote = personalNuevo.slice(i, i+500);
+        btn.innerHTML = `<span class="spinner"></span> Creando personal nuevo ${Math.min(i+500,personalNuevo.length)}/${personalNuevo.length}…`;
+        const { data: insertadosP, error: errPersNuevo } = await sb.from('personal_rh').insert(lote).select('id,cedula');
+        if(errPersNuevo) throw new Error(`Guardando personal nuevo (lote ${i+1}-${Math.min(i+500,personalNuevo.length)}): ${errPersNuevo.message}`);
+        (insertadosP||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = { id:p.id }; });
+      }
     }
     // Actualiza en lotes de 500 (en vez de una solicitud por empleado, que con miles
     // de registros podía tardar varios minutos y parecer que la pantalla se congeló)
@@ -6963,7 +6971,7 @@ async function procesarImportacionNomina(){
       const lote = detalle.slice(i, i+500);
       btn.innerHTML = `<span class="spinner"></span> Guardando ${Math.min(i+500,detalle.length)}/${detalle.length}…`;
       const { error: errDet } = await sb.from('detalle_nomina_rh').insert(lote);
-      if(errDet) throw errDet;
+      if(errDet) throw new Error(`Guardando detalle (lote ${i+1}-${Math.min(i+500,detalle.length)}): ${errDet.message}`);
     }
 
     const encontrados = detalle.filter(d=>d.match_estado==='encontrado').length;
