@@ -942,7 +942,7 @@ async function cargarCentrosSelect(inputId, valorSeleccionado){
 }
 
 async function cargarPersonalSelect(inputId, valorSeleccionado){
-  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso').order('apellidos');
+  const { data, error } = await sb.from('personal_rh').select('id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso').order('apellidos').range(0, 19999);
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
   inicializarAutocompletar(
@@ -1471,7 +1471,7 @@ async function guardarCentro(){
 /* ====================== PERSONAL ====================== */
 async function renderPersonal(){
   const main = document.getElementById('main-content');
-  const { data, error } = await sb.from('personal_rh').select('*, centros_rh(nombre_centro)').order('apellidos');
+  const { data, error } = await sb.from('personal_rh').select('*, centros_rh(nombre_centro)').order('apellidos').range(0, 19999);
   if(error){ toast(error.message,'error'); }
   window._personalTodos = data || [];
 
@@ -6851,7 +6851,9 @@ async function procesarImportacionNomina(){
     }
 
     // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
-    const { data: personalExistente } = await sb.from('personal_rh').select('id,cedula,cargo_actual,centro_id');
+    // .range() amplía el límite de 1000 filas que Supabase aplica por defecto,
+    // necesario porque el personal del distrito puede superar esa cifra.
+    const { data: personalExistente } = await sb.from('personal_rh').select('id,cedula,cargo_actual,centro_id').range(0, 19999);
     const mapaPersonal = {};
     (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
 
@@ -6900,7 +6902,7 @@ async function procesarImportacionNomina(){
     }
 
     // Refrescar mapa completo de personal (incluye nuevos) para el cruce del detalle
-    const { data: personalFinal } = await sb.from('personal_rh').select('id,cedula');
+    const { data: personalFinal } = await sb.from('personal_rh').select('id,cedula').range(0, 19999);
     const mapaPersonalFinal = {};
     (personalFinal||[]).forEach(p=>{ mapaPersonalFinal[p.cedula.replace(/[^0-9]/g,'')] = p.id; });
 
