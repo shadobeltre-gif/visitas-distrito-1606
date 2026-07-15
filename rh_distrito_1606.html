@@ -2711,6 +2711,12 @@ async function procesarImportacionTelegramas(){
     let creados = 0, errores = 0;
     const detalleErrores = [];
 
+    // Siguiente número consecutivo disponible, para las filas que no traigan
+    // número de telegrama propio en el Excel (se sigue incrementando por cada
+    // una de esas filas, en el orden en que aparecen)
+    let siguienteNumeroAuto = parseInt(await calcularProximoNumeroTelegrama(), 10);
+    if(isNaN(siguienteNumeroAuto)) siguienteNumeroAuto = 1;
+
     for(const f of registros){
       try{
         const nombreCentro = mapa.centro!==undefined ? String(f[mapa.centro]||'').trim() : '';
@@ -2795,10 +2801,19 @@ async function procesarImportacionTelegramas(){
           fecha,
         });
 
+        // Número de telegrama: si la fila trae uno propio en el Excel, se respeta tal cual;
+        // si no, se asigna el siguiente consecutivo automático de la secuencia del sistema.
+        let numeroFinal = mapa.numero!==undefined ? (String(f[mapa.numero]||'').trim() || null) : null;
+        if(!numeroFinal){ numeroFinal = String(siguienteNumeroAuto); siguienteNumeroAuto++; }
+        else if(/^\d+$/.test(numeroFinal)){
+          const n = parseInt(numeroFinal,10);
+          if(n >= siguienteNumeroAuto) siguienteNumeroAuto = n + 1;
+        }
+
         const { error: errTel } = await sb.from('telegramas_rh').insert({
           candidato_ap_id: nuevoCandidato.id,
           centro_id: centroId,
-          no_telegrama: mapa.numero!==undefined ? (String(f[mapa.numero]||'').trim() || null) : null,
+          no_telegrama: numeroFinal,
           fecha_telegrama: fecha,
           destinatario_nombre: destinatario,
           destinatario_telefono: telFinal,
