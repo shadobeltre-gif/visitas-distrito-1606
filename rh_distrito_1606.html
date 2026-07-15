@@ -6689,10 +6689,31 @@ async function renderNominas(){
     </div>
 
     <div class="modal-fondo" id="modal-detalle-nomina">
-      <div class="modal" style="max-width:900px;">
+      <div class="modal" style="max-width:1200px;">
         <div class="modal-header"><h3 id="titulo-detalle-nomina">Detalle de nómina</h3>
           <button class="modal-cerrar" onclick="cerrarModal('modal-detalle-nomina')">×</button></div>
-        <div class="modal-body tabla-wrap" id="cuerpo-detalle-nomina"></div>
+        <div class="modal-body">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <input type="text" id="detnom-buscar" placeholder="Buscar por cédula, nombre, cargo o centro…" style="flex:1;min-width:220px;" oninput="filtrarDetalleNomina()">
+            <select id="detnom-filtro-cruce" onchange="filtrarDetalleNomina()">
+              <option value="">Cruce: todos</option>
+              <option value="encontrado">Encontrado</option>
+              <option value="no_encontrado">No encontrado</option>
+            </select>
+            <select id="detnom-filtro-docente" onchange="filtrarDetalleNomina()">
+              <option value="">Docente: todos</option>
+              <option value="si">Docente</option>
+              <option value="no">No docente</option>
+            </select>
+            <select id="detnom-filtro-carrera" onchange="filtrarDetalleNomina()">
+              <option value="">Carrera: todos</option>
+              <option value="si">De carrera</option>
+              <option value="no">No de carrera</option>
+            </select>
+          </div>
+          <div id="detnom-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+          <div class="tabla-wrap" id="cuerpo-detalle-nomina"></div>
+        </div>
         <div class="modal-footer">
           ${botonesExportar('detnom')}
           <button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button>
@@ -6755,6 +6776,18 @@ function abrirModalNomina(){
 
 // Detecta encabezados típicos del archivo de nómina del MINERD/Contraloría,
 // tolerando variaciones de nombre de columna.
+function formatearFechaCelda(valor){
+  if(valor===null || valor===undefined || valor==='') return null;
+  if(valor instanceof Date && !isNaN(valor)) return valor.toISOString().slice(0,10);
+  if(typeof valor === 'number'){
+    // Convierte número serial de Excel (días desde 1900, con el bug del año bisiesto) a fecha
+    const ms = Math.round((valor - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    if(!isNaN(d)) return d.toISOString().slice(0,10);
+  }
+  return String(valor).trim() || null;
+}
+
 function detectarColumnas(headers){
   const norm = h => h.toString().toLowerCase().trim()
     .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -6767,11 +6800,21 @@ function detectarColumnas(headers){
     else if(/^nombre|nombres?$/.test(n)) mapa.nombre = i;
     else if(/cargo|posicion|puesto/.test(n)) mapa.cargo = i;
     else if(/sigerd/.test(n)) mapa.sigerd = i;
-    else if(/dependencia/.test(n)) mapa.dependencia = i;
+    else if(/^dependencia$|numero.*dependencia|dependencia.*numero/.test(n)) mapa.dependencia = i;
     else if(/centro|descripcion/.test(n)) mapa.centro = i;
     else if(/bruto|sueldo\s*base/.test(n)) mapa.bruto = i;
     else if(/descuent/.test(n)) mapa.descuentos = i;
     else if(/neto/.test(n)) mapa.neto = i;
+    else if(/fecha.*ingreso|ingreso.*fecha/.test(n)) mapa.fechaIngreso = i;
+    else if(/personal.*carrera|carrera.*personal/.test(n)) mapa.personalCarrera = i;
+    else if(/personal.*docente|docente/.test(n)) mapa.personalDocente = i;
+    else if(/reg\s*\/?\s*dist/.test(n)) mapa.regDist = i;
+    else if(/tiempo.*servicio/.test(n)) mapa.tiempoServicio = i;
+    else if(/^edad$/.test(n)) mapa.edad = i;
+    else if(/pension|jubilacion/.test(n)) mapa.personalPension = i;
+    else if(/^dep$/.test(n)) mapa.dep = i;
+    else if(/^tarj/.test(n)) mapa.tarjeta = i;
+    else if(/total.*ingreso/.test(n)) mapa.totalIngreso = i;
   });
   return mapa;
 }
@@ -6825,6 +6868,16 @@ async function procesarImportacionNomina(){
         salario_bruto: mapa.bruto!==undefined ? parseFloat(f[mapa.bruto])||null : null,
         descuentos: mapa.descuentos!==undefined ? parseFloat(f[mapa.descuentos])||null : null,
         salario_neto: mapa.neto!==undefined ? parseFloat(f[mapa.neto])||null : null,
+        fecha_ingreso_archivo: mapa.fechaIngreso!==undefined ? formatearFechaCelda(f[mapa.fechaIngreso]) : null,
+        personal_carrera: mapa.personalCarrera!==undefined ? String(f[mapa.personalCarrera]||'').trim()||null : null,
+        personal_docente: mapa.personalDocente!==undefined ? String(f[mapa.personalDocente]||'').trim()||null : null,
+        reg_dist: mapa.regDist!==undefined ? String(f[mapa.regDist]||'').trim()||null : null,
+        tiempo_servicio: mapa.tiempoServicio!==undefined ? String(f[mapa.tiempoServicio]||'').trim()||null : null,
+        edad: mapa.edad!==undefined ? parseInt(f[mapa.edad])||null : null,
+        personal_pension: mapa.personalPension!==undefined ? String(f[mapa.personalPension]||'').trim()||null : null,
+        dep_archivo: mapa.dep!==undefined ? String(f[mapa.dep]||'').trim()||null : null,
+        tarjeta_archivo: mapa.tarjeta!==undefined ? String(f[mapa.tarjeta]||'').trim()||null : null,
+        total_ingreso: mapa.totalIngreso!==undefined ? parseFloat(f[mapa.totalIngreso])||null : null,
       };
     });
 
@@ -6971,6 +7024,17 @@ async function procesarImportacionNomina(){
         nomina_id: nomina.id,
         personal_id: personalId,
         match_estado: personalId ? 'encontrado' : 'no_encontrado',
+        cargo_archivo: r.cargo_archivo,
+        fecha_ingreso_archivo: r.fecha_ingreso_archivo,
+        personal_carrera: r.personal_carrera,
+        personal_docente: r.personal_docente,
+        reg_dist: r.reg_dist,
+        tiempo_servicio: r.tiempo_servicio,
+        edad: r.edad,
+        personal_pension: r.personal_pension,
+        dep_archivo: r.dep_archivo,
+        tarjeta_archivo: r.tarjeta_archivo,
+        total_ingreso: r.total_ingreso,
       };
     });
 
@@ -7189,39 +7253,106 @@ async function leerPDFNomina(archivo){
   return filas.filter(f=>f.some(c=>String(c).trim().length));
 }
 
+const SINO = v => v==null || v==='' ? '—' : (/^s[ií]$/i.test(String(v).trim()) ? 'Sí' : (/^no$/i.test(String(v).trim()) ? 'No' : String(v)));
+
+function renderFilaDetalleNomina(d){
+  const nombre = d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'—');
+  const cargo = (d.personal_rh && d.personal_rh.cargo_actual) || d.cargo_archivo || '—';
+  return `
+    <tr>
+      <td>${escapeHtml(d.cedula_archivo)}</td>
+      <td>${escapeHtml(nombre)}</td>
+      <td>${escapeHtml(cargo)}</td>
+      <td>${escapeHtml(d.centro_archivo||'—')}</td>
+      <td>${escapeHtml(d.fecha_ingreso_archivo||'—')}</td>
+      <td>${escapeHtml(SINO(d.personal_carrera))}</td>
+      <td>${escapeHtml(SINO(d.personal_docente))}</td>
+      <td>${escapeHtml(d.reg_dist||'—')}</td>
+      <td>${escapeHtml(d.tiempo_servicio||'—')}</td>
+      <td>${d.edad!=null?d.edad:'—'}</td>
+      <td>${escapeHtml(SINO(d.personal_pension))}</td>
+      <td>${escapeHtml(d.dep_archivo||'—')}</td>
+      <td>${escapeHtml(d.tarjeta_archivo||'—')}</td>
+      <td>${d.salario_bruto!=null?Number(d.salario_bruto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+      <td>${d.total_ingreso!=null?Number(d.total_ingreso).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+      <td>${d.descuentos!=null?Number(d.descuentos).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+      <td>${d.salario_neto!=null?Number(d.salario_neto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
+      <td>${badgeEstado(d.match_estado)}</td>
+    </tr>
+  `;
+}
+
+function renderTablaDetalleNomina(data){
+  document.getElementById('detnom-contador').textContent = `${data.length} de ${(window._detalleNominaTodos||[]).length} registro(s)`;
+  document.getElementById('cuerpo-detalle-nomina').innerHTML = data.length ? `
+    <table>
+      <thead><tr>
+        <th>Cédula</th><th>Nombre</th><th>Cargo</th><th>Centro</th><th>Fecha ingreso</th>
+        <th>Carrera</th><th>Docente</th><th>Reg/Dist</th><th>Tiempo servicio</th><th>Edad</th>
+        <th>Pensión/Jub.</th><th>Dep</th><th>Tarjeta</th><th>Bruto</th><th>Total ingreso</th>
+        <th>Descuentos</th><th>Neto</th><th>Cruce</th>
+      </tr></thead>
+      <tbody>${data.map(renderFilaDetalleNomina).join('')}</tbody>
+    </table>
+  ` : `<div class="vacio">Sin registros que coincidan con la búsqueda/filtro.</div>`;
+}
+
+function filtrarDetalleNomina(){
+  const q = (document.getElementById('detnom-buscar').value||'').toLowerCase().trim();
+  const cruce = document.getElementById('detnom-filtro-cruce').value;
+  const docente = document.getElementById('detnom-filtro-docente').value;
+  const carrera = document.getElementById('detnom-filtro-carrera').value;
+  const esSi = v => /^s[ií]$/i.test(String(v||'').trim());
+
+  const filtrado = (window._detalleNominaTodos||[]).filter(d=>{
+    if(cruce && d.match_estado !== cruce) return false;
+    if(docente){ const si = esSi(d.personal_docente); if(docente==='si' && !si) return false; if(docente==='no' && si) return false; }
+    if(carrera){ const si = esSi(d.personal_carrera); if(carrera==='si' && !si) return false; if(carrera==='no' && si) return false; }
+    if(q){
+      const nombre = d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'');
+      const cargo = (d.personal_rh && d.personal_rh.cargo_actual) || d.cargo_archivo || '';
+      const texto = `${d.cedula_archivo||''} ${nombre} ${cargo} ${d.centro_archivo||''}`.toLowerCase();
+      if(!texto.includes(q)) return false;
+    }
+    return true;
+  });
+
+  window._detalleNominaActual = filtrado;
+  renderTablaDetalleNomina(filtrado);
+}
+
 async function verDetalleNomina(nominaId, periodo){
   document.getElementById('titulo-detalle-nomina').textContent = `Detalle de nómina — ${periodo}`;
   const { data, error } = await sb.from('detalle_nomina_rh')
-    .select('*, personal_rh(nombres,apellidos)').eq('nomina_id', nominaId).order('cedula_archivo');
+    .select('*, personal_rh(nombres,apellidos,cargo_actual)').eq('nomina_id', nominaId).order('cedula_archivo');
   if(error){ toast(error.message,'error'); return; }
 
+  window._detalleNominaTodos = data || [];
   window._detalleNominaActual = data || [];
+  document.getElementById('detnom-buscar').value = '';
+  document.getElementById('detnom-filtro-cruce').value = '';
+  document.getElementById('detnom-filtro-docente').value = '';
+  document.getElementById('detnom-filtro-carrera').value = '';
 
-  document.getElementById('cuerpo-detalle-nomina').innerHTML = (data && data.length) ? `
-    <table>
-      <thead><tr><th>Cédula</th><th>Nombre (archivo)</th><th>Centro (archivo)</th><th>Bruto</th><th>Descuentos</th><th>Neto</th><th>Cruce</th></tr></thead>
-      <tbody>
-        ${data.map(d=>`
-          <tr>
-            <td>${escapeHtml(d.cedula_archivo)}</td>
-            <td>${escapeHtml(d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'—'))}</td>
-            <td>${escapeHtml(d.centro_archivo||'—')}</td>
-            <td>${d.salario_bruto!=null?Number(d.salario_bruto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
-            <td>${d.descuentos!=null?Number(d.descuentos).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
-            <td>${d.salario_neto!=null?Number(d.salario_neto).toLocaleString('es-DO',{minimumFractionDigits:2}):'—'}</td>
-            <td>${badgeEstado(d.match_estado)}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  ` : `<div class="vacio">Sin registros en esta nómina.</div>`;
+  renderTablaDetalleNomina(window._detalleNominaActual);
   abrirModal('modal-detalle-nomina');
 
   registrarExportadores('detnom', ()=>window._detalleNominaActual||[], [
     { label:'Cédula', key:'cedula_archivo' },
     { label:'Nombre', get:d=>d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'') },
+    { label:'Cargo', get:d=>(d.personal_rh && d.personal_rh.cargo_actual) || d.cargo_archivo || '' },
     { label:'Centro', key:'centro_archivo' },
+    { label:'Fecha ingreso', key:'fecha_ingreso_archivo' },
+    { label:'Personal de carrera', get:d=>SINO(d.personal_carrera) },
+    { label:'Personal docente', get:d=>SINO(d.personal_docente) },
+    { label:'Reg/Dist', key:'reg_dist' },
+    { label:'Tiempo servicio', key:'tiempo_servicio' },
+    { label:'Edad', key:'edad' },
+    { label:'Personal pensión/jubilación', get:d=>SINO(d.personal_pension) },
+    { label:'Dep', key:'dep_archivo' },
+    { label:'Tarjeta', key:'tarjeta_archivo' },
     { label:'Salario Bruto', key:'salario_bruto' },
+    { label:'Total ingreso', key:'total_ingreso' },
     { label:'Descuentos', key:'descuentos' },
     { label:'Salario Neto', key:'salario_neto' },
     { label:'Cruce', key:'match_estado' },
