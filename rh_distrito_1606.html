@@ -7255,11 +7255,12 @@ async function leerPDFNomina(archivo){
 
 const SINO = v => v==null || v==='' ? '—' : (/^s[ií]$/i.test(String(v).trim()) ? 'Sí' : (/^no$/i.test(String(v).trim()) ? 'No' : String(v)));
 
-function renderFilaDetalleNomina(d){
+function renderFilaDetalleNomina(d, idx){
   const nombre = d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'—');
   const cargo = (d.personal_rh && d.personal_rh.cargo_actual) || d.cargo_archivo || '—';
   return `
     <tr>
+      <td>${idx}</td>
       <td>${escapeHtml(d.cedula_archivo)}</td>
       <td>${escapeHtml(nombre)}</td>
       <td>${escapeHtml(cargo)}</td>
@@ -7287,12 +7288,12 @@ function renderTablaDetalleNomina(data){
   document.getElementById('cuerpo-detalle-nomina').innerHTML = data.length ? `
     <table>
       <thead><tr>
-        <th>Cédula</th><th>Nombre</th><th>Cargo</th><th>Centro</th><th>Fecha ingreso</th>
+        <th>No.</th><th>Cédula</th><th>Nombre</th><th>Cargo</th><th>Centro</th><th>Fecha ingreso</th>
         <th>Carrera</th><th>Docente</th><th>Reg/Dist</th><th>Tiempo servicio</th><th>Edad</th>
         <th>Pensión/Jub.</th><th>Dep</th><th>Tarjeta</th><th>Bruto</th><th>Total ingreso</th>
         <th>Descuentos</th><th>Neto</th><th>Cruce</th>
       </tr></thead>
-      <tbody>${data.map(renderFilaDetalleNomina).join('')}</tbody>
+      <tbody>${data.map((d,i)=>renderFilaDetalleNomina(d,i+1)).join('')}</tbody>
     </table>
   ` : `<div class="vacio">Sin registros que coincidan con la búsqueda/filtro.</div>`;
 }
@@ -7323,9 +7324,10 @@ function filtrarDetalleNomina(){
 
 async function verDetalleNomina(nominaId, periodo){
   document.getElementById('titulo-detalle-nomina').textContent = `Detalle de nómina — ${periodo}`;
-  const { data, error } = await sb.from('detalle_nomina_rh')
-    .select('*, personal_rh(nombres,apellidos,cargo_actual)').eq('nomina_id', nominaId).order('cedula_archivo');
-  if(error){ toast(error.message,'error'); return; }
+  let data;
+  try{
+    data = await fetchTodasLasFilas('detalle_nomina_rh', '*, personal_rh(nombres,apellidos,cargo_actual)', q=>q.eq('nomina_id', nominaId).order('cedula_archivo'));
+  }catch(err){ toast(err.message,'error'); return; }
 
   window._detalleNominaTodos = data || [];
   window._detalleNominaActual = data || [];
