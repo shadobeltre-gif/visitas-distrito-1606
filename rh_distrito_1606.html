@@ -6647,8 +6647,9 @@ async function renderNominas(){
                 <td><strong>${MESES_NOMINA[n.mes]} ${n.anio}</strong></td>
                 <td>${fechaCorta(n.fecha_pago)}</td>
                 <td>${escapeHtml(n.archivo_origen||'—')}</td>
-                <td style="display:flex;gap:6px;">
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
                   <button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Detalle</button>
+                  <button class="btn btn-secundario btn-chico" onclick="verEstadisticasNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Estadísticas</button>
                   <button class="btn btn-secundario btn-chico" onclick="verMovimientosNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Movimientos</button>
                 </td>
               </tr>
@@ -6688,6 +6689,17 @@ async function renderNominas(){
       </div>
     </div>
 
+    <div class="modal-fondo" id="modal-estadisticas-nomina">
+      <div class="modal" style="max-width:1000px;">
+        <div class="modal-header"><h3 id="titulo-estadisticas-nomina">Estadísticas de nómina</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-estadisticas-nomina')">×</button></div>
+        <div class="modal-body" id="cuerpo-estadisticas-nomina"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-estadisticas-nomina')">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-fondo" id="modal-detalle-nomina">
       <div class="modal" style="max-width:1200px;">
         <div class="modal-header"><h3 id="titulo-detalle-nomina">Detalle de nómina</h3>
@@ -6715,6 +6727,7 @@ async function renderNominas(){
           <div class="tabla-wrap" id="cuerpo-detalle-nomina"></div>
         </div>
         <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="verEstadisticasDeFiltroActual()">📊 Estadísticas de este filtro</button>
           ${botonesExportar('detnom')}
           <button class="btn btn-secundario" onclick="cerrarModal('modal-detalle-nomina')">Cerrar</button>
         </div>
@@ -7320,6 +7333,114 @@ function filtrarDetalleNomina(){
 
   window._detalleNominaActual = filtrado;
   renderTablaDetalleNomina(filtrado);
+}
+
+function calcularEstadisticas(data){
+  const totales = { empleados: data.length, bruto: 0, descuentos: 0, neto: 0 };
+  const porCargo = {}, porCentro = {}, porDocente = {'Sí':0,'No':0}, porCarrera = {'Sí':0,'No':0}, porCruce = {'Encontrado':0,'No encontrado':0};
+  const esSi = v => /^s[ií]$/i.test(String(v||'').trim());
+
+  data.forEach(d=>{
+    totales.bruto += Number(d.salario_bruto)||0;
+    totales.descuentos += Number(d.descuentos)||0;
+    totales.neto += Number(d.salario_neto)||0;
+
+    const cargo = (d.personal_rh && d.personal_rh.cargo_actual) || d.cargo_archivo || 'Sin cargo';
+    if(!porCargo[cargo]) porCargo[cargo] = { count:0, bruto:0, neto:0 };
+    porCargo[cargo].count++; porCargo[cargo].bruto += Number(d.salario_bruto)||0; porCargo[cargo].neto += Number(d.salario_neto)||0;
+
+    const centro = d.centro_archivo || 'Sin centro';
+    if(!porCentro[centro]) porCentro[centro] = { count:0, bruto:0, neto:0 };
+    porCentro[centro].count++; porCentro[centro].bruto += Number(d.salario_bruto)||0; porCentro[centro].neto += Number(d.salario_neto)||0;
+
+    porDocente[esSi(d.personal_docente) ? 'Sí' : 'No']++;
+    porCarrera[esSi(d.personal_carrera) ? 'Sí' : 'No']++;
+    porCruce[d.match_estado==='encontrado' ? 'Encontrado' : 'No encontrado']++;
+  });
+
+  return { totales, porCargo, porCentro, porDocente, porCarrera, porCruce };
+}
+
+function tablaAgrupada(titulo, grupo){
+  const filas = Object.entries(grupo).sort((a,b)=>b[1].count-a[1].count);
+  return `
+    <div style="margin-bottom:18px;">
+      <h4 style="margin:0 0 8px;font-size:15px;">${titulo}</h4>
+      <table>
+        <thead><tr><th>${titulo.includes('Cargo')?'Cargo':'Centro'}</th><th>Empleados</th><th>Total bruto</th><th>Total neto</th></tr></thead>
+        <tbody>
+          ${filas.map(([nombre,v])=>`
+            <tr>
+              <td>${escapeHtml(nombre)}</td>
+              <td>${v.count}</td>
+              <td>${v.bruto.toLocaleString('es-DO',{minimumFractionDigits:2})}</td>
+              <td>${v.neto.toLocaleString('es-DO',{minimumFractionDigits:2})}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function tablaSimple(titulo, grupo){
+  return `
+    <div style="margin-bottom:18px;">
+      <h4 style="margin:0 0 8px;font-size:15px;">${titulo}</h4>
+      <table>
+        <thead><tr><th>Categoría</th><th>Empleados</th></tr></thead>
+        <tbody>
+          ${Object.entries(grupo).map(([nombre,count])=>`<tr><td>${escapeHtml(nombre)}</td><td>${count}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderEstadisticasHTML(stats){
+  const t = stats.totales;
+  return `
+    <div class="grid-3" style="margin-bottom:18px;">
+      <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+        <div class="valor" style="font-size:20px;">${t.empleados}</div><div class="etiqueta">Empleados</div>
+      </div></div>
+      <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+        <div class="valor" style="font-size:18px;">${t.bruto.toLocaleString('es-DO',{minimumFractionDigits:2})}</div><div class="etiqueta">Total bruto</div>
+      </div></div>
+      <div class="tarjeta" style="margin:0;"><div class="tarjeta-body kpi" style="padding:12px;">
+        <div class="valor" style="font-size:18px;">${t.neto.toLocaleString('es-DO',{minimumFractionDigits:2})}</div><div class="etiqueta">Total neto</div>
+      </div></div>
+    </div>
+    <div style="font-size:13px;color:var(--gris-500);margin-bottom:18px;">Total descuentos: ${t.descuentos.toLocaleString('es-DO',{minimumFractionDigits:2})}</div>
+    ${tablaAgrupada('Por Cargo', stats.porCargo)}
+    ${tablaAgrupada('Por Centro', stats.porCentro)}
+    <div class="grid-3">
+      ${tablaSimple('Personal docente', stats.porDocente)}
+      ${tablaSimple('Personal de carrera', stats.porCarrera)}
+      ${tablaSimple('Cruce con personal', stats.porCruce)}
+    </div>
+  `;
+}
+
+async function verEstadisticasNomina(nominaId, periodo){
+  document.getElementById('titulo-estadisticas-nomina').textContent = `Estadísticas — ${periodo}`;
+  let data;
+  try{
+    data = await fetchTodasLasFilas('detalle_nomina_rh', '*, personal_rh(nombres,apellidos,cargo_actual)', q=>q.eq('nomina_id', nominaId));
+  }catch(err){ toast(err.message,'error'); return; }
+  document.getElementById('cuerpo-estadisticas-nomina').innerHTML = data.length
+    ? renderEstadisticasHTML(calcularEstadisticas(data))
+    : `<div class="vacio">Sin registros en esta nómina.</div>`;
+  abrirModal('modal-estadisticas-nomina');
+}
+
+function verEstadisticasDeFiltroActual(){
+  const data = window._detalleNominaActual||[];
+  document.getElementById('titulo-estadisticas-nomina').textContent = document.getElementById('titulo-detalle-nomina').textContent.replace('Detalle de nómina', 'Estadísticas (filtro actual)');
+  document.getElementById('cuerpo-estadisticas-nomina').innerHTML = data.length
+    ? renderEstadisticasHTML(calcularEstadisticas(data))
+    : `<div class="vacio">Sin registros que coincidan con la búsqueda/filtro.</div>`;
+  abrirModal('modal-estadisticas-nomina');
 }
 
 async function verDetalleNomina(nominaId, periodo){
