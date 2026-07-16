@@ -2971,21 +2971,24 @@ function imprimirTelegramaActual(){
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Telegrama</title>
     <style>
-      @page{ size:letter; margin:14px; }
-      body{font-family:'Times New Roman',serif;font-size:12px;line-height:1.5;margin:0;}
-      .copia-telegrama{padding:22px 30px;white-space:pre-wrap;box-sizing:border-box;height:49vh;overflow:hidden;}
-      .encabezado-doc{text-align:center;margin-bottom:14px;}
-      .encabezado-doc img{width:55px;height:55px;border-radius:50%;}
+      @page{ size:letter; margin:0.35in; }
+      html,body{margin:0;padding:0;}
+      body{font-family:'Times New Roman',serif;font-size:11px;line-height:1.4;}
+      .hoja{height:10.3in;display:flex;flex-direction:column;}
+      .copia-telegrama{height:4.85in;padding:0.15in 0.3in;box-sizing:border-box;overflow:hidden;}
+      .encabezado-doc{text-align:center;margin-bottom:10px;}
+      .encabezado-doc img{width:46px;height:46px;border-radius:50%;}
       .texto-telegrama{white-space:pre-wrap;}
-      .firma-copia{margin-top:14px;font-size:11px;border-top:1px dashed #999;padding-top:8px;}
-      .linea-corte{border-top:2px dashed #666;text-align:center;position:relative;margin:0;}
-      .linea-corte span{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#fff;padding:0 10px;font-size:10px;color:#666;}
-      @media print{ .linea-corte{ } }
+      .firma-copia{margin-top:10px;font-size:10px;border-top:1px dashed #999;padding-top:6px;}
+      .linea-corte{height:0.6in;border-top:2px dashed #666;text-align:center;position:relative;flex-shrink:0;}
+      .linea-corte span{position:relative;top:-9px;background:#fff;padding:0 10px;font-size:9px;color:#666;}
     </style>
     </head><body>
-    ${bloqueTelegrama}
-    <div class="linea-corte"><span>✂ Cortar aquí — Copia para el empleado / Copia para Recursos Humanos ✂</span></div>
-    ${bloqueTelegrama}
+    <div class="hoja">
+      ${bloqueTelegrama}
+      <div class="linea-corte"><span>✂ Cortar aquí — Copia para el empleado / Copia para Recursos Humanos ✂</span></div>
+      ${bloqueTelegrama}
+    </div>
     </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
