@@ -2367,7 +2367,7 @@ async function descargarAP(solicitudId){
 // Genera el texto del telegrama con concordancia de género automática,
 // replicando el formato real usado por el Distrito 16-06.
 function generarTextoTelegrama({ destinatarioNombre, centroNombre, candidatoNombre, candidatoCedula,
-                                   candidatoSexo, cargoDesignado, jornada, fecha }){
+                                   candidatoSexo, cargoDesignado, jornada, fecha, candidatoTelefono }){
   const F = candidatoSexo === 'F';
   const elLa = F ? 'la' : 'el';
   const senorA = F ? 'señora' : 'señor';
@@ -2376,12 +2376,13 @@ function generarTextoTelegrama({ destinatarioNombre, centroNombre, candidatoNomb
   const poneloLa = F ? 'ponerla' : 'ponerlo';
 
   const fechaTexto = new Date(fecha+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+  const lineaTelefono = candidatoTelefono ? `\nTeléfono del ${designadoA.toLowerCase()}: ${candidatoTelefono}` : '';
 
   return `Bonao, Rep. Dom.\nDISTRITO EDUCATIVO 16-06\n${fechaTexto}\n\n`+
 `Señor/a: ${destinatarioNombre}\nDirector/a\nCentro Educativo: ${centroNombre}\n\n`+
 `Por este medio se le comunica que ${elLa}/la ${senorA} ${candidatoNombre} ${portadorA} de Cédula de identidad `+
 `electoral No. ${candidatoCedula}, ha sido ${designadoA} como ${cargoDesignado}, en este centro educativo de `+
-`Jornada Escolar ${jornada}, sírvase ${poneloLa} en la posición.\n\n`+
+`Jornada Escolar ${jornada}, sírvase ${poneloLa} en la posición.${lineaTelefono}\n\n`+
 `Atentamente,\n\nEmeterio Beltré Tineo M.A.\nDirector Distrito Educativo 16-06, Bonao`;
 }
 
@@ -2456,6 +2457,8 @@ async function renderTelegramas(){
               <input type="text" id="tel-destinatario"></div>
             <div class="campo"><label>Teléfono del destinatario</label>
               <input type="tel" id="tel-destinatario-telefono" placeholder="809-000-0000"></div>
+            <div class="campo"><label>Celular del empleado designado</label>
+              <input type="tel" id="tel-candidato-telefono" placeholder="809-000-0000" oninput="actualizarPreviewTelegrama()"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Notas / Contacto</label>
               <textarea id="tel-notas" rows="2" placeholder="Ej: Trasladada desde el Centro Educativo Nieves Peña."></textarea></div>
             <div class="campo"><label>Cargo en que se designa <span class="requerido">*</span></label>
@@ -2533,6 +2536,7 @@ async function renderTelegramas(){
     { label:'Jornada', key:'jornada' },
     { label:'Destinatario (Director/a)', key:'destinatario_nombre' },
     { label:'Teléfono del destinatario', key:'destinatario_telefono' },
+    { label:'Celular del empleado designado', key:'candidato_telefono' },
     { label:'Notas / Contacto', key:'notas' },
     { label:'Estado', key:'estado_envio' },
   ], 'telegramas_1606', 'Telegramas - Distrito 16-06', 'chk-telegramas');
@@ -2560,6 +2564,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-fecha').value = t.fecha_telegrama || '';
     document.getElementById('tel-destinatario').value = t.destinatario_nombre || '';
     document.getElementById('tel-destinatario-telefono').value = t.destinatario_telefono || '';
+    document.getElementById('tel-candidato-telefono').value = t.candidato_telefono || '';
     document.getElementById('tel-notas').value = t.notas || '';
     document.getElementById('tel-cargo').value = t.cargo_designado || '';
     document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
@@ -2571,6 +2576,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-fecha').value = new Date().toISOString().slice(0,10);
     document.getElementById('tel-destinatario').value = '';
     document.getElementById('tel-destinatario-telefono').value = '';
+    document.getElementById('tel-candidato-telefono').value = '';
     document.getElementById('tel-notas').value = '';
     document.getElementById('tel-cargo').value = '';
     document.getElementById('tel-jornada').value = 'Extendida';
@@ -2630,6 +2636,7 @@ function actualizarPreviewTelegrama(){
     cargoDesignado: document.getElementById('tel-cargo').value || '________',
     jornada: document.getElementById('tel-jornada').value,
     fecha: document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10),
+    candidatoTelefono: document.getElementById('tel-candidato-telefono').value.trim(),
   });
   document.getElementById('preview-telegrama').textContent = texto;
 }
@@ -2652,6 +2659,7 @@ async function guardarTelegrama(){
   }
 
   const fecha = document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10);
+  const candidatoTelefono = document.getElementById('tel-candidato-telefono').value.trim();
   const texto = generarTextoTelegrama({
     destinatarioNombre: destinatario,
     centroNombre: centroNombre || '________',
@@ -2661,6 +2669,7 @@ async function guardarTelegrama(){
     cargoDesignado: cargo,
     jornada: document.getElementById('tel-jornada').value,
     fecha,
+    candidatoTelefono,
   });
 
   const payload = {
@@ -2670,6 +2679,7 @@ async function guardarTelegrama(){
     fecha_telegrama: fecha,
     destinatario_nombre: destinatario,
     destinatario_telefono: document.getElementById('tel-destinatario-telefono').value.trim() || null,
+    candidato_telefono: candidatoTelefono || null,
     notas: document.getElementById('tel-notas').value.trim() || null,
     cargo_designado: cargo,
     jornada: document.getElementById('tel-jornada').value,
@@ -2949,13 +2959,34 @@ function verTelegrama(id){
 function imprimirTelegramaActual(){
   const t = window._telegramaActual;
   if(!t) return;
+  const bloqueTelegrama = `
+    <div class="copia-telegrama">
+      <div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>
+      <div class="texto-telegrama">${escapeHtml(t.texto_generado)}</div>
+      <div class="firma-copia">Recibido por el empleado designado:<br><br>
+        Firma: _______________________________&nbsp;&nbsp;&nbsp; Fecha: ____/____/______
+      </div>
+    </div>
+  `;
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Telegrama</title>
-    <style>body{font-family:'Times New Roman',serif;font-size:14px;padding:50px;white-space:pre-wrap;line-height:1.7;}
-      .encabezado-doc{text-align:center;margin-bottom:20px;}
-      .encabezado-doc img{width:70px;height:70px;border-radius:50%;}
+    <style>
+      @page{ size:letter; margin:14px; }
+      body{font-family:'Times New Roman',serif;font-size:12px;line-height:1.5;margin:0;}
+      .copia-telegrama{padding:22px 30px;white-space:pre-wrap;box-sizing:border-box;height:49vh;overflow:hidden;}
+      .encabezado-doc{text-align:center;margin-bottom:14px;}
+      .encabezado-doc img{width:55px;height:55px;border-radius:50%;}
+      .texto-telegrama{white-space:pre-wrap;}
+      .firma-copia{margin-top:14px;font-size:11px;border-top:1px dashed #999;padding-top:8px;}
+      .linea-corte{border-top:2px dashed #666;text-align:center;position:relative;margin:0;}
+      .linea-corte span{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#fff;padding:0 10px;font-size:10px;color:#666;}
+      @media print{ .linea-corte{ } }
     </style>
-    </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(t.texto_generado)}</body></html>`);
+    </head><body>
+    ${bloqueTelegrama}
+    <div class="linea-corte"><span>✂ Cortar aquí — Copia para el empleado / Copia para Recursos Humanos ✂</span></div>
+    ${bloqueTelegrama}
+    </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
 }
