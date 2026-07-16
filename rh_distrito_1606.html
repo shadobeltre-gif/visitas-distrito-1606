@@ -783,10 +783,27 @@ function registrarExportadores(prefijo, getFilasActuales, columnas, nombreArchiv
 /* ---- Importación genérica con UPSERT (reutilizable en módulos con tabla simple) ----
    Lee el archivo, detecta columnas por patrones regex, y hace upsert por una
    clave única (ej. cédula, código). Reutiliza leerArchivoNomina ya existente. */
-async function importarConUpsert({ archivo, tabla, patrones, claveUnica, transformarFila }){
+// Detecta automáticamente la fila real de encabezados de un archivo importado
+// (por si trae título y/o filas en blanco antes de los nombres de columna),
+// probando cuál de las primeras filas tiene más coincidencias con los patrones
+// de columnas que se esperan.
+function detectarFilaEncabezados(filas, patrones, maxFilas){
+  const norm = h => h.toString().toLowerCase().trim()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  let mejorIdx = 0, mejorScore = -1;
+  for(let i=0; i<Math.min(filas.length, maxFilas||15); i++){
+    const score = filas[i].filter(c=>{ const n = norm(c); return n && patrones.some(p=>p.test(n)); }).length;
+    if(score > mejorScore){ mejorScore = score; mejorIdx = i; }
+  }
+  return mejorIdx;
+}
+
+async function importarConUpsert({ archivo, tabla, patrones, claveUnica, transformarFila, onProgress }){
   const filas = await leerArchivoNomina(archivo);
   if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-  const headers = filas[0];
+
+  const headerIdx = detectarFilaEncabezados(filas, Object.values(patrones));
+  const headers = filas[headerIdx];
 
   const norm = h => h.toString().toLowerCase().trim()
     .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -799,7 +816,7 @@ async function importarConUpsert({ archivo, tabla, patrones, claveUnica, transfo
   });
   if(mapa[claveUnica] === undefined) throw new Error(`No se pudo detectar la columna "${claveUnica}" en el archivo.`);
 
-  const registros = filas.slice(1)
+  const registros = filas.slice(headerIdx+1)
     .filter(f=>f[mapa[claveUnica]] && String(f[mapa[claveUnica]]).trim())
     .map(f=>{
       const base = {};
@@ -809,23 +826,28 @@ async function importarConUpsert({ archivo, tabla, patrones, claveUnica, transfo
 
   if(!registros.length) throw new Error('No se encontraron filas válidas.');
 
-  const { data: existentes } = await sb.from(tabla).select(`id,${claveUnica}`);
+  const existentes = await fetchTodasLasFilas(tabla, `id,${claveUnica}`, q=>q.order('id'));
   const mapaExistente = {};
   (existentes||[]).forEach(e=>{ if(e[claveUnica]) mapaExistente[e[claveUnica]] = e.id; });
 
   let creados = 0, actualizados = 0;
-  for(const r of registros){
-    const clave = r[claveUnica];
-    if(clave && mapaExistente[clave]){
-      const { error } = await sb.from(tabla).update(r).eq('id', mapaExistente[clave]);
-      if(error) throw error;
-      actualizados++;
-    } else {
-      const { data: nuevo, error } = await sb.from(tabla).insert(r).select(`id,${claveUnica}`).single();
-      if(error) throw error;
-      if(nuevo[claveUnica]) mapaExistente[nuevo[claveUnica]] = nuevo.id;
-      creados++;
-    }
+  const TAM_LOTE = 20; // procesa varias filas a la vez en vez de una por una (mucho más rápido)
+  for(let i=0; i<registros.length; i+=TAM_LOTE){
+    const lote = registros.slice(i, i+TAM_LOTE);
+    if(onProgress) onProgress(Math.min(i+TAM_LOTE, registros.length), registros.length);
+    await Promise.all(lote.map(async r=>{
+      const clave = r[claveUnica];
+      if(clave && mapaExistente[clave]){
+        const { error } = await sb.from(tabla).update(r).eq('id', mapaExistente[clave]);
+        if(error) throw new Error(`Actualizando ${claveUnica}=${clave}: ${error.message}`);
+        actualizados++;
+      } else {
+        const { data: nuevo, error } = await sb.from(tabla).insert(r).select(`id,${claveUnica}`).single();
+        if(error) throw new Error(`Creando ${claveUnica}=${clave}: ${error.message}`);
+        if(nuevo[claveUnica]) mapaExistente[nuevo[claveUnica]] = nuevo.id;
+        creados++;
+      }
+    }));
   }
   return { total: registros.length, creados, actualizados };
 }
@@ -1700,6 +1722,7 @@ async function procesarImportacionPersonal(){
         if(!base.apellidos) base.apellidos = '';
         return base;
       },
+      onProgress: (hecho,total)=>{ btn.innerHTML = `<span class="spinner"></span> Procesando ${hecho}/${total}…`; },
     });
     document.getElementById('personal-resumen-preview').innerHTML = `
       <div class="texto-ayuda" style="margin-top:10px;">
@@ -1975,7 +1998,11 @@ async function procesarImportacionAP(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoAP = [/solicitud|no\.?\s*ap/, /fecha/, /motivo/, /sigerd|codigo.*centro/, /centro/,
+      /nombres?\b.*candidato|^nombres?$/, /apellidos?\b.*candidato|^apellidos?$/, /cedula/, /sexo/, /cargo/, /observ/, /estado/];
+    const headerIdxAP = detectarFilaEncabezados(filas, patronesEncabezadoAP);
+    const headers = filas[headerIdxAP];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -1999,7 +2026,7 @@ async function procesarImportacionAP(){
       throw new Error('No se pudo detectar las columnas de nombres/apellidos del candidato.');
     }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.nombres] && String(f[mapa.nombres]).trim());
+    const registros = filas.slice(headerIdxAP+1).filter(f=>f[mapa.nombres] && String(f[mapa.nombres]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con nombres de candidato.');
 
     let creados = 0, actualizados = 0, errores = 0;
@@ -3245,7 +3272,11 @@ async function procesarImportacionPD(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoPD = [/cedula/, /nombres?\b.*emplea|^nombres?\b/, /apellidos?\b.*emplea|^apellidos?\b/,
+      /fecha/, /destinatario/, /distrito/, /analista|via/, /cargo.*design|design.*cargo/, /motivo/, /estado/];
+    const headerIdxPD = detectarFilaEncabezados(filas, patronesEncabezadoPD);
+    const headers = filas[headerIdxPD];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -3266,7 +3297,7 @@ async function procesarImportacionPD(){
     });
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxPD+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -3681,7 +3712,11 @@ async function procesarImportacionCA(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoCA = [/cedula/, /nombres?\b.*emplea|^nombres?\b/, /apellidos?\b.*emplea|^apellidos?\b/,
+      /fecha/, /procedencia|destinatario/, /analista|via/, /cargo.*design|design.*cargo/, /centro/, /estado/];
+    const headerIdxCA = detectarFilaEncabezados(filas, patronesEncabezadoCA);
+    const headers = filas[headerIdxCA];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -3701,7 +3736,7 @@ async function procesarImportacionCA(){
     });
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxCA+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -4276,7 +4311,11 @@ async function procesarImportacionVac(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoVac = [/cedula/, /fecha.*solicitud/, /minerd/, /otra.*instituc/, /dias.*ano\s*1|dias.*a.o\s*1/,
+      /^ano\s*1$|^a.o\s*1$/, /dias.*ano\s*2|dias.*a.o\s*2/, /^ano\s*2$|^a.o\s*2$/, /pendient/, /inicio/, /fin/, /comentario/, /natal/, /estado/];
+    const headerIdxVac = detectarFilaEncabezados(filas, patronesEncabezadoVac);
+    const headers = filas[headerIdxVac];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -4301,7 +4340,7 @@ async function procesarImportacionVac(){
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
     if(mapa.inicio===undefined || mapa.fin===undefined){ throw new Error('No se pudo detectar las columnas de fecha de inicio/fin del disfrute.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxVac+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -4709,7 +4748,11 @@ async function procesarImportacionLP(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoLP = [/cedula/, /fecha.*solicitud/, /categoria/, /subtipo$|^subtipo/, /detalle/, /^dias$/,
+      /^meses$/, /^anos$|^a.os$/, /inicio/, /^fecha fin$|fin\)/, /comentario/, /evidencia/, /estado/];
+    const headerIdxLP = detectarFilaEncabezados(filas, patronesEncabezadoLP);
+    const headers = filas[headerIdxLP];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -4733,7 +4776,7 @@ async function procesarImportacionLP(){
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
     if(mapa.categoria===undefined || mapa.subtipo===undefined){ throw new Error('No se pudo detectar las columnas de categoría/subtipo.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxLP+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -5188,7 +5231,11 @@ async function procesarImportacionRL(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoRL = [/cedula/, /tipo/, /evento/, /aviso/, /descripcion/, /lugar/, /centro/,
+      /certificado/, /policial/, /firmado/, /estado/];
+    const headerIdxRL = detectarFilaEncabezados(filas, patronesEncabezadoRL);
+    const headers = filas[headerIdxRL];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -5212,7 +5259,7 @@ async function procesarImportacionRL(){
       throw new Error('No se pudo detectar las columnas de tipo, fecha del evento o descripción.');
     }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxRL+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -5558,7 +5605,11 @@ async function procesarImportacionPen(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoPen = [/cedula/, /tipo.*personal/, /tipo.*pension/, /fecha.*solicitud/, /anos.*servicio|a.os.*servicio/,
+      /ingreso/, /certificacion.*trabajo/, /contraloria/, /ministro/, /cedula.*si.*no|copia.*cedula/, /foto/, /estado/, /observ/];
+    const headerIdxPen = detectarFilaEncabezados(filas, patronesEncabezadoPen);
+    const headers = filas[headerIdxPen];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -5582,7 +5633,7 @@ async function procesarImportacionPen(){
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
     if(mapa.tipoPersonal===undefined){ throw new Error('No se pudo detectar la columna de tipo de personal.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxPen+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -5926,7 +5977,11 @@ async function procesarImportacionSeg(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoSeg = [/cedula.*titular|^cedula$/, /tipo/, /fecha/, /nombre.*dependiente/, /parentesco/,
+      /cedula.*dependiente/, /copia.*cedula/, /acta/, /certificacion.*estudio/, /descuento/, /estado/, /observ/];
+    const headerIdxSeg = detectarFilaEncabezados(filas, patronesEncabezadoSeg);
+    const headers = filas[headerIdxSeg];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -5949,7 +6004,7 @@ async function procesarImportacionSeg(){
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del titular.'); }
     if(mapa.tipo===undefined){ throw new Error('No se pudo detectar la columna de tipo (F1/F2).'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxSeg+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
@@ -6330,7 +6385,11 @@ async function procesarImportacionCL(){
   try{
     const filas = await leerArchivoNomina(archivo);
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
-    const headers = filas[0];
+
+    const patronesEncabezadoCL = [/cedula/, /fecha.*solicitud/, /emision/, /periodo.*desde/, /periodo.*hasta/,
+      /cargo/, /motivo/, /terceros/, /poder.*notarial/, /estado/];
+    const headerIdxCL = detectarFilaEncabezados(filas, patronesEncabezadoCL);
+    const headers = filas[headerIdxCL];
 
     const norm = h => h.toString().toLowerCase().trim()
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -6350,7 +6409,7 @@ async function procesarImportacionCL(){
     });
     if(mapa.cedula===undefined){ throw new Error('No se pudo detectar la columna de cédula del empleado.'); }
 
-    const registros = filas.slice(1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
+    const registros = filas.slice(headerIdxCL+1).filter(f=>f[mapa.cedula] && String(f[mapa.cedula]).trim());
     if(!registros.length) throw new Error('No se encontraron filas válidas con cédula.');
 
     let creados = 0, errores = 0;
