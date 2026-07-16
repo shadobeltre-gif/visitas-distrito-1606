@@ -3867,6 +3867,10 @@ async function renderVacaciones(){
             <div class="texto-ayuda" style="margin-bottom:8px;">
               Según años de servicio: 1 a &lt;5 años = 15 días · 5 a &lt;10 = 20 días · 10 a &lt;15 = 25 días · 15+ = 30 días (días laborables).
             </div>
+            <div style="text-align:center;background:var(--azul-50,#eef4ff);border-radius:12px;padding:14px;margin-bottom:14px;">
+              <div id="vac-dias-total-grande" style="font-size:48px;font-weight:800;color:var(--azul-800);line-height:1;">0</div>
+              <div class="etiqueta" style="margin-top:4px;">Total días de vacaciones</div>
+            </div>
             <div class="grid-3">
               <div class="campo">
                 <label>Días año 1</label>
@@ -3878,7 +3882,7 @@ async function renderVacaciones(){
                 <input type="number" id="vac-dias1" value="0" oninput="validarReglasVacaciones()" style="display:none;margin-top:6px;">
               </div>
               <div class="campo"><label>Año 1</label><input type="number" id="vac-anio1"></div>
-              <div class="campo"><label>Días pendientes (saldo)</label><input type="number" id="vac-dias-pendientes"></div>
+              <div class="campo"><label>Días pendientes (saldo)</label><input type="number" id="vac-dias-pendientes" oninput="actualizarDiasTotalGrande()"></div>
               <div class="campo">
                 <label>Días año 2 (opcional)</label>
                 <select id="vac-dias2-select" onchange="aplicarDiasPredefinidos(2)">
@@ -4016,6 +4020,7 @@ async function abrirModalVacacion(){
   document.getElementById('vac-dias2-select').value = '0';
   document.getElementById('vac-dias1').style.display = 'none';
   document.getElementById('vac-dias2').style.display = 'none';
+  actualizarDiasTotalGrande();
   await cargarPersonalSelect('vac-personal');
   document.getElementById('vac-personal').addEventListener('autocomplete-change', calcularAniosServicioVacaciones);
   abrirModal('modal-vacacion');
@@ -4110,10 +4115,18 @@ function calcularFechaFinVacaciones(){
 
 // Reglas de negocio del formulario oficial: acumulación máxima 2 años,
 // fraccionamiento si supera 20 días, y obligatoriedad si está en pre/post natal.
+function actualizarDiasTotalGrande(){
+  const dias1 = parseInt(document.getElementById('vac-dias1').value)||0;
+  const dias2 = parseInt(document.getElementById('vac-dias2').value)||0;
+  const pendientes = parseInt(document.getElementById('vac-dias-pendientes').value)||0;
+  document.getElementById('vac-dias-total-grande').textContent = dias1 + dias2 + pendientes;
+}
+
 function validarReglasVacaciones(){
   const dias1 = parseInt(document.getElementById('vac-dias1').value)||0;
   const dias2 = parseInt(document.getElementById('vac-dias2').value)||0;
   const totalDias = dias1+dias2;
+  actualizarDiasTotalGrande();
   const ini = document.getElementById('vac-fecha-inicio').value;
   const fin = document.getElementById('vac-fecha-fin').value;
   const alertas = [];
@@ -6978,7 +6991,7 @@ async function procesarImportacionNomina(){
     // ---- PASO 2: UPSERT de personal (por cédula), actualizando cargo/centro si cambiaron ----
     // .range() amplía el límite de 1000 filas que Supabase aplica por defecto,
     // necesario porque el personal del distrito puede superar esa cifra.
-    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,nombres,apellidos,sexo,cargo_actual,centro_id', q=>q.order('id'));
+    const personalExistente = await fetchTodasLasFilas('personal_rh', 'id,cedula,nombres,apellidos,sexo,cargo_actual,centro_id,fecha_ingreso', q=>q.order('id'));
     const mapaPersonal = {};
     (personalExistente||[]).forEach(p=>{ mapaPersonal[p.cedula.replace(/[^0-9]/g,'')] = p; });
 
@@ -6999,11 +7012,13 @@ async function procesarImportacionNomina(){
           cargo_actual: r.cargo_archivo || null,
           centro_id: centroId,
           numero_dependencia_nomina: r.dependencia_archivo || null,
+          fecha_ingreso: r.fecha_ingreso_archivo || null,
           estatus: 'activo',
         });
       } else {
         const necesitaActualizar = (r.cargo_archivo && r.cargo_archivo !== existente.cargo_actual)
           || (centroId && centroId !== existente.centro_id)
+          || (r.fecha_ingreso_archivo && !existente.fecha_ingreso)
           || existente.estatus !== 'activo';
         if(necesitaActualizar){
           // Se manda la fila completa (no solo lo que cambia): el upsert de Supabase
@@ -7017,6 +7032,9 @@ async function procesarImportacionNomina(){
             sexo: existente.sexo,
             cargo_actual: r.cargo_archivo || existente.cargo_actual,
             centro_id: centroId || existente.centro_id,
+            // Solo llena la fecha de ingreso si el empleado no la tenía ya (no pisa
+            // una fecha correcta ya registrada por otra vía)
+            fecha_ingreso: existente.fecha_ingreso || r.fecha_ingreso_archivo || null,
             estatus: 'activo',
           });
         }
