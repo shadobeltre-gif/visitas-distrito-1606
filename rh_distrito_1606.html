@@ -2376,9 +2376,8 @@ function generarTextoTelegrama({ destinatarioNombre, centroNombre, candidatoNomb
   const poneloLa = F ? 'ponerla' : 'ponerlo';
 
   const fechaTexto = new Date(fecha+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
-  let lineaTelefonos = '';
-  if(destinatarioTelefono) lineaTelefonos += `\nTeléfono del Director/a: ${destinatarioTelefono}`;
-  if(candidatoTelefono) lineaTelefonos += `\nTeléfono del ${designadoA.toLowerCase()}: ${candidatoTelefono}`;
+  const lineaTelefonos = `\nTeléfono del Director/a: ${destinatarioTelefono || '_______________'}`+
+                          `\nTeléfono del ${designadoA.toLowerCase()}: ${candidatoTelefono || '_______________'}`;
 
   return `Bonao, Rep. Dom.\nDISTRITO EDUCATIVO 16-06\n${fechaTexto}\n\n`+
 `Señor/a: ${destinatarioNombre}\nDirector/a\nCentro Educativo: ${centroNombre}\n\n`+
