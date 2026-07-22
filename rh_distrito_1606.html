@@ -1001,7 +1001,7 @@ async function cargarCentrosSelect(inputId, valorSeleccionado){
 async function cargarPersonalSelect(inputId, valorSeleccionado){
   let data, error;
   try{
-    data = await fetchTodasLasFilas('personal_rh', 'id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso', q=>q.order('apellidos'));
+    data = await fetchTodasLasFilas('personal_rh', 'id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso,centro_id,centros_rh(nombre_centro)', q=>q.order('apellidos'));
   }catch(e){ error = e; }
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
@@ -3223,6 +3223,8 @@ function actualizarPreviewPD(){
   const id = document.getElementById('pd-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-pd').textContent=''; return; }
+  const campoCargo = document.getElementById('pd-cargo');
+  if(!campoCargo.value && p.cargo_actual) campoCargo.value = p.cargo_actual;
   const texto = generarTextoPuestaDisposicion({
     fecha: document.getElementById('pd-fecha').value || new Date().toISOString().slice(0,10),
     destinatarioNombre: document.getElementById('pd-destinatario').value || '________________',
@@ -3662,6 +3664,8 @@ function actualizarPreviewCA(){
   const id = document.getElementById('ca-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-ca').textContent=''; return; }
+  autorellenarCargoDesdeEmpleado('ca-cargo', p);
+  autorellenarCentroDesdeEmpleado('ca-centro', p);
   const centroInput = document.getElementById('ca-centro');
   const centroIdVal = document.getElementById('ca-centro-id')?.value;
   const centroNombre = centroInput?.value || '';
@@ -4664,12 +4668,12 @@ async function renderLicenciasPermisos(){
           <fieldset class="fieldset-doc">
             <legend>Duración</legend>
             <div class="grid-3">
-              <div class="campo"><label>Días</label><input type="number" id="lp-dias" value="0"></div>
-              <div class="campo"><label>Meses</label><input type="number" id="lp-meses" value="0"></div>
-              <div class="campo"><label>Años</label><input type="number" id="lp-anios" value="0"></div>
+              <div class="campo"><label>Días</label><input type="number" id="lp-dias" value="0" oninput="calcularFechaFinLP()"></div>
+              <div class="campo"><label>Meses</label><input type="number" id="lp-meses" value="0" oninput="calcularFechaFinLP()"></div>
+              <div class="campo"><label>Años</label><input type="number" id="lp-anios" value="0" oninput="calcularFechaFinLP()"></div>
             </div>
             <div class="grid-2">
-              <div class="campo"><label>Fecha inicio</label><input type="date" id="lp-fecha-inicio"></div>
+              <div class="campo"><label>Fecha inicio</label><input type="date" id="lp-fecha-inicio" onchange="calcularFechaFinLP()"></div>
               <div class="campo"><label>Fecha fin</label><input type="date" id="lp-fecha-fin"></div>
             </div>
           </fieldset>
@@ -5299,6 +5303,11 @@ async function abrirModalRiesgo(){
   document.getElementById('rl-alerta-plazo').innerHTML = '';
   await cargarPersonalSelect('rl-personal');
   await cargarCentrosSelect('rl-centro');
+  document.getElementById('rl-personal').addEventListener('autocomplete-change', ()=>{
+    const id = document.getElementById('rl-personal-id').value;
+    const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+    autorellenarCentroDesdeEmpleado('rl-centro', p);
+  });
   abrirModal('modal-riesgo');
 }
 
@@ -5679,6 +5688,49 @@ async function eliminarSeleccionPensiones(){
   renderPensiones();
 }
 
+// Autocompleta un campo de texto de "cargo" con el cargo actual del empleado
+// seleccionado, solo si el campo está vacío (no pisa lo que el usuario ya escribió).
+function autorellenarCargoDesdeEmpleado(inputId, p){
+  const campo = document.getElementById(inputId);
+  if(campo && !campo.value && p?.cargo_actual) campo.value = p.cargo_actual;
+}
+
+// Autocompleta un widget de autocompletar de "centro" con el centro educativo
+// donde ya está asignado el empleado, solo si el campo está vacío.
+function autorellenarCentroDesdeEmpleado(inputId, p){
+  if(!p || !p.centro_id) return;
+  const campoTexto = document.getElementById(inputId);
+  const campoId = document.getElementById(inputId+'-id');
+  if(campoTexto && campoId && !campoId.value){
+    campoTexto.value = p.centros_rh?.nombre_centro || '';
+    campoId.value = p.centro_id;
+  }
+}
+
+function calcularFechaFinLP(){
+  const inicio = document.getElementById('lp-fecha-inicio').value;
+  if(!inicio) return;
+  const dias = parseInt(document.getElementById('lp-dias').value)||0;
+  const meses = parseInt(document.getElementById('lp-meses').value)||0;
+  const anios = parseInt(document.getElementById('lp-anios').value)||0;
+  if(!dias && !meses && !anios) return;
+  const f = new Date(inicio+'T00:00:00');
+  f.setFullYear(f.getFullYear()+anios);
+  f.setMonth(f.getMonth()+meses);
+  f.setDate(f.getDate()+dias);
+  document.getElementById('lp-fecha-fin').value = f.toISOString().slice(0,10);
+}
+
+function calcularAniosServicioPension(){
+  const id = document.getElementById('pen-personal-id').value;
+  const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+  if(!p) return;
+  if(p.fecha_ingreso){
+    document.getElementById('pen-fecha-ingreso').value = p.fecha_ingreso;
+    document.getElementById('pen-anios').value = calcularAniosEntreFechas(p.fecha_ingreso, new Date().toISOString().slice(0,10));
+  }
+}
+
 async function abrirModalPension(){
   document.getElementById('pen-anios').value = '';
   document.getElementById('pen-fecha-ingreso').value = '';
@@ -5687,6 +5739,7 @@ async function abrirModalPension(){
     document.getElementById(id).checked = false;
   });
   await cargarPersonalSelect('pen-personal');
+  document.getElementById('pen-personal').addEventListener('autocomplete-change', calcularAniosServicioPension);
   abrirModal('modal-pension');
 }
 
@@ -6452,6 +6505,11 @@ function actualizarPreviewCL(){
   const id = document.getElementById('cl-personal-id')?.value;
   const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
   if(!p){ document.getElementById('preview-cl').textContent=''; return; }
+  autorellenarCargoDesdeEmpleado('cl-cargo', p);
+  const campoDesde = document.getElementById('cl-periodo-desde');
+  if(!campoDesde.value && p.fecha_ingreso) campoDesde.value = p.fecha_ingreso;
+  const campoHasta = document.getElementById('cl-periodo-hasta');
+  if(!campoHasta.value) campoHasta.value = new Date().toISOString().slice(0,10);
   const texto = generarTextoCertificacionLaboral({
     personalNombre: p.nombres+' '+p.apellidos,
     personalCedula: p.cedula,
