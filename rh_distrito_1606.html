@@ -3431,7 +3431,7 @@ async function procesarImportacionPD(){
 }
 
 /* ====================== CARTA DE ACEPTACIÓN DE PERSONAL ====================== */
-function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCargo, analistaNombre,
+function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCargo, destinatarioDistrito, analistaNombre,
                                          analistaCargo, asunto, candidatoNombre, candidatoCedula,
                                          candidatoSexo, cargoDesignado, centroNombre }){
   const F = candidatoSexo === 'F';
@@ -3441,10 +3441,11 @@ function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCa
   const ubicacion = centroNombre
     ? `la cual será ubicada en ${centroNombre}, centro educativo de nuestro Distrito Educativo 16-06, Bonao Nordeste`
     : `la cual será ubicada en un centro educativo de nuestro Distrito Educativo 16-06, Bonao Nordeste`;
+  const cargoYDistrito = [destinatarioCargo, destinatarioDistrito].filter(Boolean).join(' ');
 
   return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
 `${fechaTexto}.\nBonao, R. D.\nHHRR\n\n`+
-`A la\t\t\t: ${destinatarioNombre}\n\t\t\t  ${destinatarioCargo}\n\n`+
+`A la\t\t\t: ${destinatarioNombre}\n\t\t\t  ${cargoYDistrito}\n\n`+
 `De\t\t\t: Emeterio Beltre Tineo M.A.\n\t\t\t  Director del Distrito Educativo 16-06.\n\n`+
 `Vía\t\t\t: ${analistaNombre || '________________'}\n\t\t\t  ${analistaCargo}\n\n`+
 `Asunto\t\t\t: ${asunto}.\n\n`+
@@ -3519,8 +3520,10 @@ async function renderCartasAceptacion(){
               <input type="text" id="ca-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Docente de Nivel Inicial"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Distrito de procedencia ("A la"/"Al") <span class="requerido">*</span></label>
               <input type="text" id="ca-destinatario" oninput="actualizarPreviewCA()" placeholder="Ej. Licda. María Mercedes De La Cruz Valerio"></div>
-            <div class="campo" style="grid-column:1/-1;"><label>Cargo del destinatario</label>
-              <input type="text" id="ca-destinatario-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Directora del Distrito Educativo 16-05, Piedra Blanca"></div>
+            <div class="campo"><label>Cargo del destinatario</label>
+              <input type="text" id="ca-destinatario-cargo" oninput="actualizarPreviewCA()" placeholder="Ej. Directora del Distrito Educativo"></div>
+            <div class="campo"><label>Distrito/Centro destinatario</label>
+              <input type="text" id="ca-destinatario-distrito" oninput="actualizarPreviewCA()" placeholder="Ej. 16-05, Piedra Blanca"></div>
             <div class="campo"><label>Analista RH ("Vía")</label><input type="text" id="ca-analista" oninput="actualizarPreviewCA()"></div>
             <div class="campo"><label>Asunto</label><input type="text" id="ca-asunto" value="Aceptación De Personal" oninput="actualizarPreviewCA()"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Centro educativo donde será ubicado (opcional)</label>
@@ -3586,6 +3589,7 @@ async function renderCartasAceptacion(){
     { label:'Fecha del oficio (AAAA-MM-DD)', get:c=>c.fecha_oficio||'' },
     { label:'Procedencia (Director/a que envía)', key:'destinatario_nombre' },
     { label:'Cargo del destinatario (procedencia)', key:'destinatario_cargo' },
+    { label:'Distrito/Centro destinatario', key:'destinatario_distrito' },
     { label:'Analista (Vía)', key:'analista_nombre' },
     { label:'Cargo designado', key:'cargo_designado' },
     { label:'Centro donde será ubicada (opcional)', get:c=>c.centros_rh?.nombre_centro||'' },
@@ -3643,6 +3647,7 @@ async function abrirModalCA(){
   document.getElementById('ca-cargo').value = '';
   document.getElementById('ca-destinatario').value = '';
   document.getElementById('ca-destinatario-cargo').value = '';
+  document.getElementById('ca-destinatario-distrito').value = '';
   document.getElementById('ca-analista').value = '';
   document.getElementById('ca-asunto').value = 'Aceptación De Personal';
   await cargarPersonalSelect('ca-personal');
@@ -3664,6 +3669,7 @@ function actualizarPreviewCA(){
     fecha: document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10),
     destinatarioNombre: document.getElementById('ca-destinatario').value || '________________',
     destinatarioCargo: document.getElementById('ca-destinatario-cargo').value || '________________',
+    destinatarioDistrito: document.getElementById('ca-destinatario-distrito').value || '',
     analistaNombre: document.getElementById('ca-analista').value,
     analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
     asunto: document.getElementById('ca-asunto').value || 'Aceptación De Personal',
@@ -3680,6 +3686,7 @@ async function guardarCA(){
   const personalId = document.getElementById('ca-personal-id').value;
   const destinatario = document.getElementById('ca-destinatario').value.trim();
   const destinatarioCargo = document.getElementById('ca-destinatario-cargo').value.trim();
+  const destinatarioDistrito = document.getElementById('ca-destinatario-distrito').value.trim();
   const cargo = document.getElementById('ca-cargo').value.trim();
   if(!personalId || !destinatario || !destinatarioCargo || !cargo){
     toast('Completa empleado, destinatario, su cargo y el cargo designado.','error'); return;
@@ -3693,7 +3700,7 @@ async function guardarCA(){
 
   const fecha = document.getElementById('ca-fecha').value || new Date().toISOString().slice(0,10);
   const texto = generarTextoCartaAceptacion({
-    fecha, destinatarioNombre: destinatario, destinatarioCargo,
+    fecha, destinatarioNombre: destinatario, destinatarioCargo, destinatarioDistrito,
     analistaNombre: document.getElementById('ca-analista').value,
     analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
     asunto: document.getElementById('ca-asunto').value || 'Aceptación De Personal',
@@ -3704,6 +3711,7 @@ async function guardarCA(){
   const payload = {
     personal_id: personalId, fecha_oficio: fecha,
     destinatario_nombre: destinatario, destinatario_cargo: destinatarioCargo,
+    destinatario_distrito: destinatarioDistrito || null,
     analista_nombre: document.getElementById('ca-analista').value.trim() || null,
     asunto: document.getElementById('ca-asunto').value.trim() || 'Aceptación De Personal',
     cargo_designado: cargo, centro_id: centroId,
@@ -3750,7 +3758,8 @@ function descargarPlantillaCA(){
     { 'Cédula del empleado':'001-9988776-5', 'Nombres (si el empleado no existe aún)':'Mariana',
       'Apellidos (si el empleado no existe aún)':'Hernández Franco', 'Fecha del oficio (AAAA-MM-DD)':'2024-04-10',
       'Procedencia (Director/a que envía)':'María Mercedes De La Cruz Valerio',
-      'Cargo del destinatario (procedencia)':'Directora del Distrito Educativo 16-05, Piedra Blanca',
+      'Cargo del destinatario (procedencia)':'Directora del Distrito Educativo',
+      'Distrito/Centro destinatario':'16-05, Piedra Blanca',
       'Analista (Vía)':'Humberto Leonardo Gonzales', 'Cargo designado':'AUXILIAR ADMINISTRATIVO',
       'Centro donde será ubicada (opcional)':'ESC PRIM JUAN PABLO DUARTE', 'Estado':'confirmado' },
   ];
@@ -3773,7 +3782,7 @@ async function procesarImportacionCA(){
     if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
 
     const patronesEncabezadoCA = [/cedula/, /nombres?\b.*emplea|^nombres?\b/, /apellidos?\b.*emplea|^apellidos?\b/,
-      /fecha/, /procedencia|destinatario/, /analista|via/, /cargo.*design|design.*cargo/, /centro/, /estado/];
+      /fecha/, /procedencia|destinatario/, /analista|via/, /cargo.*design|design.*cargo/, /distrito.*destinatario|destinatario.*distrito/, /centro/, /estado/];
     const headerIdxCA = detectarFilaEncabezados(filas, patronesEncabezadoCA);
     const headers = filas[headerIdxCA];
 
@@ -3787,6 +3796,7 @@ async function procesarImportacionCA(){
       else if(/apellidos?\b.*emplea|^apellidos?\b/.test(n) && mapa.apellidos===undefined) mapa.apellidos = i;
       else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
       else if(/cargo\b.*destinatario|destinatario\b.*cargo/.test(n) && mapa.destinatarioCargo===undefined) mapa.destinatarioCargo = i;
+      else if(/distrito.*destinatario|destinatario.*distrito/.test(n) && mapa.destinatarioDistrito===undefined) mapa.destinatarioDistrito = i;
       else if(/procedencia|destinatario/.test(n) && mapa.destinatario===undefined) mapa.destinatario = i;
       else if(/analista|via/.test(n) && mapa.analista===undefined) mapa.analista = i;
       else if(/cargo.*design|design.*cargo/.test(n) && mapa.cargoDesignado===undefined) mapa.cargoDesignado = i;
@@ -3837,11 +3847,12 @@ async function procesarImportacionCA(){
         const fecha = mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
         const destinatario = mapa.destinatario!==undefined ? (String(f[mapa.destinatario]||'').trim() || '________') : '________';
         const destinatarioCargo = mapa.destinatarioCargo!==undefined ? (String(f[mapa.destinatarioCargo]||'').trim() || '________') : '________';
+        const destinatarioDistrito = mapa.destinatarioDistrito!==undefined ? String(f[mapa.destinatarioDistrito]||'').trim() : '';
         const analista = mapa.analista!==undefined ? String(f[mapa.analista]||'').trim() : '';
         const cargoDesignado = mapa.cargoDesignado!==undefined ? (String(f[mapa.cargoDesignado]||'').trim() || persona.cargo_actual || '________') : (persona.cargo_actual || '________');
 
         const texto = generarTextoCartaAceptacion({
-          fecha, destinatarioNombre: destinatario, destinatarioCargo,
+          fecha, destinatarioNombre: destinatario, destinatarioCargo, destinatarioDistrito,
           analistaNombre: analista, analistaCargo: 'Analista Recursos Humanos Distrito 16-06',
           asunto: 'Aceptación De Personal',
           candidatoNombre: persona.nombres+' '+persona.apellidos,
@@ -3852,6 +3863,7 @@ async function procesarImportacionCA(){
         const { error: errCA } = await sb.from('cartas_aceptacion_rh').insert({
           personal_id: persona.id, fecha_oficio: fecha,
           destinatario_nombre: destinatario, destinatario_cargo: destinatarioCargo,
+          destinatario_distrito: destinatarioDistrito || null,
           analista_nombre: analista || null, cargo_designado: cargoDesignado,
           centro_id: centroId, estado, texto_generado: texto,
         });
@@ -3886,6 +3898,64 @@ async function procesarImportacionCA(){
 }
 
 /* ====================== VACACIONES ====================== */
+function generarHTMLFormularioVacacion(v){
+  const p = v.personal_rh || {};
+  const totalDias = (v.dias_solicitados_anio1||0) + (v.dias_solicitados_anio2||0) + (v.dias_pendientes||0);
+  return `
+    <div class="encabezado-doc" style="text-align:center;margin-bottom:14px;">
+      <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="max-width:220px;">
+    </div>
+    <h3 style="text-align:center;margin:0 0 16px;">SOLICITUD DE VACACIONES</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Empleado</td><td style="padding:5px 8px;">${escapeHtml((p.nombres||'')+' '+(p.apellidos||''))}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Cédula</td><td style="padding:5px 8px;">${escapeHtml(p.cedula||'—')}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Cargo</td><td style="padding:5px 8px;">${escapeHtml(p.cargo_actual||'—')}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Centro educativo</td><td style="padding:5px 8px;">${escapeHtml(p.centros_rh?.nombre_centro||'—')}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha de solicitud</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_solicitud)}</td></tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Años servicio MINERD</td><td style="padding:5px 8px;">${v.anios_servicio_minerd ?? '—'}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Años servicio otra institución</td><td style="padding:5px 8px;">${v.anios_servicio_otra_institucion ?? '—'}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Total años en el Estado</td><td style="padding:5px 8px;">${v.anios_servicio_total ?? '—'}</td></tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Días año 1</td><td style="padding:5px 8px;">${v.dias_solicitados_anio1||0} días (${v.anio1||'—'})</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Días año 2</td><td style="padding:5px 8px;">${v.dias_solicitados_anio2||0} días (${v.anio2||'—'})</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Días pendientes (saldo)</td><td style="padding:5px 8px;">${v.dias_pendientes||0}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Total días</td><td style="padding:5px 8px;font-weight:bold;">${totalDias}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha inicio disfrute</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_inicio_disfrute)}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha fin disfrute</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_fin_disfrute)}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Empleada en licencia pre/post natal</td><td style="padding:5px 8px;">${v.en_licencia_pre_post_natal?'Sí':'No'}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Comentario</td><td style="padding:5px 8px;">${escapeHtml(v.comentario||'—')}</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:bold;">Estado</td><td style="padding:5px 8px;">${escapeHtml(v.estado||'—')}</td></tr>
+    </table>
+    <div style="margin-top:36px;display:flex;justify-content:space-between;font-size:12px;">
+      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Firma del empleado</div>
+      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Firma del supervisor</div>
+      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Autorizado RRLL</div>
+    </div>
+  `;
+}
+
+function verVacacion(id){
+  const v = (window._vacacionesData||[]).find(x=>x.id===id);
+  if(!v) return;
+  window._vacacionActual = v;
+  document.getElementById('cuerpo-ver-vacacion').innerHTML = generarHTMLFormularioVacacion(v);
+  abrirModal('modal-ver-vacacion');
+}
+
+function imprimirVacacionActual(){
+  const v = window._vacacionActual;
+  if(!v) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Solicitud de vacaciones</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:40px;color:#1a1a1a;} h3{font-size:16px;}</style>
+    </head><body>${generarHTMLFormularioVacacion(v)}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
+}
+
 async function renderVacaciones(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('vacaciones_rh')
@@ -3934,6 +4004,18 @@ async function renderVacaciones(){
             </tr></thead>
             <tbody id="tbody-vacaciones"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-ver-vacacion">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-header"><h3>Formulario de vacaciones</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-ver-vacacion')">×</button></div>
+        <div class="modal-body" id="cuerpo-ver-vacacion"></div>
+        <div class="modal-footer">
+          <button class="btn btn-primario" onclick="imprimirVacacionActual()">🖨 Imprimir</button>
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-ver-vacacion')">Cerrar</button>
         </div>
       </div>
     </div>
@@ -4071,7 +4153,8 @@ function pintarTablaVacaciones(lista){
       <td>${fechaCorta(v.fecha_inicio_disfrute)}</td>
       <td>${fechaCorta(v.fecha_fin_disfrute)}</td>
       <td>${badgeEstado(v.estado)}</td>
-      <td><button class="btn btn-secundario btn-chico" onclick="cambiarEstadoVacacion(${v.id})">Estado</button></td>
+      <td><button class="btn btn-secundario btn-chico" onclick="verVacacion(${v.id})">Ver</button>
+          <button class="btn btn-secundario btn-chico" onclick="cambiarEstadoVacacion(${v.id})">Estado</button></td>
     </tr>
   `).join('');
 }
@@ -7486,7 +7569,7 @@ async function leerPDFNomina(archivo){
   return filas.filter(f=>f.some(c=>String(c).trim().length));
 }
 
-const SINO = v => v==null || v==='' ? '—' : (/^s[ií]$/i.test(String(v).trim()) ? 'Sí' : (/^no$/i.test(String(v).trim()) ? 'No' : String(v)));
+const SINO = v => v==null || v==='' ? '—' : (/^s[ií]?$/i.test(String(v).trim()) ? 'Sí' : (/^no?$/i.test(String(v).trim()) ? 'No' : String(v)));
 
 function renderFilaDetalleNomina(d, idx){
   const nombre = d.personal_rh ? d.personal_rh.nombres+' '+d.personal_rh.apellidos : (d.nombre_archivo||'—');
@@ -7536,7 +7619,7 @@ function filtrarDetalleNomina(){
   const cruce = document.getElementById('detnom-filtro-cruce').value;
   const docente = document.getElementById('detnom-filtro-docente').value;
   const carrera = document.getElementById('detnom-filtro-carrera').value;
-  const esSi = v => /^s[ií]$/i.test(String(v||'').trim());
+  const esSi = v => /^s[ií]?$/i.test(String(v||'').trim());
 
   const filtrado = (window._detalleNominaTodos||[]).filter(d=>{
     if(cruce && d.match_estado !== cruce) return false;
@@ -7558,7 +7641,7 @@ function filtrarDetalleNomina(){
 function calcularEstadisticas(data){
   const totales = { empleados: data.length, bruto: 0, descuentos: 0, neto: 0 };
   const porCargo = {}, porCentro = {}, porDocente = {'Sí':0,'No':0}, porCarrera = {'Sí':0,'No':0}, porCruce = {'Encontrado':0,'No encontrado':0};
-  const esSi = v => /^s[ií]$/i.test(String(v||'').trim());
+  const esSi = v => /^s[ií]?$/i.test(String(v||'').trim());
 
   data.forEach(d=>{
     totales.bruto += Number(d.salario_bruto)||0;
