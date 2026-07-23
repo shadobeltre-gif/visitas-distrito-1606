@@ -6573,9 +6573,12 @@ async function abrirModalCertLab(){
     const campoSalario = document.getElementById('cl-salario');
     if(id && !campoSalario.value){
       const { data: det } = await sb.from('detalle_nomina_rh')
-        .select('salario_bruto').eq('personal_id', id)
+        .select('salario_bruto, total_ingreso').eq('personal_id', id)
         .order('creado_en', { ascending:false }).limit(1).maybeSingle();
-      if(det?.salario_bruto) campoSalario.value = Number(det.salario_bruto).toLocaleString('es-DO',{minimumFractionDigits:2});
+      // Se toma el monto mayor entre "sueldo base" y "total ingreso" (este último
+      // incluye incentivos aplicados y aún no tiene descuentos restados).
+      const monto = Math.max(Number(det?.salario_bruto)||0, Number(det?.total_ingreso)||0);
+      if(monto) campoSalario.value = monto.toLocaleString('es-DO',{minimumFractionDigits:2});
     }
     actualizarPreviewCL();
   });
@@ -6772,15 +6775,43 @@ function verCL(id){
 function imprimirCLActual(){
   const c = window._clActual;
   if(!c) return;
+  const texto = c.texto_generado;
+  const partes = texto.split('\n\n');
+  const tituloInstitucional = partes[0] || '';
+  const resto = partes.slice(1).join('\n\n');
+
+  const marcaTitulo = 'A QUIEN PUEDA INTERESAR:';
+  const marcaCierre = 'Muy atentamente,';
+  const idxTitulo = resto.indexOf(marcaTitulo);
+  const idxCierre = resto.indexOf(marcaCierre);
+  let previo = resto, cuerpo = '', cierre = '';
+  if(idxTitulo>-1 && idxCierre>-1){
+    previo = resto.slice(0, idxTitulo).trim();
+    cuerpo = resto.slice(idxTitulo+marcaTitulo.length, idxCierre).trim();
+    cierre = resto.slice(idxCierre).trim();
+  }
+
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Certificación laboral</title>
     <style>
       @page{ size:letter; margin:0.6in; }
-      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      body{font-family:Arial,sans-serif;font-size:14.5px;line-height:1.65;margin:0;}
       .encabezado-doc{text-align:center;margin-bottom:22px;}
       .encabezado-doc img{width:230px;height:auto;}
+      .titulo-institucional{text-align:center;font-weight:bold;font-size:16.5px;white-space:pre-wrap;margin-bottom:18px;}
+      .previo-carta{white-space:pre-wrap;margin-bottom:18px;}
+      .titulo-carta{text-align:center;font-weight:bold;font-size:16.5px;margin-bottom:18px;}
+      .cuerpo-carta{text-align:justify;white-space:pre-wrap;margin-bottom:18px;}
+      .cierre-carta{white-space:pre-wrap;}
     </style>
-    </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(c.texto_generado)}</body></html>`);
+    </head><body>
+    <div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>
+    <div class="titulo-institucional">${escapeHtml(tituloInstitucional)}</div>
+    <div class="previo-carta">${escapeHtml(previo)}</div>
+    <div class="titulo-carta">${escapeHtml(marcaTitulo)}</div>
+    <div class="cuerpo-carta">${escapeHtml(cuerpo)}</div>
+    <div class="cierre-carta">${escapeHtml(cierre)}</div>
+    </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
 }
