@@ -2454,10 +2454,16 @@ async function renderTelegramas(){
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
 
-  // Candidatos ya nombrados, disponibles para generarles telegrama
-  const { data: candidatosNombrables } = await sb.from('candidatos_ap')
-    .select('id,nombres,apellidos,cedula,sexo,cargo_propuesto, solicitudes_ap(centro_id, centros_rh(nombre_centro,director_nombre,director_telefono,tanda))')
-    .order('id',{ascending:false});
+  // Todos los empleados de la nómina, disponibles para generarles telegrama
+  // (no solo los que vienen de una Solicitud AP)
+  let candidatosNombrables = [];
+  try{
+    candidatosNombrables = await fetchTodasLasFilas(
+      'personal_rh',
+      'id,nombres,apellidos,cedula,sexo,cargo_actual,centro_id,centros_rh(nombre_centro,director_nombre,director_telefono,tanda)',
+      q=>q.order('apellidos')
+    );
+  }catch(e){ toast('Error cargando personal: '+e.message,'error'); }
 
   main.innerHTML = `
     <div class="tarjeta">
@@ -2584,7 +2590,7 @@ async function renderTelegramas(){
     'tel-candidato',
     window._candidatosNombrables,
     c=>c.nombres+' '+c.apellidos,
-    c=>`${c.cargo_propuesto||''} — ${c.solicitudes_ap?.centros_rh?.nombre_centro||'sin centro'}`
+    c=>`${c.cargo_actual||'sin cargo'} — ${c.centros_rh?.nombre_centro||'sin centro'}`
   );
   document.getElementById('tel-candidato').addEventListener('autocomplete-change', precargarTelegrama);
 
@@ -2633,10 +2639,11 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-notas').value = t.notas || '';
     document.getElementById('tel-cargo').value = t.cargo_designado || '';
     document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
-    document.getElementById('tel-candidato-id').value = t.candidato_ap_id || '';
-    const candSel = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(t.candidato_ap_id));
+    const cedulaBuscada = t.candidatos_ap?.cedula;
+    const candSel = (window._candidatosNombrables||[]).find(x=>x.cedula === cedulaBuscada);
+    document.getElementById('tel-candidato-id').value = candSel ? candSel.id : '';
     document.getElementById('tel-candidato').value = candSel ? (candSel.nombres+' '+candSel.apellidos)
-      : (t.candidatos_ap ? (t.candidatos_ap.nombres+' '+t.candidatos_ap.apellidos) : '');
+      : (t.candidatos_ap ? (t.candidatos_ap.nombres+' '+t.candidatos_ap.apellidos)+' (no está en Personal actualmente)' : '');
     await cargarCentrosSelect('tel-centro', t.centro_id);
   } else {
     document.getElementById('titulo-modal-telegrama').textContent = 'Generar telegrama';
@@ -2676,17 +2683,17 @@ function precargarTelegrama(){
   const id = document.getElementById('tel-candidato-id').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
   if(!c) return;
-  document.getElementById('tel-cargo').value = c.cargo_propuesto || '';
-  document.getElementById('tel-destinatario').value = c.solicitudes_ap?.centros_rh?.director_nombre || '';
+  document.getElementById('tel-cargo').value = c.cargo_actual || '';
+  document.getElementById('tel-destinatario').value = c.centros_rh?.director_nombre || '';
   if(!document.getElementById('tel-destinatario-telefono').value){
-    document.getElementById('tel-destinatario-telefono').value = c.solicitudes_ap?.centros_rh?.director_telefono || '';
+    document.getElementById('tel-destinatario-telefono').value = c.centros_rh?.director_telefono || '';
   }
-  document.getElementById('tel-jornada').value = c.solicitudes_ap?.centros_rh?.tanda || 'Extendida';
-  // Precarga el centro de la solicitud del candidato, pero queda en un campo
-  // visible y editable: si el usuario lo cambia, el telegrama imprimirá ese
-  // centro nuevo, no el de la solicitud original.
-  const centroId = c.solicitudes_ap?.centro_id || '';
-  const centroNombre = c.solicitudes_ap?.centros_rh?.nombre_centro || '';
+  document.getElementById('tel-jornada').value = c.centros_rh?.tanda || 'Extendida';
+  // Precarga el centro actual del empleado, pero queda en un campo visible y
+  // editable: si el usuario lo cambia, el telegrama imprimirá ese centro nuevo,
+  // no el que tenía asignado hasta ahora.
+  const centroId = c.centro_id || '';
+  const centroNombre = c.centros_rh?.nombre_centro || '';
   document.getElementById('tel-centro-id').value = centroId;
   document.getElementById('tel-centro').value = centroNombre;
   actualizarPreviewTelegrama();
@@ -2736,6 +2743,30 @@ async function guardarTelegrama(imprimir){
   const fecha = document.getElementById('tel-fecha').value || new Date().toISOString().slice(0,10);
   const candidatoTelefono = document.getElementById('tel-candidato-telefono').value.trim();
   const destinatarioTelefono = document.getElementById('tel-destinatario-telefono').value.trim();
+
+  // telegramas_rh sigue enlazando por diseño a candidatos_ap; como ahora el
+  // empleado se elige directo de personal_rh (toda la nómina, no solo quienes
+  // vienen de una Solicitud AP), se busca —o si no existe, se crea— el
+  // candidato_ap correspondiente a esa cédula para mantener ese enlace.
+  let candidatoApId;
+  const { data: candidatoApExistente } = await sb.from('candidatos_ap')
+    .select('id').eq('cedula', c.cedula).order('id',{ascending:false}).limit(1).maybeSingle();
+  if(candidatoApExistente){
+    candidatoApId = candidatoApExistente.id;
+  } else {
+    const { data: nuevaSolicitudAuto, error: errSolAuto } = await sb.from('solicitudes_ap')
+      .insert({ centro_id: centroId, motivo_solicitud:'PLAZA_VACANTE', estado:'nombrado',
+                observaciones:'Generado automáticamente al crear un telegrama desde Personal.' })
+      .select('id').single();
+    if(errSolAuto){ toast('No se pudo vincular el candidato: '+errSolAuto.message,'error'); return; }
+    const { data: nuevoCandidatoAp, error: errCandAp } = await sb.from('candidatos_ap')
+      .insert({ solicitud_ap_id: nuevaSolicitudAuto.id, nombres: c.nombres, apellidos: c.apellidos,
+                cedula: c.cedula, sexo: c.sexo, cargo_propuesto: cargo, estado: 'nombrado' })
+      .select('id').single();
+    if(errCandAp){ toast('No se pudo vincular el candidato: '+errCandAp.message,'error'); return; }
+    candidatoApId = nuevoCandidatoAp.id;
+  }
+
   const texto = generarTextoTelegrama({
     destinatarioNombre: destinatario,
     centroNombre: centroNombre || '________',
@@ -2750,7 +2781,7 @@ async function guardarTelegrama(imprimir){
   });
 
   const payload = {
-    candidato_ap_id: candidatoId,
+    candidato_ap_id: candidatoApId,
     centro_id: centroId,
     no_telegrama: document.getElementById('tel-numero').value.trim() || null,
     fecha_telegrama: fecha,
