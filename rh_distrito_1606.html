@@ -801,6 +801,16 @@ function registrarExportadores(prefijo, getFilasActuales, columnas, nombreArchiv
 // (por si trae título y/o filas en blanco antes de los nombres de columna),
 // probando cuál de las primeras filas tiene más coincidencias con los patrones
 // de columnas que se esperan.
+// Evita que un guardado se dispare dos veces si el usuario toca el botón
+// varias veces seguidas (por ejemplo por lentitud de la conexión).
+const _guardandoLock = {};
+function bloquearGuardado(clave){
+  if(_guardandoLock[clave]) return false;
+  _guardandoLock[clave] = true;
+  return true;
+}
+function desbloquearGuardado(clave){ _guardandoLock[clave] = false; }
+
 function detectarFilaEncabezados(filas, patrones, maxFilas){
   const norm = h => h.toString().toLowerCase().trim()
     .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
@@ -2697,6 +2707,8 @@ function actualizarPreviewTelegrama(){
 });
 
 async function guardarTelegrama(imprimir){
+  if(!bloquearGuardado('telegrama')) return;
+  try{
   const telId = document.getElementById('tel-id').value;
   const candidatoId = document.getElementById('tel-candidato').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(candidatoId));
@@ -2757,6 +2769,7 @@ async function guardarTelegrama(imprimir){
     window._telegramaActual = { texto_generado: texto };
     imprimirTelegramaActual();
   }
+  }finally{ desbloquearGuardado('telegrama'); }
 }
 
 /* ---- Importación masiva de telegramas (datos viejos en papel) ----
@@ -3295,6 +3308,8 @@ function actualizarPreviewPD(){
 }
 
 async function guardarPuestaDisp(imprimir){
+  if(!bloquearGuardado('pd')) return;
+  try{
   const personalId = document.getElementById('pd-personal-id').value;
   const destinatario = document.getElementById('pd-destinatario').value.trim();
   const cargo = document.getElementById('pd-cargo').value.trim();
@@ -3332,6 +3347,7 @@ async function guardarPuestaDisp(imprimir){
     window._pdActual = { texto_generado: texto };
     imprimirPDActual();
   }
+  }finally{ desbloquearGuardado('pd'); }
 }
 
 function verPuestaDisp(id){
@@ -3748,6 +3764,8 @@ function actualizarPreviewCA(){
 }
 
 async function guardarCA(imprimir){
+  if(!bloquearGuardado('ca')) return;
+  try{
   const personalId = document.getElementById('ca-personal-id').value;
   const destinatario = document.getElementById('ca-destinatario').value.trim();
   const destinatarioCargo = document.getElementById('ca-destinatario-cargo').value.trim();
@@ -3791,6 +3809,7 @@ async function guardarCA(imprimir){
     window._caActual = { texto_generado: texto };
     imprimirCAActual();
   }
+  }finally{ desbloquearGuardado('ca'); }
 }
 
 function verCA(id){
@@ -6636,6 +6655,8 @@ function actualizarPreviewCL(){
 }
 
 async function guardarCertLab(imprimir){
+  if(!bloquearGuardado('cl')) return;
+  try{
   const personalId = document.getElementById('cl-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado.','error'); return; }
 
@@ -6672,6 +6693,7 @@ async function guardarCertLab(imprimir){
     window._clActual = { texto_generado: texto };
     imprimirCLActual();
   }
+  }finally{ desbloquearGuardado('cl'); }
 }
 
 function abrirModalImportarCL(){
