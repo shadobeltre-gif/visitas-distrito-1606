@@ -2160,7 +2160,7 @@ function plantillaCandidatoHTML(idx, c){
     <button onclick="quitarCandidatoForm(${idx})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--rojo-600);font-size:16px;">✕</button>
     <legend>Candidato ${idx+1}</legend>
     <div class="grid-3">
-      <div class="campo"><label>Cédula</label><input type="text" class="cand-cedula" value="${escapeHtml(c.cedula||'')}"></div>
+      <div class="campo"><label>Cédula</label><input type="text" class="cand-cedula" value="${escapeHtml(c.cedula||'')}" onblur="autorellenarCandidatoAP(this)"></div>
       <div class="campo"><label>Sexo</label>
         <select class="cand-sexo"><option value="M" ${c.sexo==='M'?'selected':''}>M</option><option value="F" ${c.sexo==='F'?'selected':''}>F</option></select></div>
       <div class="campo"><label>Fecha nacimiento</label><input type="date" class="cand-nacimiento" value="${c.fecha_nacimiento||''}"></div>
@@ -2174,7 +2174,7 @@ function plantillaCandidatoHTML(idx, c){
     <div class="campo-sustituido" style="display:${sust?'block':'none'};border-top:1px dashed var(--gris-300);margin-top:10px;padding-top:10px;">
       <div class="texto-ayuda" style="margin-bottom:6px;"><strong>Empleado a sustituir</strong></div>
       <div class="grid-3">
-        <div class="campo"><label>Cédula</label><input type="text" class="cand-sus-cedula" value="${escapeHtml(c.sustituido_cedula||'')}"></div>
+        <div class="campo"><label>Cédula</label><input type="text" class="cand-sus-cedula" value="${escapeHtml(c.sustituido_cedula||'')}" onblur="autorellenarSustituidoAP(this)"></div>
         <div class="campo"><label>Nombres</label><input type="text" class="cand-sus-nombres" value="${escapeHtml(c.sustituido_nombres||'')}"></div>
         <div class="campo"><label>Apellidos</label><input type="text" class="cand-sus-apellidos" value="${escapeHtml(c.sustituido_apellidos||'')}"></div>
         <div class="campo"><label>Cargo</label><input type="text" class="cand-sus-cargo" value="${escapeHtml(c.sustituido_cargo||'')}"></div>
@@ -2183,6 +2183,53 @@ function plantillaCandidatoHTML(idx, c){
       </div>
     </div>
   </div>`;
+}
+
+// Si la cédula del candidato ya coincide con un empleado existente (ej. está siendo
+// re-propuesto para otro cargo), rellena lo que ya se conoce de él/ella. También
+// busca en telegramas anteriores si ya se registró un teléfono para esa persona.
+async function autorellenarCandidatoAP(inputCedula){
+  const cedula = inputCedula.value.trim();
+  if(!cedula) return;
+  const wrap = inputCedula.closest('[data-candidato]');
+  if(!wrap) return;
+  const setSiVacio = (cls, val) => { const el = wrap.querySelector('.'+cls); if(el && !el.value && val) el.value = val; };
+
+  const { data: p } = await sb.from('personal_rh').select('nombres,apellidos,sexo,cargo_actual').eq('cedula', cedula).maybeSingle();
+  if(p){
+    setSiVacio('cand-nombres', p.nombres);
+    setSiVacio('cand-apellidos', p.apellidos);
+    setSiVacio('cand-cargo', p.cargo_actual);
+    const sexoEl = wrap.querySelector('.cand-sexo');
+    if(sexoEl && !sexoEl.dataset.tocado && p.sexo) sexoEl.value = p.sexo;
+  }
+
+  try{
+    const { data: tel } = await sb.from('telegramas_rh')
+      .select('candidato_telefono, candidatos_ap!inner(cedula)')
+      .eq('candidatos_ap.cedula', cedula)
+      .not('candidato_telefono', 'is', null)
+      .order('creado_en', { ascending:false }).limit(1).maybeSingle();
+    if(tel?.candidato_telefono) setSiVacio('cand-telefono', tel.candidato_telefono);
+  }catch(e){ /* búsqueda de teléfono es opcional, no bloquea el resto */ }
+}
+
+// Si la cédula del empleado a sustituir coincide con personal existente, rellena
+// sus datos conocidos (nombres, apellidos, cargo, fecha de ingreso).
+async function autorellenarSustituidoAP(inputCedula){
+  const cedula = inputCedula.value.trim();
+  if(!cedula) return;
+  const wrap = inputCedula.closest('.campo-sustituido');
+  if(!wrap) return;
+  const setSiVacio = (cls, val) => { const el = wrap.querySelector('.'+cls); if(el && !el.value && val) el.value = val; };
+  const { data: p } = await sb.from('personal_rh').select('nombres,apellidos,cargo_actual,fecha_ingreso').eq('cedula', cedula).maybeSingle();
+  if(p){
+    setSiVacio('cand-sus-nombres', p.nombres);
+    setSiVacio('cand-sus-apellidos', p.apellidos);
+    setSiVacio('cand-sus-cargo', p.cargo_actual);
+    const fechaEl = wrap.querySelector('.cand-sus-ingreso');
+    if(fechaEl && !fechaEl.value && p.fecha_ingreso) fechaEl.value = p.fecha_ingreso;
+  }
 }
 
 function agregarCandidatoForm(c){
@@ -2300,14 +2347,16 @@ async function descargarAP(solicitudId){
   const html = `
   <html><head><meta charset="UTF-8"><title>AP ${s.no_solicitud||''}</title>
   <style>
-    body{font-family:Arial,sans-serif;font-size:12.5px;color:#111;padding:30px;}
-    h2{font-size:14px;margin:0;}
-    table{width:100%;border-collapse:collapse;margin-top:14px;}
-    td{padding:4px 6px;vertical-align:top;}
-    .seccion{margin-top:16px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #888;padding-bottom:3px;}
-    .motivos{margin-top:10px;}
+    @page{ size:letter; margin:0.45in; }
+    body{font-family:Arial,sans-serif;font-size:12.5px;color:#111;margin:0;line-height:1.4;}
+    h2{font-size:14.5px;margin:0 0 3px;}
+    table{width:100%;border-collapse:collapse;margin-top:11px;}
+    td{padding:3px 7px;vertical-align:top;}
+    .seccion{margin-top:13px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #888;padding-bottom:3px;font-size:11.5px;}
+    .motivos{margin-top:7px;}
     .motivos div{padding:2px 0;}
     .marcado::before{content:"☑ ";} .nomarcado::before{content:"☐ ";}
+    p{margin:7px 0;}
   </style></head><body>
     <h2>DIRECCIÓN DE GESTIÓN HUMANA</h2>
     <h2>REQUERIMIENTO DE ACCIÓN DE PERSONAL</h2>
@@ -2349,8 +2398,7 @@ async function descargarAP(solicitudId){
     <table>
       <tr><td>☐ Expediente completo</td><td>☐ Expediente incompleto</td><td>☐ Incidencias</td></tr>
     </table>
-    <br><br>
-    <table>
+    <table style="margin-top:45px;">
       <tr><td style="text-align:center;border-top:1px solid #000;">${escapeHtml(s.nombre_director_distrital||'Nombre director distrital')}</td>
           <td style="text-align:center;border-top:1px solid #000;">${escapeHtml(s.nombre_director_regional||'Nombre director regional')}</td></tr>
     </table>
@@ -3289,9 +3337,11 @@ function imprimirPDActual(){
   if(!p) return;
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Puesta a disposición</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}
-      .encabezado-doc{text-align:center;margin-bottom:20px;}
-      .encabezado-doc img{width:70px;height:70px;border-radius:50%;}
+    <style>
+      @page{ size:letter; margin:0.6in; }
+      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      .encabezado-doc{text-align:center;margin-bottom:22px;}
+      .encabezado-doc img{width:230px;height:auto;}
     </style>
     </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(p.texto_generado)}</body></html>`);
   w.document.close();
@@ -3741,9 +3791,11 @@ function imprimirCAActual(){
   if(!c) return;
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Carta de aceptación</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}
-      .encabezado-doc{text-align:center;margin-bottom:20px;}
-      .encabezado-doc img{width:70px;height:70px;border-radius:50%;}
+    <style>
+      @page{ size:letter; margin:0.6in; }
+      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      .encabezado-doc{text-align:center;margin-bottom:22px;}
+      .encabezado-doc img{width:230px;height:auto;}
     </style>
     </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(c.texto_generado)}</body></html>`);
   w.document.close();
@@ -6282,17 +6334,34 @@ async function cambiarEstadoSeguro(id){
 }
 
 /* ====================== CERTIFICACIÓN LABORAL ====================== */
-function generarTextoCertificacionLaboral({ personalNombre, personalCedula, cargo, periodoDesde, periodoHasta, fechaEmision }){
+function generarTextoCertificacionLaboral({ personalNombre, personalCedula, cargo, salario, periodoDesde, periodoHasta, fechaEmision }){
   const fechaTexto = new Date(fechaEmision+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
   const desde = periodoDesde ? new Date(periodoDesde+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'}) : '________';
   const hasta = periodoHasta ? new Date(periodoHasta+'T00:00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'}) : 'la fecha';
+  const salarioTexto = salario ? `RD$${salario} mensuales` : '________________';
+
+  let tiempoServicio = '';
+  if(periodoDesde){
+    const fechaHastaCalculo = periodoHasta || new Date().toISOString().slice(0,10);
+    const ini = new Date(periodoDesde+'T00:00:00');
+    const fin = new Date(fechaHastaCalculo+'T00:00:00');
+    let anios = fin.getFullYear() - ini.getFullYear();
+    let meses = fin.getMonth() - ini.getMonth();
+    if(fin.getDate() < ini.getDate()) meses--;
+    if(meses < 0){ anios--; meses += 12; }
+    anios = Math.max(anios, 0); meses = Math.max(meses, 0);
+    const partes = [];
+    if(anios) partes.push(`${anios} año${anios===1?'':'s'}`);
+    if(meses || !anios) partes.push(`${meses} mes${meses===1?'':'es'}`);
+    tiempoServicio = ` (${partes.join(' y ')})`;
+  }
 
   return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
 `${fechaTexto}.\nBonao, R. D.\n\nA QUIEN PUEDA INTERESAR:\n\n`+
 `Quien suscribe, Emeterio Beltré Tineo M.A., Director del Distrito Educativo 16-06, Bonao Nordeste, `+
 `hace constar por medio de la presente que el/la señor(a) ${personalNombre}, portador(a) de la cédula de `+
 `identidad y electoral No. ${personalCedula}, ha prestado/presta sus servicios en esta institución desde el ${desde} `+
-`hasta ${hasta}, desempeñando el cargo de ${cargo}.\n\n`+
+`hasta ${hasta}${tiempoServicio}, desempeñando el cargo de ${cargo}, devengando un salario de ${salarioTexto}.\n\n`+
 `La presente certificación se expide a solicitud de la parte interesada, para los fines que estime convenientes.\n\n`+
 `Muy atentamente,\n\n\nEmeterio Beltré Tineo M.A.\nDirector Distrital 16-06, Bonao Nordeste`;
 }
@@ -6364,6 +6433,7 @@ async function renderCertificacionesLaborales(){
             <div class="campo"><label>Período desde</label><input type="date" id="cl-periodo-desde" onchange="actualizarPreviewCL()"></div>
             <div class="campo"><label>Período hasta</label><input type="date" id="cl-periodo-hasta" onchange="actualizarPreviewCL()"></div>
             <div class="campo"><label>Cargo a certificar</label><input type="text" id="cl-cargo" oninput="actualizarPreviewCL()"></div>
+            <div class="campo"><label>Salario que devenga (RD$)</label><input type="text" id="cl-salario" oninput="actualizarPreviewCL()" placeholder="Ej. 25,000.00"></div>
             <div class="campo"><label>Fecha de emisión</label><input type="date" id="cl-fecha-emision" onchange="actualizarPreviewCL()"></div>
             <div class="campo" style="grid-column:1/-1;"><label>Motivo</label><input type="text" id="cl-motivo" placeholder="Ej. trámite migratorio, constancia laboral…"></div>
           </div>
@@ -6432,6 +6502,7 @@ async function renderCertificacionesLaborales(){
     { label:'Período desde (AAAA-MM-DD)', get:c=>c.periodo_desde||'' },
     { label:'Período hasta (AAAA-MM-DD, vacío si sigue activo)', get:c=>c.periodo_hasta||'' },
     { label:'Cargo certificado', key:'cargo_certificado' },
+    { label:'Salario certificado', key:'salario_certificado' },
     { label:'Motivo', key:'motivo' },
     { label:'Solicitado por terceros (SI/NO)', get:c=>c.solicitado_por_terceros?'SI':'NO' },
     { label:'Poder notarial (SI/NO)', get:c=>c.tiene_poder_notarial?'SI':'NO' },
@@ -6490,13 +6561,24 @@ async function abrirModalCertLab(){
   document.getElementById('cl-periodo-desde').value = '';
   document.getElementById('cl-periodo-hasta').value = '';
   document.getElementById('cl-cargo').value = '';
+  document.getElementById('cl-salario').value = '';
   document.getElementById('cl-fecha-emision').value = new Date().toISOString().slice(0,10);
   document.getElementById('cl-motivo').value = '';
   document.getElementById('cl-terceros').checked = false;
   document.getElementById('cl-poder-notarial').checked = false;
   document.getElementById('cl-poder-wrap').style.display = 'none';
   await cargarPersonalSelect('cl-personal');
-  document.getElementById('cl-personal').addEventListener('autocomplete-change', actualizarPreviewCL);
+  document.getElementById('cl-personal').addEventListener('autocomplete-change', async ()=>{
+    const id = document.getElementById('cl-personal-id')?.value;
+    const campoSalario = document.getElementById('cl-salario');
+    if(id && !campoSalario.value){
+      const { data: det } = await sb.from('detalle_nomina_rh')
+        .select('salario_bruto').eq('personal_id', id)
+        .order('creado_en', { ascending:false }).limit(1).maybeSingle();
+      if(det?.salario_bruto) campoSalario.value = Number(det.salario_bruto).toLocaleString('es-DO',{minimumFractionDigits:2});
+    }
+    actualizarPreviewCL();
+  });
   actualizarPreviewCL();
   abrirModal('modal-cert-laboral');
 }
@@ -6514,6 +6596,7 @@ function actualizarPreviewCL(){
     personalNombre: p.nombres+' '+p.apellidos,
     personalCedula: p.cedula,
     cargo: document.getElementById('cl-cargo').value || p.cargo_actual || '________________',
+    salario: document.getElementById('cl-salario').value || '',
     periodoDesde: document.getElementById('cl-periodo-desde').value,
     periodoHasta: document.getElementById('cl-periodo-hasta').value,
     fechaEmision: document.getElementById('cl-fecha-emision').value || new Date().toISOString().slice(0,10),
@@ -6532,9 +6615,10 @@ async function guardarCertLab(){
   const periodoDesde = document.getElementById('cl-periodo-desde').value || null;
   const periodoHasta = document.getElementById('cl-periodo-hasta').value || null;
   const cargo = document.getElementById('cl-cargo').value.trim() || p.cargo_actual || '';
+  const salario = document.getElementById('cl-salario').value.trim();
 
   const texto = generarTextoCertificacionLaboral({
-    personalNombre: p.nombres+' '+p.apellidos, personalCedula: p.cedula, cargo,
+    personalNombre: p.nombres+' '+p.apellidos, personalCedula: p.cedula, cargo, salario,
     periodoDesde, periodoHasta, fechaEmision,
   });
 
@@ -6542,6 +6626,7 @@ async function guardarCertLab(){
     personal_id: personalId,
     fecha_emision: fechaEmision, periodo_desde: periodoDesde, periodo_hasta: periodoHasta,
     cargo_certificado: cargo,
+    salario_certificado: salario || null,
     motivo: document.getElementById('cl-motivo').value.trim() || null,
     solicitado_por_terceros: document.getElementById('cl-terceros').checked,
     tiene_poder_notarial: document.getElementById('cl-poder-notarial').checked,
@@ -6689,9 +6774,11 @@ function imprimirCLActual(){
   if(!c) return;
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Certificación laboral</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:50px;white-space:pre-wrap;line-height:1.6;}
-      .encabezado-doc{text-align:center;margin-bottom:20px;}
-      .encabezado-doc img{width:70px;height:70px;border-radius:50%;}
+    <style>
+      @page{ size:letter; margin:0.6in; }
+      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      .encabezado-doc{text-align:center;margin-bottom:22px;}
+      .encabezado-doc img{width:230px;height:auto;}
     </style>
     </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(c.texto_generado)}</body></html>`);
   w.document.close();
