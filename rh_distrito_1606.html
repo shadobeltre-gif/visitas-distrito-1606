@@ -197,7 +197,7 @@ tbody tr:hover{background:var(--gris-100);}
 .modal-header h3{margin:0;font-size:15px;color:var(--azul-900);}
 .modal-cerrar{background:none;border:none;font-size:20px;color:var(--gris-500);line-height:1;}
 .modal-body{padding:18px 20px;max-height:70vh;overflow-y:auto;}
-.modal-footer{padding:14px 20px;border-top:1px solid var(--gris-300);display:flex;justify-content:flex-end;gap:8px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--gris-300);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
 
 .vacio{text-align:center;padding:40px 20px;color:var(--gris-500);}
 .vacio .icono-vacio{font-size:34px;margin-bottom:10px;opacity:.5;}
@@ -2530,6 +2530,7 @@ async function renderTelegramas(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-telegrama')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarTelegrama()">Guardar y generar</button>
+          <button class="btn btn-primario" onclick="guardarTelegrama(true)">🖨 Guardar e Imprimir</button>
         </div>
       </div>
     </div>
@@ -2695,7 +2696,7 @@ function actualizarPreviewTelegrama(){
   document.addEventListener('change', e=>{ if(e.target && e.target.id===id) actualizarPreviewTelegrama(); });
 });
 
-async function guardarTelegrama(){
+async function guardarTelegrama(imprimir){
   const telId = document.getElementById('tel-id').value;
   const candidatoId = document.getElementById('tel-candidato').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(candidatoId));
@@ -2752,6 +2753,10 @@ async function guardarTelegrama(){
 
   cerrarModal('modal-telegrama');
   renderTelegramas();
+  if(imprimir){
+    window._telegramaActual = { texto_generado: texto };
+    imprimirTelegramaActual();
+  }
 }
 
 /* ---- Importación masiva de telegramas (datos viejos en papel) ----
@@ -3147,6 +3152,7 @@ async function renderPuestasDisposicion(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-puesta-disp')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarPuestaDisp()">Guardar y generar</button>
+          <button class="btn btn-primario" onclick="guardarPuestaDisp(true)">🖨 Guardar e Imprimir</button>
         </div>
       </div>
     </div>
@@ -3288,7 +3294,7 @@ function actualizarPreviewPD(){
   document.getElementById('preview-pd').textContent = texto;
 }
 
-async function guardarPuestaDisp(){
+async function guardarPuestaDisp(imprimir){
   const personalId = document.getElementById('pd-personal-id').value;
   const destinatario = document.getElementById('pd-destinatario').value.trim();
   const cargo = document.getElementById('pd-cargo').value.trim();
@@ -3322,6 +3328,10 @@ async function guardarPuestaDisp(){
   toast('Oficio generado correctamente.','exito');
   cerrarModal('modal-puesta-disp');
   renderPuestasDisposicion();
+  if(imprimir){
+    window._pdActual = { texto_generado: texto };
+    imprimirPDActual();
+  }
 }
 
 function verPuestaDisp(id){
@@ -3589,6 +3599,7 @@ async function renderCartasAceptacion(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-carta-aceptacion')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarCA()">Guardar y generar</button>
+          <button class="btn btn-primario" onclick="guardarCA(true)">🖨 Guardar e Imprimir</button>
         </div>
       </div>
     </div>
@@ -3736,7 +3747,7 @@ function actualizarPreviewCA(){
   document.getElementById('preview-ca').textContent = texto;
 }
 
-async function guardarCA(){
+async function guardarCA(imprimir){
   const personalId = document.getElementById('ca-personal-id').value;
   const destinatario = document.getElementById('ca-destinatario').value.trim();
   const destinatarioCargo = document.getElementById('ca-destinatario-cargo').value.trim();
@@ -3776,6 +3787,10 @@ async function guardarCA(){
   toast('Carta de aceptación generada correctamente.','exito');
   cerrarModal('modal-carta-aceptacion');
   renderCartasAceptacion();
+  if(imprimir){
+    window._caActual = { texto_generado: texto };
+    imprimirCAActual();
+  }
 }
 
 function verCA(id){
@@ -6356,13 +6371,19 @@ function generarTextoCertificacionLaboral({ personalNombre, personalCedula, carg
     tiempoServicio = ` (${partes.join(' y ')})`;
   }
 
+  const fechaEmisionObj = new Date(fechaEmision+'T00:00:00');
+  const diaEmision = fechaEmisionObj.getDate();
+  const mesEmision = fechaEmisionObj.toLocaleDateString('es-DO',{month:'long'});
+  const anioEmision = fechaEmisionObj.getFullYear();
+
   return `DISTRITO EDUCATIVO 16-06, BONAO NORDESTE.\nC. / 16 de Agosto, esq. Luperón, 809-296-2126.\n\n`+
 `${fechaTexto}.\nBonao, R. D.\n\nA QUIEN PUEDA INTERESAR:\n\n`+
 `Quien suscribe, Emeterio Beltré Tineo M.A., Director del Distrito Educativo 16-06, Bonao Nordeste, `+
 `hace constar por medio de la presente que el/la señor(a) ${personalNombre}, portador(a) de la cédula de `+
 `identidad y electoral No. ${personalCedula}, ha prestado/presta sus servicios en esta institución desde el ${desde} `+
 `hasta ${hasta}${tiempoServicio}, desempeñando el cargo de ${cargo}, devengando un salario de ${salarioTexto}.\n\n`+
-`La presente certificación se expide a solicitud de la parte interesada, para los fines que estime convenientes.\n\n`+
+`La presente certificación se expide a solicitud de la parte interesada, para los fines que estime convenientes, `+
+`a los ${diaEmision} días del mes de ${mesEmision} del año ${anioEmision}, en la Provincia Monseñor Nouel.\n\n`+
 `Muy atentamente,\n\n\nEmeterio Beltré Tineo M.A.\nDirector Distrital 16-06, Bonao Nordeste`;
 }
 
@@ -6452,6 +6473,7 @@ async function renderCertificacionesLaborales(){
         <div class="modal-footer">
           <button class="btn btn-secundario" onclick="cerrarModal('modal-cert-laboral')">Cancelar</button>
           <button class="btn btn-primario" onclick="guardarCertLab()">Guardar y generar</button>
+          <button class="btn btn-primario" onclick="guardarCertLab(true)">🖨 Guardar e Imprimir</button>
         </div>
       </div>
     </div>
@@ -6607,7 +6629,7 @@ function actualizarPreviewCL(){
   document.getElementById('preview-cl').textContent = texto;
 }
 
-async function guardarCertLab(){
+async function guardarCertLab(imprimir){
   const personalId = document.getElementById('cl-personal-id').value;
   if(!personalId){ toast('Selecciona el empleado.','error'); return; }
 
@@ -6640,6 +6662,10 @@ async function guardarCertLab(){
   toast('Certificación laboral generada.','exito');
   cerrarModal('modal-cert-laboral');
   renderCertificacionesLaborales();
+  if(imprimir){
+    window._clActual = { texto_generado: texto };
+    imprimirCLActual();
+  }
 }
 
 function abrirModalImportarCL(){
