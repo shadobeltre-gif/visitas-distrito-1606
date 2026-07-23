@@ -427,7 +427,7 @@ async function iniciarSesion(){
       if(!cedula){ throw new Error('Ingresa tu número de cédula.'); }
 
       const { data, error } = await sb.from('personal_rh')
-        .select('*, centros_rh(nombre_centro)')
+        .select('*, centros_rh(nombre_centro,codigo_sigerd)')
         .eq('cedula', cedula)
         .maybeSingle();
 
@@ -1011,7 +1011,7 @@ async function cargarCentrosSelect(inputId, valorSeleccionado){
 async function cargarPersonalSelect(inputId, valorSeleccionado){
   let data, error;
   try{
-    data = await fetchTodasLasFilas('personal_rh', 'id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso,centro_id,centros_rh(nombre_centro)', q=>q.order('apellidos'));
+    data = await fetchTodasLasFilas('personal_rh', 'id,nombres,apellidos,cedula,cargo_actual,sexo,fecha_ingreso,centro_id,centros_rh(nombre_centro,codigo_sigerd)', q=>q.order('apellidos'));
   }catch(e){ error = e; }
   if(error){ toast('Error cargando personal: '+error.message,'error'); return; }
   window._personalCache = data || [];
@@ -1548,7 +1548,7 @@ async function renderPersonal(){
   const main = document.getElementById('main-content');
   let data, error;
   try{
-    data = await fetchTodasLasFilas('personal_rh', '*, centros_rh(nombre_centro)', q=>q.order('apellidos'));
+    data = await fetchTodasLasFilas('personal_rh', '*, centros_rh(nombre_centro,codigo_sigerd)', q=>q.order('apellidos'));
   }catch(e){ error = e; }
   if(error){ toast(error.message,'error'); }
   window._personalTodos = data || [];
@@ -1850,7 +1850,7 @@ let candidatosTemp = []; // candidatos en edición dentro del modal de solicitud
 async function renderSolicitudes(){
   const main = document.getElementById('main-content');
   const { data, error } = await sb.from('solicitudes_ap')
-    .select('*, centros_rh(nombre_centro), candidatos_ap(id,nombres,apellidos,cargo_propuesto,sexo,estado)')
+    .select('*, centros_rh(nombre_centro,codigo_sigerd), candidatos_ap(id,nombres,apellidos,cargo_propuesto,sexo,estado)')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
   window._solicitudesData = data || [];
@@ -3086,7 +3086,7 @@ function generarTextoPuestaDisposicion({ fecha, destinatarioNombre, destinatario
 async function renderPuestasDisposicion(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('puestas_disposicion_rh')
-    .select('*, personal_rh(nombres,apellidos,cedula,sexo,centro_id,centros_rh(nombre_centro))')
+    .select('*, personal_rh(nombres,apellidos,cedula,sexo,centro_id,centros_rh(nombre_centro,codigo_sigerd))')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
 
@@ -3537,7 +3537,7 @@ function generarTextoCartaAceptacion({ fecha, destinatarioNombre, destinatarioCa
 async function renderCartasAceptacion(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('cartas_aceptacion_rh')
-    .select('*, personal_rh(nombres,apellidos,cedula,sexo), centros_rh(nombre_centro)')
+    .select('*, personal_rh(nombres,apellidos,cedula,sexo), centros_rh(nombre_centro,codigo_sigerd)')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
   window._cartasAceptacionData = todos || [];
@@ -4049,7 +4049,7 @@ function imprimirVacacionActual(){
 async function renderVacaciones(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('vacaciones_rh')
-    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual,centro_id,centros_rh(nombre_centro))')
+    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual,centro_id,centros_rh(nombre_centro,codigo_sigerd))')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
   window._vacacionesData = todos || [];
@@ -4679,7 +4679,7 @@ function labelSubtipoLP(codigo){
 async function renderLicenciasPermisos(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('licencias_permisos_rh')
-    .select('*, personal_rh(nombres,apellidos,cedula,centro_id,centros_rh(nombre_centro))')
+    .select('*, personal_rh(nombres,apellidos,cedula,centro_id,centros_rh(nombre_centro,codigo_sigerd))')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
   window._licenciasPermisosData = todos || [];
@@ -5193,7 +5193,7 @@ function filtrarRelacionCentros(){
 async function renderRiesgosLaborales(){
   const main = document.getElementById('main-content');
   const { data: todos, error } = await sb.from('riesgos_laborales_rh')
-    .select('*, personal_rh(nombres,apellidos,cedula), centros_rh(nombre_centro)')
+    .select('*, personal_rh(nombres,apellidos,cedula), centros_rh(nombre_centro,codigo_sigerd)')
     .order('creado_en', {ascending:false});
   if(error){ toast(error.message,'error'); }
   window._riesgosData = todos || [];
@@ -6984,7 +6984,7 @@ async function cargarExpediente(){
   cont.innerHTML = '<div class="vacio">Cargando expediente…</div>';
 
   const { data: p, error: errP } = await sb.from('personal_rh')
-    .select('*, centros_rh(nombre_centro)').eq('id', personalId).single();
+    .select('*, centros_rh(nombre_centro,codigo_sigerd)').eq('id', personalId).single();
   if(errP){ toast(errP.message,'error'); cont.innerHTML = ''; return; }
 
   // Trae todas las secciones en paralelo, cada una ordenada por la fecha más reciente disponible.
