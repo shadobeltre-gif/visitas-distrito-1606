@@ -2505,12 +2505,7 @@ async function renderTelegramas(){
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;">
               <label>Candidato (de una solicitud AP) <span class="requerido">*</span></label>
-              <select id="tel-candidato" onchange="precargarTelegrama()">
-                <option value="">Seleccione un candidato…</option>
-                ${(candidatosNombrables||[]).map(c=>`
-                  <option value="${c.id}">${escapeHtml(c.nombres+' '+c.apellidos)} — ${escapeHtml(c.cargo_propuesto||'')} (${escapeHtml(c.solicitudes_ap?.centros_rh?.nombre_centro||'sin centro')})</option>
-                `).join('')}
-              </select>
+              ${htmlAutocompletar('tel-candidato', 'Escribe el nombre, cédula o cargo del candidato…')}
             </div>
             <div class="campo"><label>No. de telegrama</label><input type="text" id="tel-numero"></div>
             <div class="campo"><label>Fecha</label><input type="date" id="tel-fecha"></div>
@@ -2585,6 +2580,14 @@ async function renderTelegramas(){
   window._candidatosNombrables = candidatosNombrables || [];
   window._telegramasData = data || [];
 
+  inicializarAutocompletar(
+    'tel-candidato',
+    window._candidatosNombrables,
+    c=>c.nombres+' '+c.apellidos,
+    c=>`${c.cargo_propuesto||''} — ${c.solicitudes_ap?.centros_rh?.nombre_centro||'sin centro'}`
+  );
+  document.getElementById('tel-candidato').addEventListener('autocomplete-change', precargarTelegrama);
+
   registrarExportadores('telegramas', ()=>window._telegramasData||[], [
     { label:'No. de telegrama', key:'no_telegrama' },
     { label:'Fecha (AAAA-MM-DD)', get:t=>t.fecha_telegrama||'' },
@@ -2630,7 +2633,10 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-notas').value = t.notas || '';
     document.getElementById('tel-cargo').value = t.cargo_designado || '';
     document.getElementById('tel-jornada').value = t.jornada || 'Extendida';
-    document.getElementById('tel-candidato').value = t.candidato_ap_id || '';
+    document.getElementById('tel-candidato-id').value = t.candidato_ap_id || '';
+    const candSel = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(t.candidato_ap_id));
+    document.getElementById('tel-candidato').value = candSel ? (candSel.nombres+' '+candSel.apellidos)
+      : (t.candidatos_ap ? (t.candidatos_ap.nombres+' '+t.candidatos_ap.apellidos) : '');
     await cargarCentrosSelect('tel-centro', t.centro_id);
   } else {
     document.getElementById('titulo-modal-telegrama').textContent = 'Generar telegrama';
@@ -2642,6 +2648,7 @@ async function abrirModalTelegrama(id){
     document.getElementById('tel-notas').value = '';
     document.getElementById('tel-cargo').value = '';
     document.getElementById('tel-jornada').value = 'Extendida';
+    document.getElementById('tel-candidato-id').value = '';
     document.getElementById('tel-candidato').value = '';
     await cargarCentrosSelect('tel-centro');
   }
@@ -2666,7 +2673,7 @@ async function calcularProximoNumeroTelegrama(){
 }
 
 function precargarTelegrama(){
-  const id = document.getElementById('tel-candidato').value;
+  const id = document.getElementById('tel-candidato-id').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
   if(!c) return;
   document.getElementById('tel-cargo').value = c.cargo_propuesto || '';
@@ -2686,7 +2693,7 @@ function precargarTelegrama(){
 }
 
 function actualizarPreviewTelegrama(){
-  const id = document.getElementById('tel-candidato').value;
+  const id = document.getElementById('tel-candidato-id').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(id));
   if(!c){ document.getElementById('preview-telegrama').textContent=''; return; }
   // El centro que se imprime SIEMPRE es el del campo visible (editable),
@@ -2715,7 +2722,7 @@ async function guardarTelegrama(imprimir){
   if(!bloquearGuardado('telegrama')) return;
   try{
   const telId = document.getElementById('tel-id').value;
-  const candidatoId = document.getElementById('tel-candidato').value;
+  const candidatoId = document.getElementById('tel-candidato-id').value;
   const c = (window._candidatosNombrables||[]).find(x=>String(x.id)===String(candidatoId));
   const destinatario = document.getElementById('tel-destinatario').value.trim();
   const cargo = document.getElementById('tel-cargo').value.trim();
