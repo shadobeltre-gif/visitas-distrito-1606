@@ -4192,6 +4192,7 @@ async function renderVacaciones(){
 
   registrarExportadores('vac', ()=>window._vacacionesFiltrado||window._vacacionesData||[], [
     { label:'Cédula del empleado', get:v=>v.personal_rh?.cedula||'' },
+    { label:'Nombre del empleado', get:v=>v.personal_rh ? v.personal_rh.nombres+' '+v.personal_rh.apellidos : '' },
     { label:'Fecha de solicitud (AAAA-MM-DD)', get:v=>v.fecha_solicitud||'' },
     { label:'Años servicio MINERD', key:'anios_servicio_minerd' },
     { label:'Años servicio otra institución', key:'anios_servicio_otra_institucion' },
@@ -4787,6 +4788,7 @@ async function renderLicenciasPermisos(){
 
   registrarExportadores('lp', ()=>window._lpFiltrado||window._licenciasPermisosData||[], [
     { label:'Cédula del empleado', get:l=>l.personal_rh?.cedula||'' },
+    { label:'Nombre del empleado', get:l=>l.personal_rh ? l.personal_rh.nombres+' '+l.personal_rh.apellidos : '' },
     { label:'Fecha de solicitud (AAAA-MM-DD)', get:l=>l.fecha_solicitud||'' },
     { label:'Categoría (licencia/permiso)', key:'categoria' },
     { label:'Subtipo', key:'subtipo' },
@@ -5296,6 +5298,7 @@ async function renderRiesgosLaborales(){
 
   registrarExportadores('rl', ()=>window._riesgosFiltrado||window._riesgosData||[], [
     { label:'Cédula del empleado', get:r=>r.personal_rh?.cedula||'' },
+    { label:'Nombre del empleado', get:r=>r.personal_rh ? r.personal_rh.nombres+' '+r.personal_rh.apellidos : '' },
     { label:'Tipo (ATR-2/EPR-1)', key:'tipo_formulario' },
     { label:'Fecha del evento (AAAA-MM-DD)', get:r=>r.fecha_evento||'' },
     { label:'Fecha del aviso (AAAA-MM-DD)', get:r=>r.fecha_aviso||'' },
@@ -5689,6 +5692,7 @@ async function renderPensiones(){
 
   registrarExportadores('pen', ()=>window._pensionesFiltrado||window._pensionesData||[], [
     { label:'Cédula del empleado', get:p=>p.personal_rh?.cedula||'' },
+    { label:'Nombre del empleado', get:p=>p.personal_rh ? p.personal_rh.nombres+' '+p.personal_rh.apellidos : '' },
     { label:'Tipo de personal (docente/administrativo)', key:'tipo_personal' },
     { label:'Tipo de pensión', key:'tipo_pension' },
     { label:'Fecha de solicitud (AAAA-MM-DD)', get:p=>p.fecha_solicitud||'' },
@@ -6102,6 +6106,7 @@ async function renderSegurosSalud(){
 
   registrarExportadores('seg', ()=>window._segurosFiltrado||window._segurosData||[], [
     { label:'Cédula del titular', get:s=>s.personal_rh?.cedula||'' },
+    { label:'Nombre del titular', get:s=>s.personal_rh ? s.personal_rh.nombres+' '+s.personal_rh.apellidos : '' },
     { label:'Tipo (F1/F2)', key:'tipo_formulario' },
     { label:'Fecha de solicitud (AAAA-MM-DD)', get:s=>s.fecha_solicitud||'' },
     { label:'Nombre del dependiente', key:'nombre_dependiente' },
@@ -6519,6 +6524,7 @@ async function renderCertificacionesLaborales(){
 
   registrarExportadores('cl', ()=>window._clFiltrado||window._certLaboralData||[], [
     { label:'Cédula del empleado', get:c=>c.personal_rh?.cedula||'' },
+    { label:'Nombre del empleado', get:c=>c.personal_rh ? c.personal_rh.nombres+' '+c.personal_rh.apellidos : '' },
     { label:'Fecha de solicitud (AAAA-MM-DD)', get:c=>c.fecha_solicitud||'' },
     { label:'Fecha de emisión (AAAA-MM-DD)', get:c=>c.fecha_emision||'' },
     { label:'Período desde (AAAA-MM-DD)', get:c=>c.periodo_desde||'' },
