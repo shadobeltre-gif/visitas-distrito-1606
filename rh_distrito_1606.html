@@ -7484,10 +7484,19 @@ async function procesarImportacionNomina(){
 
     const personalNuevo = [];
     const personalActualizar = [];
+    // Acumula, por centro, qué número de dependencia (columna DEP del archivo) aparece
+    // más entre los empleados de ese centro — para completar el dato del centro si
+    // le faltaba, sin depender de que el archivo de centros lo haya traído.
+    const centrosSinDependencia = new Set((centrosExistentes||[]).filter(c=>!c.numero_dependencia_nomina).map(c=>c.id));
+    const depPorCentro = {};
 
     registrosUnicos.forEach(r=>{
       const cedNorm = r.cedula_archivo.replace(/[^0-9]/g,'');
       const centroId = resolverCentroId(r);
+      if(centroId && r.dep_archivo && centrosSinDependencia.has(centroId)){
+        depPorCentro[centroId] = depPorCentro[centroId] || {};
+        depPorCentro[centroId][r.dep_archivo] = (depPorCentro[centroId][r.dep_archivo]||0) + 1;
+      }
       const existente = mapaPersonal[cedNorm];
 
       if(!existente){
@@ -7527,6 +7536,18 @@ async function procesarImportacionNomina(){
         }
       }
     });
+
+    // Completa el número de dependencia de los centros que no lo tenían, usando el
+    // valor más frecuente visto en la nómina para ese centro.
+    const centrosADependenciaActualizar = Object.entries(depPorCentro).map(([centroId, conteos])=>{
+      const depMasFrecuente = Object.entries(conteos).sort((a,b)=>b[1]-a[1])[0][0];
+      return { id: Number(centroId), numero_dependencia_nomina: depMasFrecuente };
+    });
+    if(centrosADependenciaActualizar.length){
+      for(const c of centrosADependenciaActualizar){
+        await sb.from('centros_rh').update({ numero_dependencia_nomina: c.numero_dependencia_nomina }).eq('id', c.id);
+      }
+    }
 
     if(personalNuevo.length){
       const sinCedula = personalNuevo.filter(p=>!p.cedula || !String(p.cedula).trim());
