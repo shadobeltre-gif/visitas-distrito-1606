@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distrito Educativo 16-06 Bonao Nordeste | MINERD</title>
+<meta name="description" content="Portal institucional del Distrito Educativo 16-06 Bonao Nordeste. Información, servicios en línea, consultas y noticias.">
+<link rel="icon" href="escudo-1606.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --azul-marino:#0B2D5C;
+    --azul-real:#1C63C4;
+    --rojo-bandera:#C41E3A;
+    --dorado:#C9A227;
+    --marfil:#F8F6F1;
+    --tinta:#20242B;
+    --blanco:#FFFFFF;
+    --linea:#E4DFD3;
+    --radio:14px;
+    --sombra: 0 10px 30px -12px rgba(11,45,92,0.25);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:'Public Sans', sans-serif;
+    color:var(--tinta);
+    background:var(--marfil);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:'Fraunces', serif;
+    margin:0 0 .4em;
+    line-height:1.1;
+    color:var(--azul-marino);
+    font-weight:700;
+  }
+  p{line-height:1.65; margin:0 0 1em; color:#3A3F47;}
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--rojo-bandera);
+    font-weight:600;
+    margin-bottom:.6em;
+    display:block;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+  .btn{
+    display:inline-flex; align-items:center; gap:.5em;
+    padding:.85em 1.5em;
+    border-radius:999px;
+    font-weight:700;
+    font-size:.95rem;
+    text-decoration:none;
+    border:2px solid transparent;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+    font-family:'Public Sans', sans-serif;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn:focus-visible{outline:3px solid var(--dorado); outline-offset:2px;}
+  .btn-primary{background:var(--rojo-bandera); color:#fff; box-shadow:var(--sombra);}
+  .btn-primary:hover{background:#a91830;}
+  .btn-outline{background:transparent; border-color:rgba(255,255,255,.55); color:#fff;}
+  .btn-outline:hover{background:rgba(255,255,255,.12);}
+  .btn-navy{background:var(--azul-marino); color:#fff;}
+  .btn-navy:hover{background:#092349;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky; top:0; z-index:100;
+    background:var(--blanco);
+    border-bottom:3px solid var(--dorado);
+  }
+  .topbar{
+    background:var(--azul-marino); color:#dfe8fb;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.72rem;
+    letter-spacing:.04em;
+  }
+  .topbar .wrap{display:flex; justify-content:space-between; align-items:center; padding:6px 24px; flex-wrap:wrap; gap:6px;}
+  .topbar a{color:#dfe8fb; text-decoration:none;}
+  .topbar a:hover{text-decoration:underline;}
+  .navrow{display:flex; align-items:center; justify-content:space-between; padding:12px 24px; gap:20px;}
+  .brand{display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--azul-marino);}
+  .brand img{width:56px; height:56px; border-radius:50%;}
+  .brand-text{line-height:1.2;}
+  .brand-text .linea1{font-family:'IBM Plex Mono', monospace; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--rojo-bandera); font-weight:600;}
+  .brand-text .linea2{font-family:'Fraunces', serif; font-weight:700; font-size:1.15rem; color:var(--azul-marino);}
+  .brand-text .linea3{font-size:.78rem; color:#5b6270;}
+
+  nav.mainnav{display:flex; align-items:center; gap:4px;}
+  nav.mainnav > ul{display:flex; list-style:none; margin:0; padding:0; gap:2px;}
+  nav.mainnav > ul > li{position:relative;}
+  nav.mainnav > ul > li > a, nav.mainnav > ul > li > button{
+    display:flex; align-items:center; gap:6px;
+    padding:10px 14px; text-decoration:none; color:var(--tinta);
+    font-weight:600; font-size:.94rem; border-radius:8px;
+    background:none; border:none; cursor:pointer; font-family:'Public Sans', sans-serif;
+  }
+  nav.mainnav > ul > li > a:hover, nav.mainnav > ul > li > button:hover,
+  nav.mainnav > ul > li.open > button{
+    background:var(--marfil); color:var(--rojo-bandera);
+  }
+  .chev{width:9px; height:9px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); margin-top:-3px; transition:transform .15s;}
+  li.open .chev{transform:rotate(225deg); margin-top:3px;}
+  .submenu{
+    list-style:none; margin:0; padding:8px; position:absolute; top:calc(100% + 6px); left:0;
+    background:#fff; border:1px solid var(--linea); border-radius:12px; box-shadow:var(--sombra);
+    min-width:260px; display:none; z-index:50;
+  }
+  li.open .submenu{display:block;}
+  .submenu li a{
+    display:block; padding:10px 12px; border-radius:8px; text-decoration:none;
+    color:var(--tinta); font-size:.9rem; font-weight:500;
+  }
+  .submenu li a:hover{background:var(--marfil); color:var(--rojo-bandera);}
+  .hamburger{display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:8px;}
+  .hamburger span{width:26px; height:2px; background:var(--azul-marino);}
+
+  @media (max-width:960px){
+    .hamburger{display:flex;}
+    nav.mainnav{
+      position:fixed; inset:0 0 0 auto; width:min(88vw,360px); height:100vh;
+      background:#fff; transform:translateX(100%); transition:transform .25s ease;
+      flex-direction:column; align-items:stretch; padding:80px 20px 20px; overflow-y:auto;
+      box-shadow:-10px 0 30px rgba(0,0,0,.15);
+    }
+    nav.mainnav.open{transform:translateX(0);}
+    nav.mainnav > ul{flex-direction:column; width:100%; gap:4px;}
+    nav.mainnav > ul > li > a, nav.mainnav > ul > li > button{width:100%; justify-content:space-between;}
+    .submenu{position:static; box-shadow:none; border:none; display:none; width:100%; margin-top:2px;}
+    li.open .submenu{display:block;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative; overflow:hidden;
+    background:linear-gradient(180deg, var(--azul-marino) 0%, #0d3a78 65%, #123e82 100%);
+    color:#fff; padding:88px 0 76px;
+  }
+  .hero .arco{
+    position:absolute; right:-8%; top:-12%; width:640px; max-width:70vw; opacity:.16;
+    pointer-events:none;
+  }
+  .hero-grid{position:relative; z-index:2; display:grid; grid-template-columns:1.15fr .85fr; gap:48px; align-items:center;}
+  .hero h1{color:#fff; font-size:clamp(2.1rem, 3.6vw, 3.1rem); max-width:14ch;}
+  .hero .lead{color:#dfe8fb; font-size:1.08rem; max-width:52ch;}
+  .hero-cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:26px;}
+  .hero-escudo{display:flex; justify-content:center;}
+  .hero-escudo img{width:min(340px,80%); filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));}
+  @media (max-width:860px){ .hero-grid{grid-template-columns:1fr;} .hero-escudo{order:-1; margin-bottom:8px;} .hero-escudo img{width:180px;} }
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:72px 0;}
+  .section-head{max-width:640px; margin:0 auto 44px;}
+  .section-head.center{text-align:center; margin-left:auto; margin-right:auto;}
+  .divider-arco{
+    height:34px; width:100%; margin:0 auto; opacity:.55;
+  }
+
+  .tarjetas-3{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  .tarjetas-2{display:grid; grid-template-columns:repeat(2,1fr); gap:24px;}
+  @media (max-width:860px){ .tarjetas-3, .tarjetas-2{grid-template-columns:1fr;} }
+
+  .card{
+    background:#fff; border:1px solid var(--linea); border-radius:var(--radio);
+    padding:28px; box-shadow:0 1px 2px rgba(11,45,92,.04);
+  }
+  .card h3{font-size:1.15rem;}
+  .card-borde-top{border-top:4px solid var(--rojo-bandera);}
+
+  #institucion{background:#fff;}
+
+  .valores-lista{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;}
+  .valor-chip{
+    font-family:'IBM Plex Mono', monospace; font-size:.78rem; font-weight:600;
+    padding:8px 14px; border-radius:999px; background:var(--marfil); border:1px solid var(--linea); color:var(--azul-marino);
+  }
+
+  .autoridad{display:flex; gap:18px; align-items:flex-start;}
+  .autoridad .icono-cupula{width:52px; height:52px; flex:none;}
+
+  .centros-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media (max-width:860px){.centros-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:560px){.centros-grid{grid-template-columns:1fr;}}
+  .centro-card{
+    background:var(--marfil); border:1px solid var(--linea); border-radius:12px; padding:20px;
+  }
+  .centro-card .tanda{font-family:'IBM Plex Mono', monospace; font-size:.7rem; color:var(--rojo-bandera); font-weight:600; text-transform:uppercase; letter-spacing:.06em;}
+
+  /* ---------- SERVICIOS ---------- */
+  #servicios{background:var(--azul-marino); color:#fff;}
+  #servicios .section-head h2{color:#fff;}
+  #servicios .section-head p{color:#c9d5ea;}
+  .servicio-card{
+    background:#fff; border-radius:var(--radio); padding:30px; color:var(--tinta);
+    display:flex; flex-direction:column; gap:14px; height:100%;
+  }
+  .servicio-card .icono{
+    width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    background:var(--marfil); color:var(--rojo-bandera);
+  }
+  .servicio-card .icono svg{width:26px; height:26px;}
+  .servicio-card a.btn{align-self:flex-start; margin-top:auto;}
+  .nota-enlace{font-size:.78rem; color:#8b90a0; margin-top:-6px;}
+
+  /* Formulario */
+  .form-card{background:#fff; border-radius:var(--radio); padding:34px; color:var(--tinta);}
+  .campo{margin-bottom:18px;}
+  .campo label{display:block; font-weight:600; font-size:.9rem; margin-bottom:6px; color:var(--azul-marino);}
+  .campo input, .campo select, .campo textarea{
+    width:100%; padding:11px 13px; border:1.5px solid var(--linea); border-radius:9px;
+    font-family:'Public Sans', sans-serif; font-size:.95rem; background:var(--marfil);
+  }
+  .campo input:focus, .campo select:focus, .campo textarea:focus{outline:2.5px solid var(--azul-real); outline-offset:1px; background:#fff;}
+  .campo-fila{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:600px){.campo-fila{grid-template-columns:1fr;}}
+  .form-nota{
+    background:#FFF7E6; border:1px solid #F0DDA3; color:#7a5b06; font-size:.85rem;
+    padding:12px 14px; border-radius:9px; margin-top:14px;
+  }
+
+  /* ---------- NOTICIAS ---------- */
+  .noticias-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  @media (max-width:860px){.noticias-grid{grid-template-columns:1fr;}}
+  .noticia-card{background:#fff; border:1px solid var(--linea); border-radius:var(--radio); overflow:hidden;}
+  .noticia-media{aspect-ratio:16/10; background:linear-gradient(135deg,#dfe8fb,#c9d5ea); display:flex; align-items:center; justify-content:center; color:var(--azul-real); font-family:'IBM Plex Mono',monospace; font-size:.72rem; text-align:center; padding:10px;}
+  .noticia-body{padding:20px;}
+  .noticia-fecha{font-family:'IBM Plex Mono', monospace; font-size:.7rem; color:var(--rojo-bandera); font-weight:600; text-transform:uppercase; letter-spacing:.05em;}
+  .noticia-card h3{font-size:1.02rem; margin-top:8px;}
+  .noticia-card p{font-size:.9rem;}
+  .video-destacado{
+    margin-top:32px; background:#0b0e14; border-radius:var(--radio); overflow:hidden; position:relative; aspect-ratio:16/9; max-width:760px; margin-left:auto; margin-right:auto;
+    display:flex; align-items:center; justify-content:center; color:#7c8291; font-family:'IBM Plex Mono',monospace; font-size:.8rem; text-align:center; padding:20px;
+  }
+
+  /* ---------- REDES ---------- */
+  #redes{background:var(--marfil); text-align:center;}
+  .redes-grid{display:flex; justify-content:center; flex-wrap:wrap; gap:16px; margin-top:10px;}
+  .red-btn{
+    width:58px; height:58px; border-radius:16px; background:#fff; border:1px solid var(--linea);
+    display:flex; align-items:center; justify-content:center; color:var(--azul-marino);
+    transition:transform .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .red-btn svg{width:26px; height:26px;}
+  .red-btn:hover{transform:translateY(-3px); color:var(--rojo-bandera); border-color:var(--rojo-bandera);}
+
+  /* ---------- FOOTER / CONTACTO ---------- */
+  footer{background:var(--azul-marino); color:#c9d5ea; padding:56px 0 24px;}
+  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:40px;}
+  @media (max-width:860px){.footer-grid{grid-template-columns:1fr; gap:32px;}}
+  footer h4{color:#fff; font-family:'Public Sans',sans-serif; font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; margin-bottom:16px;}
+  footer .brand-text .linea2{color:#fff;}
+  footer .brand{color:#fff;}
+  footer p, footer li, footer a{color:#c9d5ea; font-size:.9rem;}
+  footer ul{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;}
+  footer a{text-decoration:none;}
+  footer a:hover{color:#fff; text-decoration:underline;}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,.15); margin-top:40px; padding-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:.78rem; color:#93a0bd;}
+
+  .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+  a:focus-visible, button:focus-visible{outline:3px solid var(--dorado); outline-offset:2px;}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header>
+  <div class="topbar">
+    <div class="wrap">
+      <span>Ministerio de Educación de la República Dominicana &middot; Regional 04 &middot; Distrito 16-06</span>
+      <span><a href="#contacto">Contáctenos</a> · <a href="#servicios">Servicios en línea</a></span>
+    </div>
+  </div>
+  <div class="navrow wrap">
+    <a href="#inicio" class="brand">
+      <img src="escudo-1606.jpg" alt="Escudo del Distrito Educativo 16-06 Bonao">
+      <span class="brand-text">
+        <span class="linea1">MINERD · Distrito 16-06</span>
+        <span class="linea2">Bonao Nordeste</span>
+        <span class="linea3">Portal institucional</span>
+      </span>
+    </a>
+
+    <button class="hamburger" aria-label="Abrir menú" aria-expanded="false" id="btnHamburger">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="mainnav" id="mainNav">
+      <ul>
+        <li><a href="#inicio">Inicio</a></li>
+        <li class="tiene-submenu">
+          <button aria-expanded="false">Institución <span class="chev"></span></button>
+          <ul class="submenu">
+            <li><a href="#mision-vision">Misión y visión</a></li>
+            <li><a href="#historia">Historia del distrito</a></li>
+            <li><a href="#autoridades">Autoridades</a></li>
+            <li><a href="#centros">Centros educativos</a></li>
+          </ul>
+        </li>
+        <li class="tiene-submenu">
+          <button aria-expanded="false">Servicios en línea <span class="chev"></span></button>
+          <ul class="submenu">
+            <li><a href="#servicio-nomina">Consulta de nómina MINERD</a></li>
+            <li><a href="#servicio-contraloria">Contraloría General de la República</a></li>
+            <li><a href="#servicio-formulario">Formulario de consulta</a></li>
+          </ul>
+        </li>
+        <li><a href="#noticias">Noticias</a></li>
+        <li><a href="#redes">Redes sociales</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="inicio">
+  <svg class="arco" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M50 380 V220 C50 120 130 40 300 40 C470 40 550 120 550 220 V380" stroke="#ffffff" stroke-width="10"/>
+    <path d="M120 380 V230 C120 150 190 90 300 90 C410 90 480 150 480 230 V380" stroke="#ffffff" stroke-width="6" opacity=".7"/>
+    <path d="M190 380 V240 C190 180 240 140 300 140 C360 140 410 180 410 240 V380" stroke="#ffffff" stroke-width="4" opacity=".5"/>
+  </svg>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow" style="color:#ffd76b;">Distrito Educativo 16-06 · Bonao Nordeste</span>
+      <h1>Información, servicios y acompañamiento para nuestra comunidad educativa</h1>
+      <p class="lead">Portal oficial del Distrito 16-06, dependencia del Ministerio de Educación de la República Dominicana. Aquí encuentra información institucional, trámites en línea y las noticias de nuestros centros educativos.</p>
+      <div class="hero-cta">
+        <a href="#servicio-formulario" class="btn btn-primary">Enviar una consulta</a>
+        <a href="#servicios" class="btn btn-outline">Servicios en línea</a>
+      </div>
+    </div>
+    <div class="hero-escudo">
+      <img src="escudo-1606.jpg" alt="Escudo oficial del Distrito Educativo 16-06 Bonao">
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTITUCIÓN ============ -->
+<section id="institucion">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">Nuestra institución</span>
+      <h2>Quiénes somos</h2>
+      <p>El Distrito Educativo 16-06 administra los centros educativos públicos de Bonao Nordeste, acompañando a directores, docentes, estudiantes y familias en la gestión escolar diaria.</p>
+    </div>
+
+    <div id="mision-vision" class="tarjetas-2" style="margin-bottom:56px;">
+      <div class="card card-borde-top">
+        <span class="eyebrow">Misión</span>
+        <h3>Educación de calidad para todos</h3>
+        <p>Garantizar una educación de calidad, equitativa e inclusiva en los centros educativos del Distrito 16-06, formando ciudadanos íntegros y comprometidos con el desarrollo de Bonao y su nordeste. <em>(Texto editable: sustituir por la misión oficial del distrito.)</em></p>
+      </div>
+      <div class="card card-borde-top">
+        <span class="eyebrow">Visión</span>
+        <h3>Un distrito modelo en gestión</h3>
+        <p>Ser un distrito educativo modelo en gestión, innovación y acompañamiento pedagógico, reconocido por la excelencia de sus centros y el compromiso de su equipo docente y administrativo. <em>(Texto editable: sustituir por la visión oficial del distrito.)</em></p>
+      </div>
+    </div>
+
+    <div class="valores-lista" style="justify-content:center; margin-bottom:64px;">
+      <span class="valor-chip">Transparencia</span>
+      <span class="valor-chip">Equidad</span>
+      <span class="valor-chip">Compromiso</span>
+      <span class="valor-chip">Innovación</span>
+      <span class="valor-chip">Trabajo en equipo</span>
+    </div>
+
+    <div id="historia" class="card" style="margin-bottom:56px;">
+      <span class="eyebrow">Historia</span>
+      <h3>Reseña del Distrito 16-06</h3>
+      <p>El Distrito Educativo 16-06 forma parte de la Regional de Educación 04 y agrupa los centros educativos públicos y semioficiales de la zona nordeste de Bonao, provincia Monseñor Nouel. <em>(Espacio para la reseña histórica oficial del distrito: año de creación, hitos y evolución.)</em></p>
+    </div>
+
+    <div id="autoridades" style="margin-bottom:56px;">
+      <span class="eyebrow" style="display:block; text-align:center;">Autoridades</span>
+      <h2 style="text-align:center; margin-bottom:32px;">Equipo de dirección distrital</h2>
+      <div class="tarjetas-3">
+        <div class="card autoridad">
+          <svg class="icono-cupula" viewBox="0 0 64 64" fill="none"><path d="M12 52 V34 C12 20 20 10 32 10 C44 10 52 20 52 34 V52" stroke="#1C63C4" stroke-width="4"/><rect x="8" y="52" width="48" height="4" rx="2" fill="#C41E3A"/></svg>
+          <div>
+            <h3 style="font-size:1rem;">Dirección distrital</h3>
+            <p>Responsable de la gestión administrativa, pedagógica y de recursos del distrito. <em>(Agregar nombre y datos del director/a.)</em></p>
+          </div>
+        </div>
+        <div class="card autoridad">
+          <svg class="icono-cupula" viewBox="0 0 64 64" fill="none"><path d="M12 52 V34 C12 20 20 10 32 10 C44 10 52 20 52 34 V52" stroke="#1C63C4" stroke-width="4"/><rect x="8" y="52" width="48" height="4" rx="2" fill="#C41E3A"/></svg>
+          <div>
+            <h3 style="font-size:1rem;">Subdirección técnico-pedagógica</h3>
+            <p>Acompaña la calidad educativa y el trabajo docente en los centros del distrito. <em>(Agregar nombre y datos.)</em></p>
+          </div>
+        </div>
+        <div class="card autoridad">
+          <svg class="icono-cupula" viewBox="0 0 64 64" fill="none"><path d="M12 52 V34 C12 20 20 10 32 10 C44 10 52 20 52 34 V52" stroke="#1C63C4" stroke-width="4"/><rect x="8" y="52" width="48" height="4" rx="2" fill="#C41E3A"/></svg>
+          <div>
+            <h3 style="font-size:1rem;">Encargado/a administrativo-financiero</h3>
+            <p>Gestiona los recursos, nómina y procesos administrativos del distrito. <em>(Agregar nombre y datos.)</em></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="centros">
+      <span class="eyebrow" style="display:block; text-align:center;">Cobertura</span>
+      <h2 style="text-align:center; margin-bottom:8px;">Centros educativos del distrito</h2>
+      <p style="text-align:center; max-width:600px; margin:0 auto 32px;">Listado editable de los centros educativos que pertenecen al Distrito 16-06. Sustituya estos ejemplos por los centros reales y su tanda.</p>
+      <div class="centros-grid">
+        <div class="centro-card"><span class="tanda">Tanda extendida</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 1]</h3></div>
+        <div class="centro-card"><span class="tanda">Tanda matutina</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 2]</h3></div>
+        <div class="centro-card"><span class="tanda">Tanda vespertina</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 3]</h3></div>
+        <div class="centro-card"><span class="tanda">Tanda extendida</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 4]</h3></div>
+        <div class="centro-card"><span class="tanda">Tanda matutina</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 5]</h3></div>
+        <div class="centro-card"><span class="tanda">Nocturna</span><h3 style="font-size:1rem; margin-top:6px;">Centro Educativo [Nombre 6]</h3></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SERVICIOS EN LÍNEA ============ -->
+<section id="servicios">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow" style="color:#ffd76b;">Trámites y consultas</span>
+      <h2>Servicios en línea</h2>
+      <p>Accesos directos a los portales oficiales que la comunidad educativa consulta con más frecuencia.</p>
+    </div>
+
+    <div class="tarjetas-3">
+      <div class="servicio-card" id="servicio-nomina">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.6"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <h3>Consulta de nómina MINERD</h3>
+        <p>Verifique información salarial y de nómina del personal docente y administrativo directamente en el portal del Ministerio de Educación.</p>
+        <p class="nota-enlace">Enlace pendiente de confirmar con la URL oficial vigente del MINERD.</p>
+        <a href="https://www.minerd.gob.do/" target="_blank" rel="noopener" class="btn btn-navy">Ir al portal MINERD →</a>
+      </div>
+
+      <div class="servicio-card" id="servicio-contraloria">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.4 8.4-8 9-4.6-.6-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="1.6"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Contraloría General de la República</h3>
+        <p>Acceda al portal oficial de la Contraloría General de la República Dominicana para consultas de transparencia y rendición de cuentas.</p>
+        <p class="nota-enlace">Confirmar que la URL corresponde al dominio oficial vigente antes de publicar.</p>
+        <a href="https://www.contraloria.gob.do/" target="_blank" rel="noopener" class="btn btn-navy">Ir a Contraloría →</a>
+      </div>
+
+      <div class="servicio-card" id="servicio-formulario">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.6"/><path d="M8 8h8v2H8zM8 12h8v2H8z" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <h3>Formulario de consulta</h3>
+        <p>¿Tiene una pregunta, solicitud o inquietud dirigida al distrito? Complete el formulario y nuestro equipo le responderá.</p>
+        <a href="#formulario" class="btn btn-navy">Completar formulario ↓</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FORMULARIO ============ -->
+<section id="formulario" style="background:var(--marfil);">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">Contáctenos</span>
+      <h2>Envíe su consulta al Distrito 16-06</h2>
+      <p>Complete los siguientes datos. Un miembro del equipo distrital revisará su mensaje.</p>
+    </div>
+    <div style="max-width:680px; margin:0 auto;">
+      <form class="form-card" id="formConsulta">
+        <div class="campo-fila">
+          <div class="campo">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" required>
+          </div>
+          <div class="campo">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" name="telefono" required>
+          </div>
+        </div>
+        <div class="campo-fila">
+          <div class="campo">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" id="correo" name="correo" required>
+          </div>
+          <div class="campo">
+            <label for="tipo">Tipo de consulta</label>
+            <select id="tipo" name="tipo">
+              <option>Información general</option>
+              <option>Asunto de nómina o RRHH</option>
+              <option>Asunto de un centro educativo</option>
+              <option>Solicitud de documento</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="mensaje">Mensaje</label>
+          <textarea id="mensaje" name="mensaje" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Enviar consulta</button>
+        <p class="form-nota">Este formulario aún no está conectado a una base de datos: por ahora es solo el diseño. Cuando se conecte a Supabase, cada envío se guardará automáticamente para su revisión.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NOTICIAS ============ -->
+<section id="noticias">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">Comunidad educativa</span>
+      <h2>Noticias y publicaciones</h2>
+      <p>Espacio para compartir avisos, actividades y logros de los centros del distrito. Estas tarjetas son plantillas de ejemplo listas para reemplazar con fotos, videos y textos reales.</p>
+    </div>
+
+    <div class="noticias-grid">
+      <article class="noticia-card">
+        <div class="noticia-media">[ espacio para imagen 1200×750 ]</div>
+        <div class="noticia-body">
+          <span class="noticia-fecha">Ejemplo · fecha</span>
+          <h3>Título de la publicación</h3>
+          <p>Breve descripción de la actividad o el aviso del centro educativo. Reemplazar con contenido real.</p>
+        </div>
+      </article>
+      <article class="noticia-card">
+        <div class="noticia-media">[ espacio para imagen 1200×750 ]</div>
+        <div class="noticia-body">
+          <span class="noticia-fecha">Ejemplo · fecha</span>
+          <h3>Título de la publicación</h3>
+          <p>Breve descripción de la actividad o el aviso del centro educativo. Reemplazar con contenido real.</p>
+        </div>
+      </article>
+      <article class="noticia-card">
+        <div class="noticia-media">[ espacio para imagen 1200×750 ]</div>
+        <div class="noticia-body">
+          <span class="noticia-fecha">Ejemplo · fecha</span>
+          <h3>Título de la publicación</h3>
+          <p>Breve descripción de la actividad o el aviso del centro educativo. Reemplazar con contenido real.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="video-destacado">
+      [ espacio para video destacado — insertar &lt;iframe&gt; de YouTube o enlace de Supabase Storage aquí ]
+    </div>
+  </div>
+</section>
+
+<!-- ============ REDES SOCIALES ============ -->
+<section id="redes">
+  <div class="wrap">
+    <span class="eyebrow">Síganos</span>
+    <h2>Nuestras redes sociales</h2>
+    <p style="max-width:520px; margin:0 auto;">Reemplace los enlaces (#) por las cuentas oficiales del Distrito 16-06.</p>
+    <div class="redes-grid">
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.2c0-.95.26-1.6 1.63-1.6H17V3.6c-.28-.04-1.25-.12-2.38-.12-2.36 0-3.97 1.44-3.97 4.08v2.28H8v3.3h2.65V22h2.85z"/></svg>
+      </a>
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg>
+      </a>
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="X (Twitter)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h3.6l4 5.4L16 3h3.6l-6.2 8 6.6 10h-3.6l-4.4-5.9L7 21H3.4l6.6-9.1L4 3z"/></svg>
+      </a>
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3zm5.1 12.9c-.2.6-1.2 1.1-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.7-1.2-4.4-3.9-4.5-4.1-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.2.5-.3.6-.3h.5c.2 0 .4 0 .6.5.2.6.7 1.9.8 2 .1.2.1.4 0 .6-.1.2-.1.3-.3.5l-.4.5c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.2 1.4 2.5 1.5.3.1.4.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.8.8.3.1.4.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+      </a>
+      <a class="red-btn" href="#" target="_blank" rel="noopener" aria-label="TikTok">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.4 2 1.8 3.4 3.8 3.6v2.7c-1.4.1-2.7-.3-3.8-1.1v6.3c0 3.1-2.5 5.5-5.6 5.5S5.3 17.6 5.3 14.5c0-3 2.4-5.4 5.4-5.5v2.8c-1.5.1-2.6 1.3-2.6 2.7 0 1.5 1.2 2.7 2.7 2.7s2.8-1.2 2.8-2.7V3h2.9z"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACTO / FOOTER ============ -->
+<footer id="contacto">
+  <div class="wrap footer-grid">
+    <div>
+      <a href="#inicio" class="brand" style="margin-bottom:16px;">
+        <img src="escudo-1606.jpg" alt="Escudo Distrito 16-06" style="width:48px;height:48px;">
+        <span class="brand-text">
+          <span class="linea1" style="color:#ffd76b;">MINERD · Distrito 16-06</span>
+          <span class="linea2">Bonao Nordeste</span>
+        </span>
+      </a>
+      <p style="max-width:34ch;">Portal institucional del Distrito Educativo 16-06, al servicio de la comunidad educativa de Bonao Nordeste.</p>
+    </div>
+    <div>
+      <h4>Contacto</h4>
+      <ul>
+        <li>[Dirección de la oficina distrital]</li>
+        <li>[Teléfono de contacto]</li>
+        <li><a href="mailto:distrito1606@minerd.gob.do">distrito1606@minerd.gob.do</a></li>
+        <li>Lunes a viernes, 8:00 a.m. – 4:00 p.m.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Enlaces</h4>
+      <ul>
+        <li><a href="#institucion">Institución</a></li>
+        <li><a href="#servicios">Servicios en línea</a></li>
+        <li><a href="#noticias">Noticias</a></li>
+        <li><a href="https://www.minerd.gob.do/" target="_blank" rel="noopener">Portal MINERD</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© <span id="anio"></span> Distrito Educativo 16-06 Bonao Nordeste · MINERD</span>
+    <span>Sitio institucional sin fines comerciales</span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('anio').textContent = new Date().getFullYear();
+
+  // Menú móvil
+  const btnHamburger = document.getElementById('btnHamburger');
+  const mainNav = document.getElementById('mainNav');
+  btnHamburger.addEventListener('click', () => {
+    const abierto = mainNav.classList.toggle('open');
+    btnHamburger.setAttribute('aria-expanded', abierto);
+  });
+
+  // Submenús (clic para móvil y escritorio, con soporte hover en escritorio)
+  document.querySelectorAll('.tiene-submenu').forEach(li => {
+    const boton = li.querySelector('button');
+    boton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const yaAbierto = li.classList.contains('open');
+      document.querySelectorAll('.tiene-submenu.open').forEach(o => { if(o!==li){o.classList.remove('open');} });
+      li.classList.toggle('open', !yaAbierto);
+      boton.setAttribute('aria-expanded', !yaAbierto);
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.tiene-submenu.open').forEach(li => {
+      li.classList.remove('open');
+      li.querySelector('button').setAttribute('aria-expanded','false');
+    });
+  });
+
+  // Cerrar menú móvil al elegir una opción
+  document.querySelectorAll('#mainNav a').forEach(a => {
+    a.addEventListener('click', () => {
+      mainNav.classList.remove('open');
+      btnHamburger.setAttribute('aria-expanded','false');
+    });
+  });
+
+  // Formulario (solo diseño por ahora)
+  document.getElementById('formConsulta').addEventListener('submit', function(e){
+    e.preventDefault();
+    alert('Este formulario todavía no está conectado a una base de datos.\n\nCuando se integre con Supabase, su consulta se guardará automáticamente.');
+  });
+</script>
+</body>
+</html>
