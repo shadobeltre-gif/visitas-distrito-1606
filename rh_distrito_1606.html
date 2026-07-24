@@ -4058,19 +4058,19 @@ async function procesarImportacionCA(){
 /* ====================== VACACIONES ====================== */
 function generarHTMLFormularioVacacion(v){
   const p = v.personal_rh || {};
-  const c = td => `style="border:1px solid #000;padding:5px 8px;vertical-align:top;${td||''}"`;
+  const c = td => `style="border:1px solid #000;padding:9px 12px;vertical-align:top;${td||''}"`;
   const negrita = txt => `<strong>${escapeHtml(String(txt ?? ''))}</strong>`;
 
   return `
-    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px;">
-      <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="width:150px;height:auto;">
-      <div style="text-align:right;flex:1;font-size:12px;">
+    <div style="display:flex;align-items:center;gap:20px;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:22px;">
+      <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="width:210px;height:auto;">
+      <div style="text-align:right;flex:1;font-size:15px;">
         <div>Dirección General de Gestión Humana</div>
-        <div style="font-weight:bold;font-size:14px;">Formulario de Solicitud de Disfrute de Vacaciones</div>
+        <div style="font-weight:bold;font-size:18px;">Formulario de Solicitud de Disfrute de Vacaciones</div>
       </div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
-      <tr><td colspan="2" style="border:1px solid #000;padding:5px 8px;font-weight:bold;background:#eee;">DATOS GENERALES</td></tr>
+    <table style="width:100%;border-collapse:collapse;font-size:15.5px;">
+      <tr><td colspan="2" style="border:1px solid #000;padding:9px 12px;font-weight:bold;background:#eee;">DATOS GENERALES</td></tr>
       <tr>
         <td ${c()}>Cédula (*):<br>${negrita(p.cedula)}</td>
         <td ${c()}>Fecha de la Solicitud:<br>${negrita(fechaCorta(v.fecha_solicitud))}</td>
@@ -4084,14 +4084,14 @@ function generarHTMLFormularioVacacion(v){
       <tr>
         <td ${c()}>Años de servicio en el MINERD (*):<br>${negrita(v.anios_servicio_minerd)}</td>
         <td ${c()}>Años de servicio en otra Institución del Estado:<br>${negrita(v.anios_servicio_otra_institucion)}<br>
-          <span style="font-size:10.5px;color:#444;">(Debe presentar constancia de la CGR)</span></td>
+          <span style="font-size:12.5px;color:#444;">(Debe presentar constancia de la CGR)</span></td>
       </tr>
       <tr><td colspan="2" ${c()}>Total de años de servicios en el Estado (*): ${negrita(v.anios_servicio_total)}</td></tr>
 
-      <tr><td colspan="2" style="border:1px solid #000;padding:5px 8px;font-weight:bold;background:#eee;">DATOS DE LA SOLICITUD</td></tr>
+      <tr><td colspan="2" style="border:1px solid #000;padding:9px 12px;font-weight:bold;background:#eee;">DATOS DE LA SOLICITUD</td></tr>
       <tr>
-        <td ${c()}>Días solicitados (*):<br>
-          • ${negrita(v.dias_solicitados_anio1||0)} días — Año que aplica: ${negrita(v.anio1||'')}<br>
+        <td ${c()}>Días solicitados (*):<br><br>
+          • ${negrita(v.dias_solicitados_anio1||0)} días — Año que aplica: ${negrita(v.anio1||'')}<br><br>
           • ${negrita(v.dias_solicitados_anio2||0)} días — Año que aplica: ${negrita(v.anio2||'')}
         </td>
         <td ${c()}>Días pendientes:<br>${negrita(v.dias_pendientes||0)}</td>
@@ -4099,18 +4099,18 @@ function generarHTMLFormularioVacacion(v){
       <tr><td colspan="2" ${c()}>Fecha de inicio de disfrute de vacaciones (*):&nbsp;&nbsp;
           Desde: ${negrita(fechaCorta(v.fecha_inicio_disfrute))}&nbsp;&nbsp;&nbsp;&nbsp;
           Hasta: ${negrita(fechaCorta(v.fecha_fin_disfrute))}</td></tr>
-      <tr><td colspan="2" ${c('min-height:40px;')}>Comentario:<br>${escapeHtml(v.comentario||'')}</td></tr>
+      <tr><td colspan="2" ${c('min-height:60px;')}>Comentario:<br>${escapeHtml(v.comentario||'')}</td></tr>
       <tr>
-        <td ${c('padding-top:44px;')}>Firma del Interesado</td>
-        <td ${c('padding-top:44px;')}>Firma del Supervisor Inmediato</td>
+        <td ${c('padding-top:70px;')}>Firma del Interesado</td>
+        <td ${c('padding-top:70px;')}>Firma del Supervisor Inmediato</td>
       </tr>
     </table>
-    <div style="font-size:10px;color:#333;margin-top:10px;line-height:1.5;">
-      <p style="margin:4px 0;">Nota: los campos marcados con (*) son obligatorios.</p>
-      <p style="margin:4px 0;">El derecho a vacaciones se adquiere luego de 1 año de servicio ininterrumpido.</p>
-      <p style="margin:4px 0;">Luego de ser firmado por el supervisor inmediato, debe depositarse este formulario en el Departamento de Relaciones Laborales para su registro y autorización definitiva.</p>
-      <p style="margin:4px 0;">Las vacaciones pueden ser acumuladas solo por 2 años y en caso de ser prorrogadas, deben de reprogramarse en los próximos seis meses a la fecha de adquirido el derecho para disfrute. Cuando el disfrute de vacaciones sea mayor a 20 días, estas podrán fraccionarse en dos fechas calendarios.</p>
-      <p style="margin:4px 0;">En el caso de que una mujer en licencia pre y post natal, solicite el disfrute de sus vacaciones, las mismas se deberán autorizar con obligatoriedad.</p>
+    <div style="font-size:12px;color:#333;margin-top:18px;line-height:1.8;">
+      <p style="margin:6px 0;">Nota: los campos marcados con (*) son obligatorios.</p>
+      <p style="margin:6px 0;">El derecho a vacaciones se adquiere luego de 1 año de servicio ininterrumpido.</p>
+      <p style="margin:6px 0;">Luego de ser firmado por el supervisor inmediato, debe depositarse este formulario en el Departamento de Relaciones Laborales para su registro y autorización definitiva.</p>
+      <p style="margin:6px 0;">Las vacaciones pueden ser acumuladas solo por 2 años y en caso de ser prorrogadas, deben de reprogramarse en los próximos seis meses a la fecha de adquirido el derecho para disfrute. Cuando el disfrute de vacaciones sea mayor a 20 días, estas podrán fraccionarse en dos fechas calendarios.</p>
+      <p style="margin:6px 0;">En el caso de que una mujer en licencia pre y post natal, solicite el disfrute de sus vacaciones, las mismas se deberán autorizar con obligatoriedad.</p>
     </div>
   `;
 }
