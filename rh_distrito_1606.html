@@ -3072,10 +3072,14 @@ function verTelegrama(id){
 function imprimirTelegramaActual(){
   const t = window._telegramaActual;
   if(!t) return;
+  const partes = t.texto_generado.split('\n\n');
+  const tituloInstitucional = partes[0] || '';
+  const cuerpo = partes.slice(1).join('\n\n');
   const bloqueTelegrama = `
     <div class="copia-telegrama">
       <div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>
-      <div class="texto-telegrama">${escapeHtml(t.texto_generado)}</div>
+      <div class="titulo-institucional">${escapeHtml(tituloInstitucional)}</div>
+      <div class="texto-telegrama">${escapeHtml(cuerpo)}</div>
       <div class="firma-copia">Recibido por el empleado designado:&nbsp;&nbsp; Firma: ______________________&nbsp;&nbsp; Fecha: ____/____/______</div>
     </div>
   `;
@@ -3084,13 +3088,14 @@ function imprimirTelegramaActual(){
     <style>
       @page{ size:letter; margin:0.3in; }
       html,body{margin:0;padding:0;}
-      body{font-family:'Times New Roman',serif;font-size:12.5px;line-height:1.28;}
+      body{font-family:'Times New Roman',serif;font-size:12.5px;line-height:1.26;}
       .hoja{height:10.2in;display:flex;flex-direction:column;}
       .copia-telegrama{height:4.85in;padding:0.08in 0.35in;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;}
       .encabezado-doc{text-align:center;margin-bottom:4px;}
       .encabezado-doc img{width:95px;height:95px;border-radius:50%;}
-      .texto-telegrama{white-space:pre-wrap;}
-      .firma-copia{margin-top:0.22in;padding-top:8px;font-size:11.5px;border-top:1px dashed #999;}
+      .titulo-institucional{text-align:center;font-weight:bold;font-size:13.5px;white-space:pre-wrap;margin-bottom:6px;}
+      .texto-telegrama{white-space:pre-wrap;text-align:justify;}
+      .firma-copia{margin-top:0.2in;padding-top:8px;font-size:11.5px;border-top:1px dashed #999;}
       .linea-corte{height:0.5in;border-top:2px dashed #666;text-align:center;position:relative;flex-shrink:0;}
       .linea-corte span{position:relative;top:-9px;background:#fff;padding:0 10px;font-size:10px;color:#666;}
     </style>
@@ -3404,15 +3409,25 @@ function verPuestaDisp(id){
 function imprimirPDActual(){
   const p = window._pdActual;
   if(!p) return;
+  const texto = p.texto_generado;
+  const partes = texto.split('\n\n');
+  const tituloInstitucional = partes[0] || '';
+  const resto = partes.slice(1).join('\n\n');
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Puesta a disposición</title>
     <style>
       @page{ size:letter; margin:0.6in; }
-      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      body{font-family:Arial,sans-serif;font-size:14.5px;line-height:1.65;margin:0;}
       .encabezado-doc{text-align:center;margin-bottom:22px;}
       .encabezado-doc img{width:230px;height:auto;}
+      .titulo-institucional{text-align:center;font-weight:bold;font-size:16.5px;white-space:pre-wrap;margin-bottom:18px;}
+      .cuerpo-doc{text-align:justify;white-space:pre-wrap;}
     </style>
-    </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(p.texto_generado)}</body></html>`);
+    </head><body>
+    <div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>
+    <div class="titulo-institucional">${escapeHtml(tituloInstitucional)}</div>
+    <div class="cuerpo-doc">${escapeHtml(resto)}</div>
+    </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
 }
@@ -3866,15 +3881,25 @@ function verCA(id){
 function imprimirCAActual(){
   const c = window._caActual;
   if(!c) return;
+  const texto = c.texto_generado;
+  const partes = texto.split('\n\n');
+  const tituloInstitucional = partes[0] || '';
+  const resto = partes.slice(1).join('\n\n');
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Carta de aceptación</title>
     <style>
       @page{ size:letter; margin:0.6in; }
-      body{font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0;}
+      body{font-family:Arial,sans-serif;font-size:14.5px;line-height:1.65;margin:0;}
       .encabezado-doc{text-align:center;margin-bottom:22px;}
       .encabezado-doc img{width:230px;height:auto;}
+      .titulo-institucional{text-align:center;font-weight:bold;font-size:16.5px;white-space:pre-wrap;margin-bottom:18px;}
+      .cuerpo-doc{text-align:justify;white-space:pre-wrap;}
     </style>
-    </head><body><div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>${escapeHtml(c.texto_generado)}</body></html>`);
+    </head><body>
+    <div class="encabezado-doc"><img src="${LOGO_ENCABEZADO_B64}" alt="Escudo"></div>
+    <div class="titulo-institucional">${escapeHtml(tituloInstitucional)}</div>
+    <div class="cuerpo-doc">${escapeHtml(resto)}</div>
+    </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
 }
@@ -4033,39 +4058,59 @@ async function procesarImportacionCA(){
 /* ====================== VACACIONES ====================== */
 function generarHTMLFormularioVacacion(v){
   const p = v.personal_rh || {};
-  const totalDias = (v.dias_solicitados_anio1||0) + (v.dias_solicitados_anio2||0) + (v.dias_pendientes||0);
+  const c = td => `style="border:1px solid #000;padding:5px 8px;vertical-align:top;${td||''}"`;
+  const negrita = txt => `<strong>${escapeHtml(String(txt ?? ''))}</strong>`;
+
   return `
-    <div class="encabezado-doc" style="text-align:center;margin-bottom:14px;">
-      <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="max-width:220px;">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px;">
+      <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="width:150px;height:auto;">
+      <div style="text-align:right;flex:1;font-size:12px;">
+        <div>Dirección General de Gestión Humana</div>
+        <div style="font-weight:bold;font-size:14px;">Formulario de Solicitud de Disfrute de Vacaciones</div>
+      </div>
     </div>
-    <h3 style="text-align:center;margin:0 0 16px;">SOLICITUD DE VACACIONES</h3>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
-      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Empleado</td><td style="padding:5px 8px;">${escapeHtml((p.nombres||'')+' '+(p.apellidos||''))}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Cédula</td><td style="padding:5px 8px;">${escapeHtml(p.cedula||'—')}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Cargo</td><td style="padding:5px 8px;">${escapeHtml(p.cargo_actual||'—')}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Centro educativo</td><td style="padding:5px 8px;">${escapeHtml(p.centros_rh?.nombre_centro||'—')}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha de solicitud</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_solicitud)}</td></tr>
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      <tr><td colspan="2" style="border:1px solid #000;padding:5px 8px;font-weight:bold;background:#eee;">DATOS GENERALES</td></tr>
+      <tr>
+        <td ${c()}>Cédula (*):<br>${negrita(p.cedula)}</td>
+        <td ${c()}>Fecha de la Solicitud:<br>${negrita(fechaCorta(v.fecha_solicitud))}</td>
+      </tr>
+      <tr>
+        <td ${c()}>Nombres y Apellidos:<br>${negrita((p.nombres||'')+' '+(p.apellidos||''))}</td>
+        <td ${c()}>Cargo:<br>${negrita(p.cargo_actual)}</td>
+      </tr>
+      <tr><td colspan="2" ${c()}>Dependencia: Distrito Educativo 16-06</td></tr>
+      <tr><td colspan="2" ${c()}>Teléfono: ${negrita(p.telefono||'')}</td></tr>
+      <tr>
+        <td ${c()}>Años de servicio en el MINERD (*):<br>${negrita(v.anios_servicio_minerd)}</td>
+        <td ${c()}>Años de servicio en otra Institución del Estado:<br>${negrita(v.anios_servicio_otra_institucion)}<br>
+          <span style="font-size:10.5px;color:#444;">(Debe presentar constancia de la CGR)</span></td>
+      </tr>
+      <tr><td colspan="2" ${c()}>Total de años de servicios en el Estado (*): ${negrita(v.anios_servicio_total)}</td></tr>
+
+      <tr><td colspan="2" style="border:1px solid #000;padding:5px 8px;font-weight:bold;background:#eee;">DATOS DE LA SOLICITUD</td></tr>
+      <tr>
+        <td ${c()}>Días solicitados (*):<br>
+          • ${negrita(v.dias_solicitados_anio1||0)} días — Año que aplica: ${negrita(v.anio1||'')}<br>
+          • ${negrita(v.dias_solicitados_anio2||0)} días — Año que aplica: ${negrita(v.anio2||'')}
+        </td>
+        <td ${c()}>Días pendientes:<br>${negrita(v.dias_pendientes||0)}</td>
+      </tr>
+      <tr><td colspan="2" ${c()}>Fecha de inicio de disfrute de vacaciones (*):&nbsp;&nbsp;
+          Desde: ${negrita(fechaCorta(v.fecha_inicio_disfrute))}&nbsp;&nbsp;&nbsp;&nbsp;
+          Hasta: ${negrita(fechaCorta(v.fecha_fin_disfrute))}</td></tr>
+      <tr><td colspan="2" ${c('min-height:40px;')}>Comentario:<br>${escapeHtml(v.comentario||'')}</td></tr>
+      <tr>
+        <td ${c('padding-top:44px;')}>Firma del Interesado</td>
+        <td ${c('padding-top:44px;')}>Firma del Supervisor Inmediato</td>
+      </tr>
     </table>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
-      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Años servicio MINERD</td><td style="padding:5px 8px;">${v.anios_servicio_minerd ?? '—'}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Años servicio otra institución</td><td style="padding:5px 8px;">${v.anios_servicio_otra_institucion ?? '—'}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Total años en el Estado</td><td style="padding:5px 8px;">${v.anios_servicio_total ?? '—'}</td></tr>
-    </table>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
-      <tr><td style="padding:5px 8px;font-weight:bold;width:38%;">Días año 1</td><td style="padding:5px 8px;">${v.dias_solicitados_anio1||0} días (${v.anio1||'—'})</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Días año 2</td><td style="padding:5px 8px;">${v.dias_solicitados_anio2||0} días (${v.anio2||'—'})</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Días pendientes (saldo)</td><td style="padding:5px 8px;">${v.dias_pendientes||0}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Total días</td><td style="padding:5px 8px;font-weight:bold;">${totalDias}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha inicio disfrute</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_inicio_disfrute)}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Fecha fin disfrute</td><td style="padding:5px 8px;">${fechaCorta(v.fecha_fin_disfrute)}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Empleada en licencia pre/post natal</td><td style="padding:5px 8px;">${v.en_licencia_pre_post_natal?'Sí':'No'}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Comentario</td><td style="padding:5px 8px;">${escapeHtml(v.comentario||'—')}</td></tr>
-      <tr><td style="padding:5px 8px;font-weight:bold;">Estado</td><td style="padding:5px 8px;">${escapeHtml(v.estado||'—')}</td></tr>
-    </table>
-    <div style="margin-top:36px;display:flex;justify-content:space-between;font-size:12px;">
-      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Firma del empleado</div>
-      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Firma del supervisor</div>
-      <div style="text-align:center;width:30%;border-top:1px solid #333;padding-top:4px;">Autorizado RRLL</div>
+    <div style="font-size:10px;color:#333;margin-top:10px;line-height:1.5;">
+      <p style="margin:4px 0;">Nota: los campos marcados con (*) son obligatorios.</p>
+      <p style="margin:4px 0;">El derecho a vacaciones se adquiere luego de 1 año de servicio ininterrumpido.</p>
+      <p style="margin:4px 0;">Luego de ser firmado por el supervisor inmediato, debe depositarse este formulario en el Departamento de Relaciones Laborales para su registro y autorización definitiva.</p>
+      <p style="margin:4px 0;">Las vacaciones pueden ser acumuladas solo por 2 años y en caso de ser prorrogadas, deben de reprogramarse en los próximos seis meses a la fecha de adquirido el derecho para disfrute. Cuando el disfrute de vacaciones sea mayor a 20 días, estas podrán fraccionarse en dos fechas calendarios.</p>
+      <p style="margin:4px 0;">En el caso de que una mujer en licencia pre y post natal, solicite el disfrute de sus vacaciones, las mismas se deberán autorizar con obligatoriedad.</p>
     </div>
   `;
 }
@@ -4083,7 +4128,10 @@ function imprimirVacacionActual(){
   if(!v) return;
   const w = window.open('', '_blank');
   w.document.write(`<html><head><meta charset="UTF-8"><title>Solicitud de vacaciones</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;padding:40px;color:#1a1a1a;} h3{font-size:16px;}</style>
+    <style>
+      @page{ size:letter; margin:0.5in; }
+      body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;margin:0;}
+    </style>
     </head><body>${generarHTMLFormularioVacacion(v)}</body></html>`);
   w.document.close();
   setTimeout(()=>w.print(), 400);
