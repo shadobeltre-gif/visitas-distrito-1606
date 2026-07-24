@@ -4058,7 +4058,7 @@ async function procesarImportacionCA(){
 /* ====================== VACACIONES ====================== */
 function generarHTMLFormularioVacacion(v){
   const p = v.personal_rh || {};
-  const c = td => `style="border:1px solid #000;padding:6px 10px;vertical-align:top;${td||''}"`;
+  const c = td => `style="border:1px solid #000;padding:7px 11px;vertical-align:top;${td||''}"`;
   const negrita = txt => `<strong>${escapeHtml(String(txt ?? ''))}</strong>`;
 
   return `
@@ -4066,11 +4066,11 @@ function generarHTMLFormularioVacacion(v){
       <img src="${LOGO_ENCABEZADO_B64}" alt="Escudo" style="width:210px;height:auto;">
       <div style="text-align:right;flex:1;font-size:15px;">
         <div>Dirección General de Gestión Humana</div>
-        <div style="font-weight:bold;font-size:16px;">Formulario de Solicitud de Disfrute de Vacaciones</div>
+        <div style="font-weight:bold;font-size:17px;">Formulario de Solicitud de Disfrute de Vacaciones</div>
       </div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td colspan="2" style="border:1px solid #000;padding:9px 12px;font-weight:bold;background:#eee;">DATOS GENERALES</td></tr>
+    <table style="width:100%;border-collapse:collapse;font-size:14.5px;">
+      <tr><td colspan="2" style="border:1px solid #000;padding:7px 11px;font-weight:bold;background:#eee;">DATOS GENERALES</td></tr>
       <tr>
         <td ${c()}>Cédula (*):<br>${negrita(p.cedula)}</td>
         <td ${c()}>Fecha de la Solicitud:<br>${negrita(fechaCorta(v.fecha_solicitud))}</td>
@@ -4088,7 +4088,7 @@ function generarHTMLFormularioVacacion(v){
       </tr>
       <tr><td colspan="2" ${c()}>Total de años de servicios en el Estado (*): ${negrita(v.anios_servicio_total)}</td></tr>
 
-      <tr><td colspan="2" style="border:1px solid #000;padding:9px 12px;font-weight:bold;background:#eee;">DATOS DE LA SOLICITUD</td></tr>
+      <tr><td colspan="2" style="border:1px solid #000;padding:7px 11px;font-weight:bold;background:#eee;">DATOS DE LA SOLICITUD</td></tr>
       <tr>
         <td ${c()}>Días solicitados (*):<br><br>
           • ${negrita(v.dias_solicitados_anio1||0)} días — Año que aplica: ${negrita(v.anio1||'')}<br><br>
@@ -4101,16 +4101,16 @@ function generarHTMLFormularioVacacion(v){
           Hasta: ${negrita(fechaCorta(v.fecha_fin_disfrute))}</td></tr>
       <tr><td colspan="2" ${c('min-height:40px;')}>Comentario:<br>${escapeHtml(v.comentario||'')}</td></tr>
       <tr>
-        <td ${c('padding-top:50px;')}>Firma del Interesado</td>
-        <td ${c('padding-top:50px;')}>Firma del Supervisor Inmediato</td>
+        <td ${c('padding-top:62px;')}>Firma del Interesado</td>
+        <td ${c('padding-top:62px;')}>Firma del Supervisor Inmediato</td>
       </tr>
     </table>
-    <div style="font-size:10.5px;color:#333;margin-top:10px;line-height:1.45;">
-      <p style="margin:3px 0;">Nota: los campos marcados con (*) son obligatorios.</p>
-      <p style="margin:3px 0;">El derecho a vacaciones se adquiere luego de 1 año de servicio ininterrumpido.</p>
-      <p style="margin:3px 0;">Luego de ser firmado por el supervisor inmediato, debe depositarse este formulario en el Departamento de Relaciones Laborales para su registro y autorización definitiva.</p>
-      <p style="margin:3px 0;">Las vacaciones pueden ser acumuladas solo por 2 años y en caso de ser prorrogadas, deben de reprogramarse en los próximos seis meses a la fecha de adquirido el derecho para disfrute. Cuando el disfrute de vacaciones sea mayor a 20 días, estas podrán fraccionarse en dos fechas calendarios.</p>
-      <p style="margin:3px 0;">En el caso de que una mujer en licencia pre y post natal, solicite el disfrute de sus vacaciones, las mismas se deberán autorizar con obligatoriedad.</p>
+    <div style="font-size:11.5px;color:#333;margin-top:14px;line-height:1.6;">
+      <p style="margin:5px 0;">Nota: los campos marcados con (*) son obligatorios.</p>
+      <p style="margin:5px 0;">El derecho a vacaciones se adquiere luego de 1 año de servicio ininterrumpido.</p>
+      <p style="margin:5px 0;">Luego de ser firmado por el supervisor inmediato, debe depositarse este formulario en el Departamento de Relaciones Laborales para su registro y autorización definitiva.</p>
+      <p style="margin:5px 0;">Las vacaciones pueden ser acumuladas solo por 2 años y en caso de ser prorrogadas, deben de reprogramarse en los próximos seis meses a la fecha de adquirido el derecho para disfrute. Cuando el disfrute de vacaciones sea mayor a 20 días, estas podrán fraccionarse en dos fechas calendarios.</p>
+      <p style="margin:5px 0;">En el caso de que una mujer en licencia pre y post natal, solicite el disfrute de sus vacaciones, las mismas se deberán autorizar con obligatoriedad.</p>
     </div>
   `;
 }
