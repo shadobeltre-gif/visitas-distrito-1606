@@ -5910,6 +5910,11 @@ function calcularAniosServicioPension(){
     document.getElementById('pen-fecha-ingreso').value = p.fecha_ingreso;
     document.getElementById('pen-anios').value = calcularAniosEntreFechas(p.fecha_ingreso, new Date().toISOString().slice(0,10));
   }
+  // Sugiere el tipo de personal según palabras clave del cargo actual (queda
+  // en un desplegable editable, se puede corregir a mano si hace falta).
+  const cargoNorm = String(p.cargo_actual||'').toUpperCase();
+  const pareceDocente = /MAESTR|DOCENTE|PROFESOR|ORIENTAD|PSICOLOG|DINAMIZAD/.test(cargoNorm);
+  document.getElementById('pen-tipo-personal').value = pareceDocente ? 'docente' : 'administrativo';
 }
 
 async function abrirModalPension(){
