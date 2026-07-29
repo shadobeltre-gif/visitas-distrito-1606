@@ -1282,29 +1282,10 @@ async function renderCentros(){
           <button class="btn btn-primario btn-chico" onclick="abrirModalCentro()">+ Agregar centro</button>
         </div>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr>
-            <th><input type="checkbox" onchange="toggleTodosCheckCentros(this)"></th>
-            <th>Centro</th><th>SIGERD</th><th>Matrícula</th><th>Nivel</th><th>Tanda</th><th>Dependencia</th><th>Director/a</th><th></th>
-          </tr></thead>
-          <tbody>
-            ${data.map(c=>`
-              <tr>
-                <td><input type="checkbox" class="chk-centros" value="${c.id}"></td>
-                <td><strong>${escapeHtml(c.nombre_centro)}</strong></td>
-                <td>${escapeHtml(c.codigo_sigerd||'—')}</td>
-                <td>${c.matricula??'—'}</td>
-                <td>${escapeHtml(c.nivel||'—')}</td>
-                <td>${escapeHtml(c.tanda||'—')}</td>
-                <td>${escapeHtml(c.numero_dependencia_nomina||'—')}</td>
-                <td>${escapeHtml(c.director_nombre||'—')}</td>
-                <td><button class="btn btn-secundario btn-chico" onclick='abrirModalCentro(${JSON.stringify(c).replace(/'/g,"&apos;")})'>Editar</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">🏫</div>No hay centros registrados todavía.</div>` }
+      <div class="tarjeta-body">
+        <input type="text" id="centros-buscar" placeholder="Buscar por nombre, SIGERD o director/a…" oninput="filtrarCentros()" style="margin-bottom:10px;width:100%;">
+        <div id="centros-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="centros-tabla-wrap" class="tabla-wrap"></div>
       </div>
     </div>
 
@@ -1364,6 +1345,8 @@ async function renderCentros(){
       </div>
     </div>
   `;
+  document.getElementById('centros-buscar').value = '';
+  renderTablaCentros(window._centrosData);
 
   registrarExportadores('centros', ()=>window._centrosData||[], [
     { label:'Nombre del Centro', key:'nombre_centro' },
@@ -1507,6 +1490,46 @@ function descargarPlantillaCentros(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Centros');
   XLSX.writeFile(wb, 'plantilla_centros.xlsx');
+}
+
+function renderFilaCentro(c){
+  return `
+    <tr>
+      <td><input type="checkbox" class="chk-centros" value="${c.id}"></td>
+      <td><strong>${escapeHtml(c.nombre_centro)}</strong></td>
+      <td>${escapeHtml(c.codigo_sigerd||'—')}</td>
+      <td>${c.matricula??'—'}</td>
+      <td>${escapeHtml(c.nivel||'—')}</td>
+      <td>${escapeHtml(c.tanda||'—')}</td>
+      <td>${escapeHtml(c.numero_dependencia_nomina||'—')}</td>
+      <td>${escapeHtml(c.director_nombre||'—')}</td>
+      <td><button class="btn btn-secundario btn-chico" onclick='abrirModalCentro(${JSON.stringify(c).replace(/'/g,"&apos;")})'>Editar</button></td>
+    </tr>
+  `;
+}
+
+function renderTablaCentros(lista){
+  document.getElementById('centros-contador').textContent = `${lista.length} de ${(window._centrosData||[]).length} centro(s)`;
+  document.getElementById('centros-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" onchange="toggleTodosCheckCentros(this)"></th>
+        <th>Centro</th><th>SIGERD</th><th>Matrícula</th><th>Nivel</th><th>Tanda</th><th>Dependencia</th><th>Director/a</th><th></th>
+      </tr></thead>
+      <tbody>${lista.map(renderFilaCentro).join('')}</tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">🏫</div>${(window._centrosData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay centros registrados todavía.'}</div>`;
+}
+
+function filtrarCentros(){
+  const q = (document.getElementById('centros-buscar').value||'').toLowerCase().trim();
+  if(!q){ renderTablaCentros(window._centrosData||[]); return; }
+  const filtrado = (window._centrosData||[]).filter(c=>{
+    return String(c.nombre_centro||'').toLowerCase().includes(q)
+      || String(c.codigo_sigerd||'').toLowerCase().includes(q)
+      || String(c.director_nombre||'').toLowerCase().includes(q);
+  });
+  renderTablaCentros(filtrado);
 }
 
 function abrirModalCentro(c){
@@ -1868,31 +1891,10 @@ async function renderSolicitudes(){
           <button class="btn btn-primario btn-chico" onclick="abrirModalSolicitud()">+ Nueva solicitud AP</button>
         </div>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr>
-            <th><input type="checkbox" onchange="toggleTodosCheckAP(this)"></th>
-            <th>No. Solicitud</th><th>Fecha</th><th>Centro</th><th>Motivo</th><th>Candidatos</th><th>Estado</th><th></th>
-          </tr></thead>
-          <tbody>
-            ${data.map(s=>`
-              <tr>
-                <td><input type="checkbox" class="chk-ap" value="${s.id}"></td>
-                <td><strong>${escapeHtml(s.no_solicitud||'(sin número)')}</strong></td>
-                <td>${fechaCorta(s.fecha_solicitud)}</td>
-                <td>${escapeHtml(s.centros_rh?.nombre_centro||'—')}</td>
-                <td>${labelMotivo(s.motivo_solicitud)}</td>
-                <td>${(s.candidatos_ap||[]).map(c=>escapeHtml(c.nombres+' '+c.apellidos)).join(', ')||'—'}</td>
-                <td>${badgeEstado(s.estado)}</td>
-                <td style="display:flex;gap:6px;">
-                  <button class="btn btn-secundario btn-chico" onclick='verSolicitud(${s.id})'>Ver / Editar</button>
-                  <button class="btn btn-secundario btn-chico" onclick='descargarAP(${s.id})'>📄 AP</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">📋</div>No hay solicitudes AP todavía.</div>` }
+      <div class="tarjeta-body">
+        <input type="text" id="ap-buscar" placeholder="Buscar por No. solicitud, centro o candidato…" oninput="filtrarSolicitudesAP()" style="margin-bottom:10px;width:100%;">
+        <div id="ap-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="ap-tabla-wrap" class="tabla-wrap"></div>
       </div>
     </div>
 
@@ -1964,6 +1966,8 @@ async function renderSolicitudes(){
       </div>
     </div>
   `;
+  document.getElementById('ap-buscar').value = '';
+  renderTablaSolicitudesAP(window._solicitudesData);
 
   registrarExportadores('ap', ()=>window._solicitudesData||[], [
     { label:'No. de solicitud', key:'no_solicitud' },
@@ -2257,6 +2261,49 @@ function actualizarVisibilidadSustituido(){
   document.querySelectorAll('.campo-sustituido').forEach(el=>{ el.style.display = sust ? 'block':'none'; });
 }
 
+function renderFilaSolicitudAP(s){
+  return `
+    <tr>
+      <td><input type="checkbox" class="chk-ap" value="${s.id}"></td>
+      <td><strong>${escapeHtml(s.no_solicitud||'(sin número)')}</strong></td>
+      <td>${fechaCorta(s.fecha_solicitud)}</td>
+      <td>${escapeHtml(s.centros_rh?.nombre_centro||'—')}</td>
+      <td>${labelMotivo(s.motivo_solicitud)}</td>
+      <td>${(s.candidatos_ap||[]).map(c=>escapeHtml(c.nombres+' '+c.apellidos)).join(', ')||'—'}</td>
+      <td>${badgeEstado(s.estado)}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-secundario btn-chico" onclick='verSolicitud(${s.id})'>Ver / Editar</button>
+        <button class="btn btn-secundario btn-chico" onclick='descargarAP(${s.id})'>📄 AP</button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderTablaSolicitudesAP(lista){
+  document.getElementById('ap-contador').textContent = `${lista.length} de ${(window._solicitudesData||[]).length} solicitud(es)`;
+  document.getElementById('ap-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" onchange="toggleTodosCheckAP(this)"></th>
+        <th>No. Solicitud</th><th>Fecha</th><th>Centro</th><th>Motivo</th><th>Candidatos</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody>${lista.map(renderFilaSolicitudAP).join('')}</tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">📋</div>${(window._solicitudesData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay solicitudes AP todavía.'}</div>`;
+}
+
+function filtrarSolicitudesAP(){
+  const q = (document.getElementById('ap-buscar').value||'').toLowerCase().trim();
+  if(!q){ renderTablaSolicitudesAP(window._solicitudesData||[]); return; }
+  const filtrado = (window._solicitudesData||[]).filter(s=>{
+    const candidatos = (s.candidatos_ap||[]).map(c=>c.nombres+' '+c.apellidos).join(', ').toLowerCase();
+    return String(s.no_solicitud||'').toLowerCase().includes(q)
+      || String(s.centros_rh?.nombre_centro||'').toLowerCase().includes(q)
+      || candidatos.includes(q);
+  });
+  renderTablaSolicitudesAP(filtrado);
+}
+
 async function abrirModalSolicitud(){
   document.getElementById('titulo-modal-solicitud').textContent = 'Nueva solicitud AP';
   document.getElementById('sol-id').value = '';
@@ -2476,29 +2523,10 @@ async function renderTelegramas(){
           <button class="btn btn-primario btn-chico" onclick="abrirModalTelegrama()">+ Generar telegrama</button>
         </div>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckTelegramas(this)"></th><th>No.</th><th>Fecha</th><th>Candidato</th><th>Centro</th><th>Cargo</th><th>Jornada</th><th>Estado</th><th></th></tr></thead>
-          <tbody>
-            ${data.map(t=>`
-              <tr>
-                <td><input type="checkbox" class="chk-telegramas" value="${t.id}"></td>
-                <td>${escapeHtml(t.no_telegrama||'—')}</td>
-                <td>${fechaCorta(t.fecha_telegrama)}</td>
-                <td>${escapeHtml((t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||''))}</td>
-                <td>${escapeHtml(t.centros_rh?.nombre_centro||'—')}</td>
-                <td>${escapeHtml(t.cargo_designado)}</td>
-                <td>${escapeHtml(t.jornada)}</td>
-                <td>${badgeEstado(t.estado_envio)}</td>
-                <td style="display:flex;gap:6px;">
-                  <button class="btn btn-secundario btn-chico" onclick="verTelegrama(${t.id})">Ver / Imprimir</button>
-                  <button class="btn btn-secundario btn-chico" onclick="abrirModalTelegrama(${t.id})">Editar</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">✉</div>No hay telegramas generados todavía.</div>` }
+      <div class="tarjeta-body">
+        <input type="text" id="tel-buscar" placeholder="Buscar por nombre, cédula o fecha (AAAA-MM-DD)…" oninput="filtrarTelegramas()" style="margin-bottom:10px;width:100%;">
+        <div id="tel-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="tel-tabla-wrap" class="tabla-wrap"></div>
       </div>
     </div>
 
@@ -2585,6 +2613,8 @@ async function renderTelegramas(){
   `;
   window._candidatosNombrables = candidatosNombrables || [];
   window._telegramasData = data || [];
+  document.getElementById('tel-buscar').value = '';
+  renderTablaTelegramas(window._telegramasData);
 
   inicializarAutocompletar(
     'tel-candidato',
@@ -2724,6 +2754,48 @@ function actualizarPreviewTelegrama(){
   document.addEventListener('input', e=>{ if(e.target && e.target.id===id) actualizarPreviewTelegrama(); });
   document.addEventListener('change', e=>{ if(e.target && e.target.id===id) actualizarPreviewTelegrama(); });
 });
+
+function renderFilaTelegrama(t){
+  return `
+    <tr>
+      <td><input type="checkbox" class="chk-telegramas" value="${t.id}"></td>
+      <td>${escapeHtml(t.no_telegrama||'—')}</td>
+      <td>${fechaCorta(t.fecha_telegrama)}</td>
+      <td>${escapeHtml((t.candidatos_ap?.nombres||'')+' '+(t.candidatos_ap?.apellidos||''))}</td>
+      <td>${escapeHtml(t.centros_rh?.nombre_centro||'—')}</td>
+      <td>${escapeHtml(t.cargo_designado)}</td>
+      <td>${escapeHtml(t.jornada)}</td>
+      <td>${badgeEstado(t.estado_envio)}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-secundario btn-chico" onclick="verTelegrama(${t.id})">Ver / Imprimir</button>
+        <button class="btn btn-secundario btn-chico" onclick="abrirModalTelegrama(${t.id})">Editar</button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderTablaTelegramas(lista){
+  document.getElementById('tel-contador').textContent = `${lista.length} de ${(window._telegramasData||[]).length} telegrama(s)`;
+  document.getElementById('tel-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckTelegramas(this)"></th><th>No.</th><th>Fecha</th><th>Candidato</th><th>Centro</th><th>Cargo</th><th>Jornada</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${lista.map(renderFilaTelegrama).join('')}</tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">✉</div>${(window._telegramasData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay telegramas generados todavía.'}</div>`;
+}
+
+function filtrarTelegramas(){
+  const q = (document.getElementById('tel-buscar').value||'').toLowerCase().trim();
+  if(!q){ renderTablaTelegramas(window._telegramasData||[]); return; }
+  const filtrado = (window._telegramasData||[]).filter(t=>{
+    const nombre = `${t.candidatos_ap?.nombres||''} ${t.candidatos_ap?.apellidos||''}`.toLowerCase();
+    const cedula = String(t.candidatos_ap?.cedula||'').toLowerCase();
+    const fecha = String(t.fecha_telegrama||'').toLowerCase();
+    const fechaCortaTxt = fechaCorta(t.fecha_telegrama).toLowerCase();
+    return nombre.includes(q) || cedula.includes(q) || fecha.includes(q) || fechaCortaTxt.includes(q);
+  });
+  renderTablaTelegramas(filtrado);
+}
 
 async function guardarTelegrama(imprimir){
   if(!bloquearGuardado('telegrama')) return;
