@@ -1283,7 +1283,16 @@ async function renderCentros(){
         </div>
       </div>
       <div class="tarjeta-body">
-        <input type="text" id="centros-buscar" placeholder="Buscar por nombre, SIGERD o director/a…" oninput="filtrarCentros()" style="margin-bottom:10px;width:100%;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" id="centros-buscar" placeholder="Buscar por nombre, SIGERD o director/a…" oninput="filtrarCentros()" style="flex:2;min-width:220px;">
+          <select id="centros-filtro-tanda" onchange="filtrarCentros()" style="flex:1;min-width:150px;">
+            <option value="">Todas las tandas</option>
+            <option value="Matutina">Matutina</option>
+            <option value="Vespertina">Vespertina</option>
+            <option value="Nocturna">Nocturna</option>
+            <option value="Extendida">Extendida</option>
+          </select>
+        </div>
         <div id="centros-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
         <div id="centros-tabla-wrap" class="tabla-wrap"></div>
       </div>
@@ -1346,6 +1355,7 @@ async function renderCentros(){
     </div>
   `;
   document.getElementById('centros-buscar').value = '';
+  document.getElementById('centros-filtro-tanda').value = '';
   renderTablaCentros(window._centrosData);
 
   registrarExportadores('centros', ()=>window._centrosData||[], [
@@ -1523,8 +1533,10 @@ function renderTablaCentros(lista){
 
 function filtrarCentros(){
   const q = (document.getElementById('centros-buscar').value||'').toLowerCase().trim();
-  if(!q){ renderTablaCentros(window._centrosData||[]); return; }
+  const tanda = document.getElementById('centros-filtro-tanda').value;
   const filtrado = (window._centrosData||[]).filter(c=>{
+    if(tanda && c.tanda !== tanda) return false;
+    if(!q) return true;
     return String(c.nombre_centro||'').toLowerCase().includes(q)
       || String(c.codigo_sigerd||'').toLowerCase().includes(q)
       || String(c.director_nombre||'').toLowerCase().includes(q);
@@ -1892,7 +1904,19 @@ async function renderSolicitudes(){
         </div>
       </div>
       <div class="tarjeta-body">
-        <input type="text" id="ap-buscar" placeholder="Buscar por No. solicitud, centro o candidato…" oninput="filtrarSolicitudesAP()" style="margin-bottom:10px;width:100%;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" id="ap-buscar" placeholder="Buscar por No. solicitud, centro o candidato…" oninput="filtrarSolicitudesAP()" style="flex:2;min-width:220px;">
+          <select id="ap-filtro-estado" onchange="filtrarSolicitudesAP()" style="flex:1;min-width:170px;">
+            <option value="">Todos los estados</option>
+            <option value="borrador">Borrador</option>
+            <option value="enviado">Enviado</option>
+            <option value="expediente_incompleto">Expediente incompleto</option>
+            <option value="incidencias">Incidencias</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="nombrado">Nombrado</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
         <div id="ap-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
         <div id="ap-tabla-wrap" class="tabla-wrap"></div>
       </div>
@@ -1967,6 +1991,7 @@ async function renderSolicitudes(){
     </div>
   `;
   document.getElementById('ap-buscar').value = '';
+  document.getElementById('ap-filtro-estado').value = '';
   renderTablaSolicitudesAP(window._solicitudesData);
 
   registrarExportadores('ap', ()=>window._solicitudesData||[], [
@@ -2294,8 +2319,10 @@ function renderTablaSolicitudesAP(lista){
 
 function filtrarSolicitudesAP(){
   const q = (document.getElementById('ap-buscar').value||'').toLowerCase().trim();
-  if(!q){ renderTablaSolicitudesAP(window._solicitudesData||[]); return; }
+  const estado = document.getElementById('ap-filtro-estado').value;
   const filtrado = (window._solicitudesData||[]).filter(s=>{
+    if(estado && s.estado !== estado) return false;
+    if(!q) return true;
     const candidatos = (s.candidatos_ap||[]).map(c=>c.nombres+' '+c.apellidos).join(', ').toLowerCase();
     return String(s.no_solicitud||'').toLowerCase().includes(q)
       || String(s.centros_rh?.nombre_centro||'').toLowerCase().includes(q)
@@ -7343,26 +7370,10 @@ async function renderNominas(){
           <button class="btn btn-primario btn-chico" onclick="abrirModalNomina()">+ Importar nómina</button>
         </div>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckNominas(this)"></th><th>Período</th><th>Fecha de pago</th><th>Archivo origen</th><th></th></tr></thead>
-          <tbody>
-            ${data.map(n=>`
-              <tr>
-                <td><input type="checkbox" class="chk-nominas" value="${n.id}"></td>
-                <td><strong>${MESES_NOMINA[n.mes]} ${n.anio}</strong></td>
-                <td>${fechaCorta(n.fecha_pago)}</td>
-                <td>${escapeHtml(n.archivo_origen||'—')}</td>
-                <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                  <button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Detalle</button>
-                  <button class="btn btn-secundario btn-chico" onclick="verEstadisticasNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Estadísticas</button>
-                  <button class="btn btn-secundario btn-chico" onclick="verMovimientosNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Movimientos</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">💵</div>No hay nóminas importadas todavía.</div>` }
+      <div class="tarjeta-body">
+        <input type="text" id="nom-lista-buscar" placeholder="Buscar por mes, año o archivo…" oninput="filtrarNominas()" style="margin-bottom:10px;width:100%;">
+        <div id="nom-lista-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="nom-lista-tabla-wrap" class="tabla-wrap"></div>
       </div>
     </div>
 
@@ -7466,12 +7477,48 @@ async function renderNominas(){
       </div>
     </div>
   `;
+  document.getElementById('nom-lista-buscar').value = '';
+  renderTablaNominas(window._nominasData);
 
   registrarExportadores('nominas', ()=>window._nominasData||[], [
     { label:'Período', get:n=>`${MESES_NOMINA[n.mes]} ${n.anio}` },
     { label:'Fecha de pago', get:n=>fechaCorta(n.fecha_pago) },
     { label:'Archivo origen', key:'archivo_origen' },
   ], 'nominas_1606', 'Nóminas Registradas - Distrito 16-06', 'chk-nominas');
+}
+
+function renderTablaNominas(lista){
+  document.getElementById('nom-lista-contador').textContent = `${lista.length} de ${(window._nominasData||[]).length} nómina(s)`;
+  document.getElementById('nom-lista-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleTodosCheckNominas(this)"></th><th>Período</th><th>Fecha de pago</th><th>Archivo origen</th><th></th></tr></thead>
+      <tbody>
+        ${lista.map(n=>`
+          <tr>
+            <td><input type="checkbox" class="chk-nominas" value="${n.id}"></td>
+            <td><strong>${MESES_NOMINA[n.mes]} ${n.anio}</strong></td>
+            <td>${fechaCorta(n.fecha_pago)}</td>
+            <td>${escapeHtml(n.archivo_origen||'—')}</td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-secundario btn-chico" onclick="verDetalleNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Detalle</button>
+              <button class="btn btn-secundario btn-chico" onclick="verEstadisticasNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Estadísticas</button>
+              <button class="btn btn-secundario btn-chico" onclick="verMovimientosNomina(${n.id}, '${MESES_NOMINA[n.mes]} ${n.anio}')">Movimientos</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">💵</div>${(window._nominasData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay nóminas importadas todavía.'}</div>`;
+}
+
+function filtrarNominas(){
+  const q = (document.getElementById('nom-lista-buscar').value||'').toLowerCase().trim();
+  if(!q){ renderTablaNominas(window._nominasData||[]); return; }
+  const filtrado = (window._nominasData||[]).filter(n=>{
+    const periodo = `${MESES_NOMINA[n.mes]} ${n.anio}`.toLowerCase();
+    return periodo.includes(q) || String(n.anio||'').includes(q) || String(n.archivo_origen||'').toLowerCase().includes(q);
+  });
+  renderTablaNominas(filtrado);
 }
 
 function toggleTodosCheckNominas(master){ document.querySelectorAll('.chk-nominas').forEach(c=>c.checked = master.checked); }
@@ -8318,26 +8365,10 @@ async function renderUsuarios(){
         <h3>Usuarios del sistema (${data?.length||0})</h3>
         <button class="btn btn-primario btn-chico" onclick="abrirModalUsuario()">+ Crear usuario</button>
       </div>
-      <div class="tarjeta-body tabla-wrap">
-        ${ (data && data.length) ? `
-        <table>
-          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Acceso a módulos</th><th></th></tr></thead>
-          <tbody>
-            ${data.map(u=>{
-              const esteEsCreador = (u.usuario||'').toLowerCase() === USUARIO_CREADOR;
-              const permisos = Array.isArray(u.permisos_rh) ? u.permisos_rh : [];
-              const resumenAcceso = esteEsCreador ? 'Acceso total (creador)' : (permisos.length ? `${permisos.length} módulo(s)` : 'Acceso total');
-              return `
-              <tr>
-                <td><strong>${escapeHtml(u.usuario)}</strong></td>
-                <td>${escapeHtml(u.nombre||'—')}</td>
-                <td>${escapeHtml(u.rol||'—')}</td>
-                <td>${escapeHtml(resumenAcceso)}</td>
-                <td>${esteEsCreador ? '<span class="texto-ayuda">No editable</span>' : `<button class="btn btn-secundario btn-chico" onclick='abrirModalUsuario(${JSON.stringify(u).replace(/'/g,"&apos;")})'>Editar</button>`}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>` : `<div class="vacio"><div class="icono-vacio">🔐</div>No hay usuarios registrados todavía.</div>` }
+      <div class="tarjeta-body">
+        <input type="text" id="usr-buscar" placeholder="Buscar por usuario, nombre o rol…" oninput="filtrarUsuarios()" style="margin-bottom:10px;width:100%;">
+        <div id="usr-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="usr-tabla-wrap" class="tabla-wrap"></div>
       </div>
     </div>
 
@@ -8380,6 +8411,43 @@ async function renderUsuarios(){
       </div>
     </div>
   `;
+  document.getElementById('usr-buscar').value = '';
+  renderTablaUsuarios(window._usuariosData);
+}
+
+function renderTablaUsuarios(lista){
+  document.getElementById('usr-contador').textContent = `${lista.length} de ${(window._usuariosData||[]).length} usuario(s)`;
+  document.getElementById('usr-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Acceso a módulos</th><th></th></tr></thead>
+      <tbody>
+        ${lista.map(u=>{
+          const esteEsCreador = (u.usuario||'').toLowerCase() === USUARIO_CREADOR;
+          const permisos = Array.isArray(u.permisos_rh) ? u.permisos_rh : [];
+          const resumenAcceso = esteEsCreador ? 'Acceso total (creador)' : (permisos.length ? `${permisos.length} módulo(s)` : 'Acceso total');
+          return `
+          <tr>
+            <td><strong>${escapeHtml(u.usuario)}</strong></td>
+            <td>${escapeHtml(u.nombre||'—')}</td>
+            <td>${escapeHtml(u.rol||'—')}</td>
+            <td>${escapeHtml(resumenAcceso)}</td>
+            <td>${esteEsCreador ? '<span class="texto-ayuda">No editable</span>' : `<button class="btn btn-secundario btn-chico" onclick='abrirModalUsuario(${JSON.stringify(u).replace(/'/g,"&apos;")})'>Editar</button>`}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">🔐</div>${(window._usuariosData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay usuarios registrados todavía.'}</div>`;
+}
+
+function filtrarUsuarios(){
+  const q = (document.getElementById('usr-buscar').value||'').toLowerCase().trim();
+  if(!q){ renderTablaUsuarios(window._usuariosData||[]); return; }
+  const filtrado = (window._usuariosData||[]).filter(u=>{
+    return String(u.usuario||'').toLowerCase().includes(q)
+      || String(u.nombre||'').toLowerCase().includes(q)
+      || String(u.rol||'').toLowerCase().includes(q);
+  });
+  renderTablaUsuarios(filtrado);
 }
 
 function toggleAccesoTotal(){
