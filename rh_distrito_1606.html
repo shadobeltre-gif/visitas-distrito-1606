@@ -2524,7 +2524,24 @@ async function renderTelegramas(){
         </div>
       </div>
       <div class="tarjeta-body">
-        <input type="text" id="tel-buscar" placeholder="Buscar por nombre, cédula o fecha (AAAA-MM-DD)…" oninput="filtrarTelegramas()" style="margin-bottom:10px;width:100%;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" id="tel-buscar" placeholder="Buscar por nombre, cédula o fecha (AAAA-MM-DD)…" oninput="filtrarTelegramas()" style="flex:2;min-width:220px;">
+          <select id="tel-filtro-centro" onchange="filtrarTelegramas()" style="flex:1;min-width:170px;"><option value="">Todos los centros</option></select>
+          <select id="tel-filtro-jornada" onchange="filtrarTelegramas()" style="flex:1;min-width:150px;">
+            <option value="">Todas las jornadas</option>
+            <option value="Matutina">Matutina</option>
+            <option value="Vespertina">Vespertina</option>
+            <option value="Nocturna">Nocturna</option>
+            <option value="Extendida">Extendida</option>
+          </select>
+          <select id="tel-filtro-estado" onchange="filtrarTelegramas()" style="flex:1;min-width:150px;">
+            <option value="">Todos los estados</option>
+            <option value="generado">Generado</option>
+            <option value="enviado_tel">Enviado</option>
+            <option value="entregado">Entregado</option>
+          </select>
+          <button class="btn btn-secundario btn-chico" onclick="limpiarFiltrosTelegramas()">Limpiar filtros</button>
+        </div>
         <div id="tel-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
         <div id="tel-tabla-wrap" class="tabla-wrap"></div>
       </div>
@@ -2614,6 +2631,13 @@ async function renderTelegramas(){
   window._candidatosNombrables = candidatosNombrables || [];
   window._telegramasData = data || [];
   document.getElementById('tel-buscar').value = '';
+
+  const centrosUnicos = [...new Set((window._telegramasData||[]).map(t=>t.centros_rh?.nombre_centro).filter(Boolean))].sort();
+  const selCentro = document.getElementById('tel-filtro-centro');
+  selCentro.innerHTML = '<option value="">Todos los centros</option>' + centrosUnicos.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  document.getElementById('tel-filtro-jornada').value = '';
+  document.getElementById('tel-filtro-estado').value = '';
+
   renderTablaTelegramas(window._telegramasData);
 
   inicializarAutocompletar(
@@ -2786,8 +2810,15 @@ function renderTablaTelegramas(lista){
 
 function filtrarTelegramas(){
   const q = (document.getElementById('tel-buscar').value||'').toLowerCase().trim();
-  if(!q){ renderTablaTelegramas(window._telegramasData||[]); return; }
+  const centro = document.getElementById('tel-filtro-centro').value;
+  const jornada = document.getElementById('tel-filtro-jornada').value;
+  const estado = document.getElementById('tel-filtro-estado').value;
+
   const filtrado = (window._telegramasData||[]).filter(t=>{
+    if(centro && t.centros_rh?.nombre_centro !== centro) return false;
+    if(jornada && t.jornada !== jornada) return false;
+    if(estado && t.estado_envio !== estado) return false;
+    if(!q) return true;
     const nombre = `${t.candidatos_ap?.nombres||''} ${t.candidatos_ap?.apellidos||''}`.toLowerCase();
     const cedula = String(t.candidatos_ap?.cedula||'').toLowerCase();
     const fecha = String(t.fecha_telegrama||'').toLowerCase();
@@ -2795,6 +2826,14 @@ function filtrarTelegramas(){
     return nombre.includes(q) || cedula.includes(q) || fecha.includes(q) || fechaCortaTxt.includes(q);
   });
   renderTablaTelegramas(filtrado);
+}
+
+function limpiarFiltrosTelegramas(){
+  document.getElementById('tel-buscar').value = '';
+  document.getElementById('tel-filtro-centro').value = '';
+  document.getElementById('tel-filtro-jornada').value = '';
+  document.getElementById('tel-filtro-estado').value = '';
+  renderTablaTelegramas(window._telegramasData||[]);
 }
 
 async function guardarTelegrama(imprimir){
