@@ -501,6 +501,7 @@ const MENU_ADMIN = [
     { id:'telegramas', icono:'✉', label:'Telegramas' },
     { id:'puestasdisposicion', icono:'📤', label:'Puesta a disposición' },
     { id:'cartasaceptacion', icono:'📥', label:'Carta de aceptación' },
+    { id:'traslados', icono:'🔀', label:'Traslado de personal' },
   ]},
   { grupo:'Ausencias', items:[
     { id:'vacaciones', icono:'🏖', label:'Vacaciones' },
@@ -603,6 +604,7 @@ const TITULOS = {
   telegramas:['Telegramas','Notificaciones oficiales de nombramiento'],
   puestasdisposicion:['Puesta a disposición','Oficios de liberación de personal'],
   cartasaceptacion:['Carta de aceptación','Oficios de aceptación de personal recibido'],
+  traslados:['Traslado de personal','Solicitudes de traslado a otro centro, distrito o regional'],
   vacaciones:['Vacaciones','Solicitudes de disfrute de vacaciones'],
   licenciaspermisos:['Licencias y permisos','Reporte de licencias y solicitud de permisos'],
   riesgoslaborales:['Riesgo laboral','Aviso de Accidente de Trabajo (ATR-2) y Enfermedad Profesional (EPR-1)'],
@@ -649,6 +651,7 @@ async function irAVista(id){
     else if(id === 'telegramas') await renderTelegramas();
     else if(id === 'puestasdisposicion') await renderPuestasDisposicion();
     else if(id === 'cartasaceptacion') await renderCartasAceptacion();
+    else if(id === 'traslados') await renderTraslados();
     else if(id === 'vacaciones') await renderVacaciones();
     else if(id === 'licenciaspermisos') await renderLicenciasPermisos();
     else if(id === 'riesgoslaborales') await renderRiesgosLaborales();
@@ -911,6 +914,7 @@ function badgeEstado(estado){
     rechazada:['rojo','Rechazada'],
     depositado_nomina:['amarillo','Depositado en nómina'],
     cubierta:['verde','Cubierta'], cancelada:['rojo','Cancelada'],
+    en_evaluacion:['amarillo','En evaluación'], completado:['verde','Completado'],
   };
   const [color,texto] = mapa[estado] || ['gris', estado];
   return `<span class="badge badge-${color}">${texto}</span>`;
@@ -1031,6 +1035,51 @@ async function cargarPersonalSelect(inputId, valorSeleccionado){
     p=>p.cedula,
     valorSeleccionado
   );
+}
+
+// ====================== CATÁLOGO EDITABLE DE CARGOS (por área docente/administrativo) ======================
+// Combobox tipo <input list> + <datalist>: se puede elegir un cargo ya
+// registrado o escribir uno nuevo, que se guarda en el catálogo (tabla
+// cargos_rh) para que quede disponible la próxima vez, en cualquier módulo.
+window._catalogoCargos = null;
+async function cargarCatalogoCargos(forzar){
+  if(window._catalogoCargos && !forzar) return window._catalogoCargos;
+  const { data, error } = await sb.from('cargos_rh').select('*').order('nombre');
+  if(error){ toast('Error cargando catálogo de cargos: '+error.message,'error'); window._catalogoCargos = { docente:[], administrativo:[] }; return window._catalogoCargos; }
+  const cat = { docente: [], administrativo: [] };
+  (data||[]).forEach(c=>{ if(cat[c.area]) cat[c.area].push(c.nombre); });
+  window._catalogoCargos = cat;
+  return cat;
+}
+
+function htmlCargoCombo(inputId, placeholder){
+  return `
+    <input type="text" id="${inputId}" list="${inputId}-lista" placeholder="${escapeHtml(placeholder||'Escribe o elige un cargo…')}" autocomplete="off">
+    <datalist id="${inputId}-lista"></datalist>
+  `;
+}
+
+function pintarListaCargos(inputId, area){
+  const datalist = document.getElementById(inputId+'-lista');
+  if(!datalist) return;
+  const cargos = (window._catalogoCargos?.[area]) || [];
+  datalist.innerHTML = cargos.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');
+}
+
+async function inicializarComboCargo(inputId, areaSelectId){
+  await cargarCatalogoCargos();
+  pintarListaCargos(inputId, document.getElementById(areaSelectId).value);
+}
+
+// Si el usuario escribió un cargo que no está en el catálogo de esa área,
+// lo agrega para que aparezca sugerido la próxima vez, en todos los módulos.
+async function guardarCargoSiEsNuevo(area, nombre){
+  if(!area || !nombre) return;
+  const cat = await cargarCatalogoCargos();
+  const existe = (cat[area]||[]).some(c=>c.toLowerCase()===nombre.toLowerCase());
+  if(existe) return;
+  const { error } = await sb.from('cargos_rh').insert({ area, nombre });
+  if(!error){ cat[area] = cat[area]||[]; cat[area].push(nombre); }
 }
 
 function abrirModal(id){ document.getElementById(id).classList.add('abierto'); }
@@ -4202,6 +4251,338 @@ async function procesarImportacionCA(){
   }
 }
 
+/* ====================== TRASLADO DE PERSONAL ====================== */
+async function renderTraslados(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('traslados_personal_rh')
+    .select('*, personal_rh(nombres,apellidos,cedula,cargo_actual), centro_origen:centro_origen_id(nombre_centro,codigo_sigerd), centro_destino:centro_destino_id(nombre_centro,codigo_sigerd)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._trasladosData = todos || [];
+
+  const pendientes = (todos||[]).filter(t=>t.estado==='solicitado'||t.estado==='en_evaluacion').length;
+  const mismoDistrito = (todos||[]).filter(t=>t.tipo_destino==='mismo_distrito').length;
+  const otroDistritoRegional = (todos||[]).filter(t=>t.tipo_destino==='otro_distrito'||t.tipo_destino==='otra_regional').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${pendientes}</div><div class="etiqueta">Pendientes de resolver</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${mismoDistrito}</div><div class="etiqueta">Dentro del mismo distrito</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${otroDistritoRegional}</div><div class="etiqueta">A otro distrito / regional</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Solicitudes de traslado (${todos?.length||0})</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('tr')}
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionTraslados()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalTraslado()">+ Nueva solicitud</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+          <input type="text" id="tr-buscar" placeholder="Buscar por empleado, cédula, centro origen o destino…" oninput="filtrarTraslados()" style="flex:2;min-width:220px;">
+          <select id="tr-filtro-tipo" onchange="filtrarTraslados()" style="flex:1;min-width:170px;">
+            <option value="">Todo destino</option>
+            <option value="mismo_distrito">Mismo distrito</option>
+            <option value="otro_distrito">Otro distrito</option>
+            <option value="otra_regional">Otra regional</option>
+          </select>
+          <select id="tr-filtro-area" onchange="filtrarTraslados()" style="flex:1;min-width:150px;">
+            <option value="">Todas las áreas</option>
+            <option value="docente">Docente</option>
+            <option value="administrativo">Administrativo</option>
+          </select>
+          <select id="tr-filtro-estado" onchange="filtrarTraslados()" style="flex:1;min-width:160px;">
+            <option value="">Todos los estados</option>
+            <option value="solicitado">Solicitado</option>
+            <option value="en_evaluacion">En evaluación</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="rechazado">Rechazado</option>
+            <option value="completado">Completado</option>
+          </select>
+        </div>
+        <div id="tr-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="tr-tabla-wrap" class="tabla-wrap"></div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-traslado">
+      <div class="modal" style="max-width:760px;">
+        <div class="modal-header"><h3 id="titulo-modal-traslado">Nueva solicitud de traslado</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-traslado')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="tr-id">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Empleado <span class="requerido">*</span></label>${htmlAutocompletar('tr-personal','Buscar empleado por nombre o cédula…')}</div>
+            <div class="campo"><label>Centro de origen</label>${htmlAutocompletar('tr-centro-origen','Se completa automáticamente…')}</div>
+            <div class="campo"><label>Área <span class="requerido">*</span></label>
+              <select id="tr-area" onchange="pintarListaCargos('tr-cargo', this.value); buscarSugerenciasTraslado();">
+                <option value="docente">Docente</option>
+                <option value="administrativo">Administrativo</option>
+              </select>
+            </div>
+            <div class="campo" style="grid-column:1/-1;"><label>Cargo actual</label>
+              ${htmlCargoCombo('tr-cargo','Escribe o elige un cargo…')}</div>
+            <div class="campo" style="grid-column:1/-1;"><label>Tipo de traslado solicitado <span class="requerido">*</span></label>
+              <select id="tr-tipo-destino" onchange="toggleCamposDestinoTraslado()">
+                <option value="mismo_distrito">Centro dentro del mismo distrito (16-06)</option>
+                <option value="otro_distrito">Otro distrito educativo</option>
+                <option value="otra_regional">Otra regional</option>
+              </select>
+            </div>
+            <div class="campo" id="tr-campo-centro-destino" style="grid-column:1/-1;"><label>Centro destino deseado</label>${htmlAutocompletar('tr-centro-destino','Buscar centro por nombre o código…')}</div>
+            <div class="campo" id="tr-campo-distrito-destino" style="display:none;"><label>Distrito destino</label><input type="text" id="tr-distrito-destino" placeholder="Ej. 16-04"></div>
+            <div class="campo" id="tr-campo-regional-destino" style="display:none;"><label>Regional destino</label><input type="text" id="tr-regional-destino" placeholder="Ej. Regional 10"></div>
+            <div class="campo"><label>Fecha</label><input type="date" id="tr-fecha"></div>
+            <div class="campo"><label>Estado</label>
+              <select id="tr-estado">
+                <option value="solicitado">Solicitado</option>
+                <option value="en_evaluacion">En evaluación</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="rechazado">Rechazado</option>
+                <option value="completado">Completado</option>
+              </select>
+            </div>
+            <div class="campo" style="grid-column:1/-1;"><label>Motivo del traslado</label>
+              <textarea id="tr-motivo" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Observaciones</label>
+              <textarea id="tr-observaciones" rows="2" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          </div>
+          <div id="tr-sugerencias"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-traslado')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarTraslado()">Guardar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('tr-buscar').value = '';
+  document.getElementById('tr-filtro-tipo').value = '';
+  document.getElementById('tr-filtro-area').value = '';
+  document.getElementById('tr-filtro-estado').value = '';
+  renderTablaTraslados(window._trasladosData);
+
+  registrarExportadores('tr', ()=>window._trasladosFiltrado||window._trasladosData||[], [
+    { label:'Empleado', get:t=>t.personal_rh ? t.personal_rh.nombres+' '+t.personal_rh.apellidos : '' },
+    { label:'Cédula', get:t=>t.personal_rh?.cedula||'' },
+    { label:'Centro de origen', get:t=>t.centro_origen?.nombre_centro||'' },
+    { label:'Área', get:t=>t.area==='docente'?'Docente':'Administrativo' },
+    { label:'Cargo actual', key:'cargo_actual' },
+    { label:'Tipo de destino', get:t=>({mismo_distrito:'Mismo distrito',otro_distrito:'Otro distrito',otra_regional:'Otra regional'}[t.tipo_destino]||t.tipo_destino) },
+    { label:'Centro destino', get:t=>t.centro_destino?.nombre_centro||'' },
+    { label:'Distrito destino', key:'distrito_destino' },
+    { label:'Regional destino', key:'regional_destino' },
+    { label:'Estado', key:'estado' },
+    { label:'Fecha (AAAA-MM-DD)', get:t=>t.fecha_solicitud||'' },
+    { label:'Motivo', key:'motivo' },
+    { label:'Observaciones', key:'observaciones' },
+  ], 'traslados_personal_1606', 'Traslados de Personal - Distrito 16-06', 'chk-tr');
+}
+
+function renderTablaTraslados(lista){
+  window._trasladosFiltrado = lista;
+  document.getElementById('tr-contador').textContent = `${lista.length} de ${(window._trasladosData||[]).length} solicitud(es)`;
+  const etiquetasTipo = { mismo_distrito:'Mismo distrito', otro_distrito:'Otro distrito', otra_regional:'Otra regional' };
+  document.getElementById('tr-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" onchange="toggleTodosCheckTraslados(this)"></th>
+        <th>Empleado</th><th>Centro origen</th><th>Destino solicitado</th><th>Área</th><th>Cargo</th><th>Estado</th><th>Fecha</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${lista.map(t=>{
+          const destino = t.tipo_destino==='mismo_distrito' ? (t.centro_destino?.nombre_centro || 'Por definir')
+            : t.tipo_destino==='otro_distrito' ? `Distrito ${escapeHtml(t.distrito_destino||'—')}`
+            : `Regional ${escapeHtml(t.regional_destino||'—')}`;
+          return `
+          <tr>
+            <td><input type="checkbox" class="chk-tr" value="${t.id}"></td>
+            <td>${escapeHtml((t.personal_rh?.nombres||'')+' '+(t.personal_rh?.apellidos||''))}</td>
+            <td>${escapeHtml(t.centro_origen?.nombre_centro||'—')}</td>
+            <td><span class="texto-ayuda">${etiquetasTipo[t.tipo_destino]||''}</span><br>${destino}</td>
+            <td>${t.area==='docente'?'Docente':'Administrativo'}</td>
+            <td>${escapeHtml(t.cargo_actual||'—')}</td>
+            <td>${badgeEstado(t.estado)}</td>
+            <td>${fechaCorta(t.fecha_solicitud)}</td>
+            <td><button class="btn btn-secundario btn-chico" onclick='abrirModalTraslado(${JSON.stringify(t).replace(/'/g,"&apos;")})'>Editar</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">🔀</div>${(window._trasladosData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay solicitudes de traslado registradas todavía.'}</div>`;
+}
+
+function filtrarTraslados(){
+  const q = (document.getElementById('tr-buscar').value||'').toLowerCase().trim();
+  const tipo = document.getElementById('tr-filtro-tipo').value;
+  const area = document.getElementById('tr-filtro-area').value;
+  const estado = document.getElementById('tr-filtro-estado').value;
+
+  const filtrado = (window._trasladosData||[]).filter(t=>{
+    if(tipo && t.tipo_destino !== tipo) return false;
+    if(area && t.area !== area) return false;
+    if(estado && t.estado !== estado) return false;
+    if(!q) return true;
+    const texto = `${t.personal_rh?.nombres||''} ${t.personal_rh?.apellidos||''} ${t.personal_rh?.cedula||''} ${t.centro_origen?.nombre_centro||''} ${t.centro_destino?.nombre_centro||''} ${t.distrito_destino||''} ${t.regional_destino||''}`.toLowerCase();
+    return texto.includes(q);
+  });
+  renderTablaTraslados(filtrado);
+}
+
+function toggleTodosCheckTraslados(master){ document.querySelectorAll('.chk-tr').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionTraslados(){
+  const ids = [...document.querySelectorAll('.chk-tr:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} solicitud(es) de traslado seleccionada(s)?`)) return;
+  const { error } = await sb.from('traslados_personal_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderTraslados();
+}
+
+function toggleCamposDestinoTraslado(){
+  const tipo = document.getElementById('tr-tipo-destino').value;
+  document.getElementById('tr-campo-centro-destino').style.display = tipo==='mismo_distrito' ? '' : 'none';
+  document.getElementById('tr-campo-distrito-destino').style.display = tipo==='otro_distrito' ? '' : 'none';
+  document.getElementById('tr-campo-regional-destino').style.display = tipo==='otra_regional' ? '' : 'none';
+  buscarSugerenciasTraslado();
+}
+
+// Cruza el área y el cargo escrito en la solicitud contra las necesidades de
+// personal pendientes de OTROS centros del distrito (módulo Necesidades de
+// Personal) y sugiere plazas vacantes que podrían coincidir con el traslado.
+async function buscarSugerenciasTraslado(){
+  const cont = document.getElementById('tr-sugerencias');
+  if(!cont) return;
+  const area = document.getElementById('tr-area').value;
+  const cargoTexto = (document.getElementById('tr-cargo').value||'').toLowerCase().trim();
+  const centroOrigenId = document.getElementById('tr-centro-origen-id')?.value;
+
+  if(!window._necesidadesParaSugerencia){
+    const { data } = await sb.from('necesidades_personal_rh')
+      .select('centro_id,area,cargo,nivel_asignatura,prioridad,estado,centros_rh(nombre_centro)')
+      .in('estado', ['pendiente','en_proceso']);
+    window._necesidadesParaSugerencia = data || [];
+  }
+
+  const candidatas = (window._necesidadesParaSugerencia||[]).filter(n=>{
+    if(n.area !== area) return false;
+    if(centroOrigenId && String(n.centro_id)===String(centroOrigenId)) return false;
+    return true;
+  });
+
+  const puntuadas = candidatas.map(n=>{
+    const cargoN = (n.cargo||'').toLowerCase();
+    const coincide = !!cargoTexto && (cargoN.includes(cargoTexto) || cargoTexto.includes(cargoN));
+    return { ...n, coincide };
+  }).sort((a,b)=>{
+    if(a.coincide !== b.coincide) return a.coincide ? -1 : 1;
+    const prioOrden = { alta:0, media:1, baja:2 };
+    return (prioOrden[a.prioridad]??3) - (prioOrden[b.prioridad]??3);
+  });
+
+  if(!puntuadas.length){
+    cont.innerHTML = `<div class="texto-ayuda" style="margin-top:12px;">🔎 No hay plazas vacantes registradas en el distrito para esa área por el momento.</div>`;
+    return;
+  }
+  cont.innerHTML = `
+    <div class="texto-ayuda" style="margin:12px 0 6px;font-weight:600;">🔎 Plazas vacantes en otros centros del distrito que podrían coincidir:</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;">
+      ${puntuadas.slice(0,15).map(n=>`
+        <div style="border:1px solid var(--gris-300);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;${n.coincide?'background:#eefbf1;':''}">
+          <div>
+            <strong>${escapeHtml(n.centros_rh?.nombre_centro||'—')}</strong> — ${escapeHtml(n.cargo||'')}
+            ${n.nivel_asignatura?` <span class="texto-ayuda">(${escapeHtml(n.nivel_asignatura)})</span>`:''}
+            ${badgePrioridad(n.prioridad)}${n.coincide?' <span class="badge badge-verde">Coincide con el cargo</span>':''}
+          </div>
+          <button type="button" class="btn btn-secundario btn-chico" onclick="usarSugerenciaTraslado(${n.centro_id}, '${escapeHtml(n.centros_rh?.nombre_centro||'').replace(/'/g,"\\'")}')">Usar este centro</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function usarSugerenciaTraslado(centroId, nombreCentro){
+  document.getElementById('tr-tipo-destino').value = 'mismo_distrito';
+  toggleCamposDestinoTraslado();
+  document.getElementById('tr-centro-destino').value = nombreCentro;
+  document.getElementById('tr-centro-destino-id').value = centroId;
+  toast('Centro destino seleccionado desde la sugerencia.','exito');
+}
+
+async function abrirModalTraslado(t){
+  document.getElementById('titulo-modal-traslado').textContent = t ? 'Editar solicitud de traslado' : 'Nueva solicitud de traslado';
+  document.getElementById('tr-id').value = t?.id || '';
+  document.getElementById('tr-area').value = t?.area || 'docente';
+  document.getElementById('tr-cargo').value = t?.cargo_actual || '';
+  document.getElementById('tr-tipo-destino').value = t?.tipo_destino || 'mismo_distrito';
+  document.getElementById('tr-distrito-destino').value = t?.distrito_destino || '';
+  document.getElementById('tr-regional-destino').value = t?.regional_destino || '';
+  document.getElementById('tr-fecha').value = t?.fecha_solicitud || new Date().toISOString().slice(0,10);
+  document.getElementById('tr-estado').value = t?.estado || 'solicitado';
+  document.getElementById('tr-motivo').value = t?.motivo || '';
+  document.getElementById('tr-observaciones').value = t?.observaciones || '';
+  document.getElementById('tr-sugerencias').innerHTML = '';
+  window._necesidadesParaSugerencia = null;
+
+  await cargarPersonalSelect('tr-personal', t?.personal_id);
+  await cargarCentrosSelect('tr-centro-origen', t?.centro_origen_id);
+  await cargarCentrosSelect('tr-centro-destino', t?.centro_destino_id);
+  await inicializarComboCargo('tr-cargo', 'tr-area');
+  document.getElementById('tr-cargo').oninput = buscarSugerenciasTraslado;
+
+  document.getElementById('tr-personal').addEventListener('autocomplete-change', ()=>{
+    const id = document.getElementById('tr-personal-id').value;
+    const p = (window._personalCache||[]).find(x=>String(x.id)===String(id));
+    if(p){
+      document.getElementById('tr-centro-origen-id').value = '';
+      autorellenarCentroDesdeEmpleado('tr-centro-origen', p);
+      if(!document.getElementById('tr-cargo').value) document.getElementById('tr-cargo').value = p.cargo_actual || '';
+      buscarSugerenciasTraslado();
+    }
+  });
+  document.getElementById('tr-centro-origen').addEventListener('autocomplete-change', buscarSugerenciasTraslado);
+
+  toggleCamposDestinoTraslado();
+  buscarSugerenciasTraslado();
+  abrirModal('modal-traslado');
+}
+
+async function guardarTraslado(){
+  const personalId = document.getElementById('tr-personal-id').value;
+  const tipoDestino = document.getElementById('tr-tipo-destino').value;
+  if(!personalId){ toast('Selecciona el empleado que solicita el traslado.','error'); return; }
+
+  const payload = {
+    personal_id: personalId,
+    centro_origen_id: document.getElementById('tr-centro-origen-id').value || null,
+    area: document.getElementById('tr-area').value,
+    cargo_actual: document.getElementById('tr-cargo').value.trim() || null,
+    tipo_destino: tipoDestino,
+    centro_destino_id: tipoDestino==='mismo_distrito' ? (document.getElementById('tr-centro-destino-id').value || null) : null,
+    distrito_destino: tipoDestino==='otro_distrito' ? (document.getElementById('tr-distrito-destino').value.trim() || null) : null,
+    regional_destino: tipoDestino==='otra_regional' ? (document.getElementById('tr-regional-destino').value.trim() || null) : null,
+    fecha_solicitud: document.getElementById('tr-fecha').value || new Date().toISOString().slice(0,10),
+    estado: document.getElementById('tr-estado').value,
+    motivo: document.getElementById('tr-motivo').value.trim() || null,
+    observaciones: document.getElementById('tr-observaciones').value.trim() || null,
+  };
+
+  const id = document.getElementById('tr-id').value;
+  const q = id ? sb.from('traslados_personal_rh').update(payload).eq('id', id) : sb.from('traslados_personal_rh').insert(payload);
+  const { error } = await q;
+  if(error){ toast(error.message,'error'); return; }
+  if(payload.cargo_actual) await guardarCargoSiEsNuevo(payload.area, payload.cargo_actual);
+  toast('Solicitud de traslado guardada.','exito');
+  cerrarModal('modal-traslado');
+  renderTraslados();
+}
+
 /* ====================== VACACIONES ====================== */
 function generarHTMLFormularioVacacion(v){
   const p = v.personal_rh || {};
@@ -5494,13 +5875,13 @@ async function renderNecesidadesPersonal(){
           <div class="grid-2">
             <div class="campo" style="grid-column:1/-1;"><label>Centro educativo <span class="requerido">*</span></label>${htmlAutocompletar('np-centro','Buscar centro por nombre o código…')}</div>
             <div class="campo"><label>Área <span class="requerido">*</span></label>
-              <select id="np-area">
+              <select id="np-area" onchange="pintarListaCargos('np-cargo', this.value)">
                 <option value="docente">Docente</option>
                 <option value="administrativo">Administrativo</option>
               </select>
             </div>
             <div class="campo"><label>Cargo necesitado <span class="requerido">*</span></label>
-              <input type="text" id="np-cargo" placeholder="Ej. Profesor de Matemática, Conserje…"></div>
+              ${htmlCargoCombo('np-cargo','Escribe o elige un cargo…')}</div>
             <div class="campo"><label>Nivel / asignatura (si aplica)</label>
               <input type="text" id="np-nivel" placeholder="Ej. Primario, Secundaria - Matemática…"></div>
             <div class="campo"><label>Cantidad necesaria</label>
@@ -5658,6 +6039,7 @@ async function abrirModalNecesidad(n){
   document.getElementById('np-motivo').value = n?.motivo || '';
   document.getElementById('np-observaciones').value = n?.observaciones || '';
   await cargarCentrosSelect('np-centro', n?.centro_id);
+  await inicializarComboCargo('np-cargo', 'np-area');
   abrirModal('modal-necesidad');
 }
 
@@ -5683,6 +6065,7 @@ async function guardarNecesidad(){
   const q = id ? sb.from('necesidades_personal_rh').update(payload).eq('id', id) : sb.from('necesidades_personal_rh').insert(payload);
   const { error } = await q;
   if(error){ toast(error.message,'error'); return; }
+  await guardarCargoSiEsNuevo(payload.area, payload.cargo);
   toast('Necesidad de personal guardada.','exito');
   cerrarModal('modal-necesidad');
   renderNecesidadesPersonal();
