@@ -518,6 +518,7 @@ const MENU_ADMIN = [
     { id:'personal', icono:'👤', label:'Personal' },
     { id:'centros', icono:'🏫', label:'Centros educativos' },
     { id:'relacioncentros', icono:'📊', label:'Relación de centros' },
+    { id:'necesidadespersonal', icono:'🧩', label:'Necesidades de personal' },
   ]},
   { grupo:'Reportes y Consultas', items:[
     { id:'expediente', icono:'🗂', label:'Expediente del empleado' },
@@ -611,6 +612,7 @@ const TITULOS = {
   personal:['Personal','Empleados del Distrito 16-06'],
   centros:['Centros educativos','Catálogo de centros del distrito'],
   relacioncentros:['Relación de centros','Listado de centros con personal de contacto'],
+  necesidadespersonal:['Necesidades de personal','Requerimientos de personal docente y administrativo por centro educativo'],
   expediente:['Expediente del empleado','Historial completo de un empleado en todos los módulos del sistema'],
   nominas:['Nóminas MINERD','Control de nómina recibida de Contraloría'],
   manual:['Manual del sistema','Guía completa de uso para el usuario'],
@@ -656,6 +658,7 @@ async function irAVista(id){
     else if(id === 'personal') await renderPersonal();
     else if(id === 'centros') await renderCentros();
     else if(id === 'relacioncentros') await renderRelacionCentros();
+    else if(id === 'necesidadespersonal') await renderNecesidadesPersonal();
     else if(id === 'expediente') await renderExpediente();
     else if(id === 'nominas') await renderNominas();
     else if(id === 'manual') await renderManual();
@@ -907,8 +910,14 @@ function badgeEstado(estado){
     en_proceso:['amarillo','En proceso'], emitida:['verde','Emitida'], entregada:['verde','Entregada'],
     rechazada:['rojo','Rechazada'],
     depositado_nomina:['amarillo','Depositado en nómina'],
+    cubierta:['verde','Cubierta'], cancelada:['rojo','Cancelada'],
   };
   const [color,texto] = mapa[estado] || ['gris', estado];
+  return `<span class="badge badge-${color}">${texto}</span>`;
+}
+function badgePrioridad(p){
+  const mapa = { alta:['rojo','Alta'], media:['amarillo','Media'], baja:['gris','Baja'] };
+  const [color,texto] = mapa[p] || ['gris', p||'—'];
   return `<span class="badge badge-${color}">${texto}</span>`;
 }
 const MOTIVOS_AP = [
@@ -5416,6 +5425,389 @@ function filtrarRelacionCentros(){
     return !texto || todo.includes(texto);
   });
   pintarTablaRelacionCentros(filtrado);
+}
+
+/* ====================== NECESIDADES DE PERSONAL ====================== */
+async function renderNecesidadesPersonal(){
+  const main = document.getElementById('main-content');
+  const { data: todos, error } = await sb.from('necesidades_personal_rh')
+    .select('*, centros_rh(nombre_centro,codigo_sigerd)')
+    .order('creado_en', {ascending:false});
+  if(error){ toast(error.message,'error'); }
+  window._necesidadesData = todos || [];
+
+  const totalDocentes = (todos||[]).filter(n=>n.area==='docente' && n.estado!=='cubierta' && n.estado!=='cancelada').length;
+  const totalAdmin = (todos||[]).filter(n=>n.area==='administrativo' && n.estado!=='cubierta' && n.estado!=='cancelada').length;
+  const prioridadAlta = (todos||[]).filter(n=>n.prioridad==='alta' && n.estado!=='cubierta' && n.estado!=='cancelada').length;
+
+  main.innerHTML = `
+    <div class="grid-3">
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalDocentes}</div><div class="etiqueta">Necesidades docentes pendientes</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor">${totalAdmin}</div><div class="etiqueta">Necesidades administrativas pendientes</div></div></div>
+      <div class="tarjeta"><div class="tarjeta-body kpi"><div class="valor" style="color:var(--rojo-600);">${prioridadAlta}</div><div class="etiqueta">Prioridad alta sin cubrir</div></div></div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-header">
+        <h3>Necesidades de personal por centro (${todos?.length||0})</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${botonesExportar('np')}
+          <button class="btn btn-secundario btn-chico" onclick="abrirModalImportarNP()">⬆ Importar Excel</button>
+          <button class="btn btn-rojo btn-chico" onclick="eliminarSeleccionNP()">Eliminar selección</button>
+          <button class="btn btn-primario btn-chico" onclick="abrirModalNecesidad()">+ Nueva necesidad</button>
+        </div>
+      </div>
+      <div class="tarjeta-body">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+          <input type="text" id="np-buscar" placeholder="Buscar por centro, cargo o motivo…" oninput="filtrarNP()" style="flex:2;min-width:220px;">
+          <select id="np-filtro-centro" onchange="filtrarNP()" style="flex:1;min-width:170px;"><option value="">Todos los centros</option></select>
+          <select id="np-filtro-area" onchange="filtrarNP()" style="flex:1;min-width:150px;">
+            <option value="">Todas las áreas</option>
+            <option value="docente">Docente</option>
+            <option value="administrativo">Administrativo</option>
+          </select>
+          <select id="np-filtro-prioridad" onchange="filtrarNP()" style="flex:1;min-width:140px;">
+            <option value="">Toda prioridad</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+          <select id="np-filtro-estado" onchange="filtrarNP()" style="flex:1;min-width:150px;">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="cubierta">Cubierta</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div id="np-contador" style="font-size:13px;color:var(--gris-500);margin-bottom:8px;"></div>
+        <div id="np-tabla-wrap" class="tabla-wrap"></div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-necesidad">
+      <div class="modal" style="max-width:720px;">
+        <div class="modal-header"><h3 id="titulo-modal-necesidad">Nueva necesidad de personal</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-necesidad')">×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="np-id">
+          <div class="grid-2">
+            <div class="campo" style="grid-column:1/-1;"><label>Centro educativo <span class="requerido">*</span></label>${htmlAutocompletar('np-centro','Buscar centro por nombre o código…')}</div>
+            <div class="campo"><label>Área <span class="requerido">*</span></label>
+              <select id="np-area">
+                <option value="docente">Docente</option>
+                <option value="administrativo">Administrativo</option>
+              </select>
+            </div>
+            <div class="campo"><label>Cargo necesitado <span class="requerido">*</span></label>
+              <input type="text" id="np-cargo" placeholder="Ej. Profesor de Matemática, Conserje…"></div>
+            <div class="campo"><label>Nivel / asignatura (si aplica)</label>
+              <input type="text" id="np-nivel" placeholder="Ej. Primario, Secundaria - Matemática…"></div>
+            <div class="campo"><label>Cantidad necesaria</label>
+              <input type="number" id="np-cantidad" min="1" value="1"></div>
+            <div class="campo"><label>Prioridad</label>
+              <select id="np-prioridad">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="campo"><label>Estado</label>
+              <select id="np-estado">
+                <option value="pendiente">Pendiente</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="cubierta">Cubierta</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </div>
+            <div class="campo"><label>Fecha</label><input type="date" id="np-fecha"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Motivo de la necesidad</label>
+              <input type="text" id="np-motivo" placeholder="Ej. Aumento de matrícula, sustitución, nueva sección…"></div>
+            <div class="campo" style="grid-column:1/-1;"><label>Observaciones</label>
+              <textarea id="np-observaciones" rows="3" style="width:100%;padding:8px;border:1px solid var(--gris-300);border-radius:8px;"></textarea></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-necesidad')">Cancelar</button>
+          <button class="btn btn-primario" onclick="guardarNecesidad()">Guardar necesidad</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-importar-np">
+      <div class="modal">
+        <div class="modal-header"><h3>Importar necesidades de personal desde Excel</h3>
+          <button class="modal-cerrar" onclick="cerrarModal('modal-importar-np')">×</button></div>
+        <div class="modal-body">
+          <div class="campo">
+            <label>Archivo Excel o CSV <span class="requerido">*</span></label>
+            <input type="file" id="np-import-archivo" accept=".xlsx,.xls,.csv">
+            <div class="texto-ayuda">
+              Columnas reconocidas: centro, área (docente/administrativo), cargo, nivel/asignatura, cantidad, prioridad (alta/media/baja), estado, motivo, observaciones, fecha.
+              El centro debe existir en el módulo Centros educativos (búsqueda por nombre exacto).
+              <a href="#" onclick="descargarPlantillaNP();return false;">Descargar plantilla de ejemplo</a>.
+            </div>
+          </div>
+          <div id="np-import-resumen-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secundario" onclick="cerrarModal('modal-importar-np')">Cancelar</button>
+          <button class="btn btn-primario" id="btn-importar-np" onclick="procesarImportacionNP()">Importar</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('np-buscar').value = '';
+  const centrosUnicos = [...new Set((window._necesidadesData||[]).map(n=>n.centros_rh?.nombre_centro).filter(Boolean))].sort();
+  const selCentro = document.getElementById('np-filtro-centro');
+  selCentro.innerHTML = '<option value="">Todos los centros</option>' + centrosUnicos.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  document.getElementById('np-filtro-area').value = '';
+  document.getElementById('np-filtro-prioridad').value = '';
+  document.getElementById('np-filtro-estado').value = '';
+
+  renderTablaNP(window._necesidadesData);
+
+  registrarExportadores('np', ()=>window._necesidadesFiltrado||window._necesidadesData||[], [
+    { label:'Centro', get:n=>n.centros_rh?.nombre_centro||'' },
+    { label:'Área', get:n=>n.area==='docente'?'Docente':'Administrativo' },
+    { label:'Cargo', key:'cargo' },
+    { label:'Nivel / asignatura', key:'nivel_asignatura' },
+    { label:'Cantidad necesaria', key:'cantidad_necesaria' },
+    { label:'Prioridad', key:'prioridad' },
+    { label:'Estado', key:'estado' },
+    { label:'Fecha (AAAA-MM-DD)', get:n=>n.fecha_solicitud||'' },
+    { label:'Motivo', key:'motivo' },
+    { label:'Observaciones', key:'observaciones' },
+  ], 'necesidades_personal_1606', 'Necesidades de Personal - Distrito 16-06', 'chk-np');
+}
+
+function renderTablaNP(lista){
+  window._necesidadesFiltrado = lista;
+  document.getElementById('np-contador').textContent = `${lista.length} de ${(window._necesidadesData||[]).length} necesidad(es)`;
+  document.getElementById('np-tabla-wrap').innerHTML = lista.length ? `
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" onchange="toggleTodosCheckNP(this)"></th>
+        <th>Centro</th><th>Área</th><th>Cargo</th><th>Nivel/asignatura</th><th>Cant.</th><th>Prioridad</th><th>Estado</th><th>Fecha</th><th></th>
+      </tr></thead>
+      <tbody>${lista.map(renderFilaNP).join('')}</tbody>
+    </table>
+  ` : `<div class="vacio"><div class="icono-vacio">🧩</div>${(window._necesidadesData||[]).length ? 'Sin resultados para esa búsqueda.' : 'No hay necesidades de personal registradas todavía.'}</div>`;
+}
+
+function renderFilaNP(n){
+  return `
+    <tr>
+      <td><input type="checkbox" class="chk-np" value="${n.id}"></td>
+      <td><strong>${escapeHtml(n.centros_rh?.nombre_centro||'—')}</strong></td>
+      <td>${n.area==='docente'?'Docente':'Administrativo'}</td>
+      <td>${escapeHtml(n.cargo||'—')}</td>
+      <td>${escapeHtml(n.nivel_asignatura||'—')}</td>
+      <td>${n.cantidad_necesaria||1}</td>
+      <td>${badgePrioridad(n.prioridad)}</td>
+      <td>${badgeEstado(n.estado)}</td>
+      <td>${fechaCorta(n.fecha_solicitud)}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-secundario btn-chico" onclick='abrirModalNecesidad(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Editar</button>
+      </td>
+    </tr>`;
+}
+
+function filtrarNP(){
+  const q = (document.getElementById('np-buscar').value||'').toLowerCase().trim();
+  const centro = document.getElementById('np-filtro-centro').value;
+  const area = document.getElementById('np-filtro-area').value;
+  const prioridad = document.getElementById('np-filtro-prioridad').value;
+  const estado = document.getElementById('np-filtro-estado').value;
+
+  const filtrado = (window._necesidadesData||[]).filter(n=>{
+    if(centro && n.centros_rh?.nombre_centro !== centro) return false;
+    if(area && n.area !== area) return false;
+    if(prioridad && n.prioridad !== prioridad) return false;
+    if(estado && n.estado !== estado) return false;
+    if(!q) return true;
+    const texto = `${n.centros_rh?.nombre_centro||''} ${n.cargo||''} ${n.nivel_asignatura||''} ${n.motivo||''}`.toLowerCase();
+    return texto.includes(q);
+  });
+  renderTablaNP(filtrado);
+}
+
+function toggleTodosCheckNP(master){ document.querySelectorAll('.chk-np').forEach(c=>c.checked = master.checked); }
+
+async function eliminarSeleccionNP(){
+  const ids = [...document.querySelectorAll('.chk-np:checked')].map(c=>c.value);
+  if(!ids.length){ toast('Selecciona al menos un registro.','error'); return; }
+  if(!confirm(`¿Eliminar ${ids.length} necesidad(es) seleccionada(s)?`)) return;
+  const { error } = await sb.from('necesidades_personal_rh').delete().in('id', ids);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Registros eliminados.','exito');
+  renderNecesidadesPersonal();
+}
+
+async function abrirModalNecesidad(n){
+  document.getElementById('titulo-modal-necesidad').textContent = n ? 'Editar necesidad de personal' : 'Nueva necesidad de personal';
+  document.getElementById('np-id').value = n?.id || '';
+  document.getElementById('np-area').value = n?.area || 'docente';
+  document.getElementById('np-cargo').value = n?.cargo || '';
+  document.getElementById('np-nivel').value = n?.nivel_asignatura || '';
+  document.getElementById('np-cantidad').value = n?.cantidad_necesaria || 1;
+  document.getElementById('np-prioridad').value = n?.prioridad || 'media';
+  document.getElementById('np-estado').value = n?.estado || 'pendiente';
+  document.getElementById('np-fecha').value = n?.fecha_solicitud || new Date().toISOString().slice(0,10);
+  document.getElementById('np-motivo').value = n?.motivo || '';
+  document.getElementById('np-observaciones').value = n?.observaciones || '';
+  await cargarCentrosSelect('np-centro', n?.centro_id);
+  abrirModal('modal-necesidad');
+}
+
+async function guardarNecesidad(){
+  const id = document.getElementById('np-id').value;
+  const centroId = document.getElementById('np-centro-id').value;
+  const cargo = document.getElementById('np-cargo').value.trim();
+  if(!centroId || !cargo){ toast('Completa el centro educativo y el cargo necesitado.','error'); return; }
+
+  const payload = {
+    centro_id: centroId,
+    area: document.getElementById('np-area').value,
+    cargo,
+    nivel_asignatura: document.getElementById('np-nivel').value.trim() || null,
+    cantidad_necesaria: parseInt(document.getElementById('np-cantidad').value) || 1,
+    prioridad: document.getElementById('np-prioridad').value,
+    estado: document.getElementById('np-estado').value,
+    fecha_solicitud: document.getElementById('np-fecha').value || new Date().toISOString().slice(0,10),
+    motivo: document.getElementById('np-motivo').value.trim() || null,
+    observaciones: document.getElementById('np-observaciones').value.trim() || null,
+  };
+
+  const q = id ? sb.from('necesidades_personal_rh').update(payload).eq('id', id) : sb.from('necesidades_personal_rh').insert(payload);
+  const { error } = await q;
+  if(error){ toast(error.message,'error'); return; }
+  toast('Necesidad de personal guardada.','exito');
+  cerrarModal('modal-necesidad');
+  renderNecesidadesPersonal();
+}
+
+function abrirModalImportarNP(){
+  document.getElementById('np-import-archivo').value = '';
+  document.getElementById('np-import-resumen-preview').innerHTML = '';
+  abrirModal('modal-importar-np');
+}
+
+function descargarPlantillaNP(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo generar la plantilla.','error'); return; }
+  const datos = [
+    { 'Centro':'ESC PRIM HERMANAS MIRABAL', 'Área (docente/administrativo)':'docente', 'Cargo':'Profesor de Matemática',
+      'Nivel/asignatura':'Secundaria - Matemática', 'Cantidad':2, 'Prioridad (alta/media/baja)':'alta',
+      'Estado':'pendiente', 'Motivo':'Aumento de matrícula', 'Observaciones':'', 'Fecha (AAAA-MM-DD)':'2026-08-15' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Necesidades Personal');
+  XLSX.writeFile(wb, 'plantilla_necesidades_personal.xlsx');
+}
+
+async function procesarImportacionNP(){
+  const archivo = document.getElementById('np-import-archivo').files[0];
+  if(!archivo){ toast('Selecciona el archivo.','error'); return; }
+
+  const btn = document.getElementById('btn-importar-np');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try{
+    const filas = await leerArchivoNomina(archivo);
+    if(!filas.length) throw new Error('El archivo no contiene filas de datos.');
+
+    const patronesEncabezadoNP = [/centro/, /area/, /cargo/, /nivel/, /cantidad/, /prioridad/, /estado/, /motivo/, /observ/, /fecha/];
+    const headerIdxNP = detectarFilaEncabezados(filas, patronesEncabezadoNP);
+    const headers = filas[headerIdxNP];
+
+    const norm = h => h.toString().toLowerCase().trim()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    const mapa = {};
+    headers.forEach((h,i)=>{
+      const n = norm(h);
+      if(/centro/.test(n) && mapa.centro===undefined) mapa.centro = i;
+      else if(/area/.test(n) && mapa.area===undefined) mapa.area = i;
+      else if(/cargo/.test(n) && mapa.cargo===undefined) mapa.cargo = i;
+      else if(/nivel/.test(n) && mapa.nivel===undefined) mapa.nivel = i;
+      else if(/cantidad/.test(n) && mapa.cantidad===undefined) mapa.cantidad = i;
+      else if(/prioridad/.test(n) && mapa.prioridad===undefined) mapa.prioridad = i;
+      else if(/estado/.test(n) && mapa.estado===undefined) mapa.estado = i;
+      else if(/motivo/.test(n) && mapa.motivo===undefined) mapa.motivo = i;
+      else if(/observ/.test(n) && mapa.observaciones===undefined) mapa.observaciones = i;
+      else if(/fecha/.test(n) && mapa.fecha===undefined) mapa.fecha = i;
+    });
+    if(mapa.centro===undefined || mapa.area===undefined || mapa.cargo===undefined){
+      throw new Error('No se pudo detectar las columnas de centro, área o cargo.');
+    }
+
+    const registros = filas.slice(headerIdxNP+1).filter(f=>f[mapa.centro] && String(f[mapa.centro]).trim());
+    if(!registros.length) throw new Error('No se encontraron filas válidas con centro.');
+
+    let creados = 0, errores = 0;
+    const detalleErrores = [];
+    const areasValidas = ['docente','administrativo'];
+    const prioridadesValidas = ['alta','media','baja'];
+    const estadosValidos = ['pendiente','en_proceso','cubierta','cancelada'];
+
+    for(const f of registros){
+      try{
+        const nombreCentro = String(f[mapa.centro]).trim();
+        const { data: centro } = await sb.from('centros_rh').select('id').eq('nombre_centro', nombreCentro).maybeSingle();
+        if(!centro){ throw new Error('Centro no encontrado. Impórtalo primero en Centros educativos.'); }
+
+        let area = String(f[mapa.area]||'').trim().toLowerCase();
+        if(!areasValidas.includes(area)) area = 'docente';
+
+        const cargo = String(f[mapa.cargo]||'').trim();
+        if(!cargo){ throw new Error('Falta el cargo necesitado.'); }
+
+        let prioridad = mapa.prioridad!==undefined ? String(f[mapa.prioridad]||'').trim().toLowerCase() : '';
+        if(!prioridadesValidas.includes(prioridad)) prioridad = 'media';
+
+        let estado = mapa.estado!==undefined ? String(f[mapa.estado]||'').trim().toLowerCase() : '';
+        if(!estadosValidos.includes(estado)) estado = 'pendiente';
+
+        const { error: errNP } = await sb.from('necesidades_personal_rh').insert({
+          centro_id: centro.id,
+          area, cargo,
+          nivel_asignatura: mapa.nivel!==undefined ? (String(f[mapa.nivel]||'').trim() || null) : null,
+          cantidad_necesaria: mapa.cantidad!==undefined ? (parseInt(f[mapa.cantidad]) || 1) : 1,
+          prioridad, estado,
+          motivo: mapa.motivo!==undefined ? (String(f[mapa.motivo]||'').trim() || null) : null,
+          observaciones: mapa.observaciones!==undefined ? (String(f[mapa.observaciones]||'').trim() || null) : null,
+          fecha_solicitud: mapa.fecha!==undefined ? (String(f[mapa.fecha]||'').trim() || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10),
+        });
+        if(errNP) throw errNP;
+        creados++;
+      }catch(errFila){
+        errores++;
+        detalleErrores.push(`Fila con centro "${f[mapa.centro]||'?'}": ${errFila.message}`);
+      }
+    }
+
+    document.getElementById('np-import-resumen-preview').innerHTML = `
+      <div class="texto-ayuda" style="margin-top:10px;">
+        <strong>${registros.length}</strong> filas procesadas ·
+        <span style="color:var(--verde-600);font-weight:600;">${creados} creados</span>
+        ${errores ? `· <span style="color:var(--rojo-600);font-weight:600;">${errores} con error</span>` : ''}
+        ${detalleErrores.length ? `<br><span style="color:var(--rojo-600);">${detalleErrores.slice(0,5).join('<br>')}</span>` : ''}
+      </div>`;
+
+    if(creados){
+      toast(`${creados} necesidad(es) importada(s) correctamente.`,'exito');
+      renderNecesidadesPersonal();
+    } else {
+      toast('No se pudo importar ninguna necesidad. Revisa los errores.','error');
+    }
+  }catch(err){
+    toast(err.message,'error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
 }
 
 /* ====================== RIESGO LABORAL (ATR-2 / EPR-1) ====================== */
