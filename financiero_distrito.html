@@ -422,6 +422,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     </div>
     <div id="ch-count" style="font-size:12px;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;gap:8px">
       <span id="ch-count-txt"></span>
+      <button class="btn btn-amber btn-xs" id="btn-imp-cheques" style="display:none" onclick="imprimirChequesSeleccionados()">🖨️ Imprimir seleccionados</button>
       <button class="btn btn-danger btn-xs" id="btn-del-cheques" style="display:none" onclick="eliminarSeleccionados('cheques','chk-cheq')">🗑️ Eliminar seleccionados</button>
     </div>
     <div class="twrap"><table>
@@ -1395,7 +1396,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div class="btn-row">
         <button class="btn btn-primary" onclick="guardarCheque()">💾 Guardar cheque</button>
         <button class="btn btn-amber" id="btn-imprimir-cheque" style="display:none" onclick="imprimirCheque(gv('cheq-id'))">🖨️ Imprimir</button>
-        <button class="btn" onclick="closeMod('m-cheque')">Cancelar</button>
+        <button class="btn" id="btn-cancelar-cheque" onclick="closeMod('m-cheque')">Cancelar</button>
       </div>
     </div>
   </div>
@@ -1955,12 +1956,16 @@ function selTodo(cls,chk){
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
     'chk-usr':'btn-del-usuarios'
   };
-  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls]);
+  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':undefined);
 }
-async function actualizarBtnBulk(cls,btnId){
+async function actualizarBtnBulk(cls,btnId,extraBtnId){
   const sel=document.querySelectorAll('.'+cls+':checked').length;
   const btn=document.getElementById(btnId);
   if(btn){ btn.style.display=sel>0?'inline-flex':'none'; btn.textContent='🗑️ Eliminar '+sel+' seleccionados'; }
+  if(extraBtnId){
+    const btn2=document.getElementById(extraBtnId);
+    if(btn2){ btn2.style.display=sel>0?'inline-flex':'none'; btn2.textContent='🖨️ Imprimir '+sel+' seleccionados'; }
+  }
 }
 async function eliminarSeleccionados(tabla,cls){
   const ids=[...document.querySelectorAll('.'+cls+':checked')].map(c=>c.value);
@@ -3344,7 +3349,7 @@ function renderCheques(data){
   if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="14">Sin cheques registrados</td></tr>'; return; }
   const isAdmin=CU&&(CU.rol==='admin'||CU.rol==='supervisor');
   tb.innerHTML=data.map((c,i)=>`<tr>
-    <td><input type="checkbox" class="chk-cheq" value="${c.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-cheq','btn-del-cheques')"/></td>
+    <td><input type="checkbox" class="chk-cheq" value="${c.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-cheq','btn-del-cheques','btn-imp-cheques')"/></td>
     <td style="color:var(--text3)">${i+1}</td>
     <td>${new Date(c.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
     <td><strong>${c.num_cheque}</strong>${c.referencia?`<div class="cs">Ref: ${c.referencia}</div>`:''}</td>
@@ -3358,6 +3363,8 @@ function renderCheques(data){
     <td><strong style="color:var(--red2)">${RD(c.monto_neto)}</strong></td>
     <td><span class="badge ${c.estado==='Activo'?'b-act':c.estado==='Anulado'?'b-anu':'b-con'}">${c.estado}</span>${c.conciliado?'<span class="badge b-con" style="margin-left:3px;font-size:9px">✓</span>':''}</td>
     <td><div style="display:flex;gap:3px">
+      <button class="btn btn-xs" onclick="verCheque('${c.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirCheque('${c.id}')" title="Imprimir">🖨️</button>
       ${isAdmin&&c.estado==='Activo'?`<button class="btn btn-xs btn-primary" onclick="editarCheque('${c.id}')" title="Editar">✏️</button>`:''}
       ${isAdmin&&c.estado==='Activo'?`<button class="btn btn-xs btn-amber" onclick="conciliarCheque('${c.id}')" title="Conciliar">✓</button>`:''}
       ${CU&&CU.rol==='admin'&&c.estado==='Activo'?`<button class="btn btn-xs btn-danger" onclick="anularCheque('${c.id}')" title="Anular">🚫</button>`:''}
@@ -3380,6 +3387,7 @@ async function openNuevoCheque(){
   ssv('cheq-rubro',''); ssv('cheq-centro','');
   document.getElementById('m-cheq-tit').textContent='Nuevo Cheque';
   const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='none';
+  const btnCan=document.getElementById('btn-cancelar-cheque'); if(btnCan) btnCan.textContent='Cancelar';
   await poblarSelectRubros();
   await poblarSelectCentros();
   await poblarSelectBeneficiarios();
@@ -3471,12 +3479,16 @@ async function guardarCheque(){
     registrado_por:CU.nombre, created_at:new Date().toISOString()
   };
   const id=gv('cheq-id');
+  const esNuevo=!id;
   let chequeIdFinal=id;
   if(id){ await sb.from('cheques_fin').update(row).eq('id',id); }
   else { row.id='C'+Date.now(); chequeIdFinal=row.id; await sb.from('cheques_fin').insert(row); }
 
+  let vieneDeFlujoEspecial=false;
+
   // Si este cheque viene de "Generar cheque" individual en Dietas
   if(window.VT_DIETA_FICHAS_PENDIENTES && window.VT_DIETA_FICHAS_PENDIENTES.fichaIds.length){
+    vieneDeFlujoEspecial=true;
     await sb.from('visitas_vt').update({estado:'pagada',cheque_id:chequeIdFinal}).in('id',window.VT_DIETA_FICHAS_PENDIENTES.fichaIds);
     await cargarVisitasVT();
     if(document.getElementById('page-dietas-vt')?.classList.contains('active')) calcularDietasVT();
@@ -3486,6 +3498,7 @@ async function guardarCheque(){
 
   // Si este cheque viene de "Generar cheque consolidado" (varios tecnicos)
   if(window.VT_DIETA_CONSOLIDADO && window.VT_DIETA_CONSOLIDADO.length){
+    vieneDeFlujoEspecial=true;
     const detalleRows=window.VT_DIETA_CONSOLIDADO.map(d=>({
       cheque_id:chequeIdFinal, tecnico_id:d.tecnicoId, monto:d.monto, fichas_ids:d.fichaIds
     }));
@@ -3498,7 +3511,18 @@ async function guardarCheque(){
     window.VT_DIETA_CONSOLIDADO=null;
   }
 
-  await cargarChequesFin(); renderCheques(); closeMod('m-cheque'); cargarDashboard(); actualizarKPITrasCheque();
+  await cargarChequesFin(); renderCheques(); cargarDashboard(); actualizarKPITrasCheque();
+
+  if(esNuevo && !vieneDeFlujoEspecial){
+    // Dejar el modal abierto para poder imprimir el cheque recién guardado
+    sv('cheq-id', chequeIdFinal);
+    document.getElementById('m-cheq-tit').textContent='Cheque guardado ✓';
+    const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='inline-flex';
+    const btnCan=document.getElementById('btn-cancelar-cheque'); if(btnCan) btnCan.textContent='Cerrar';
+    mostrarToastFin('✅ Cheque guardado. Puedes imprimirlo ahora o cerrar.');
+  } else {
+    closeMod('m-cheque');
+  }
 }
 
 async function editarCheque(id){
@@ -3520,11 +3544,8 @@ async function editarCheque(id){
   openMod('m-cheque');
 }
 
-function imprimirCheque(id){
-  const c=CHEQUES.find(x=>String(x.id)===String(id));
-  if(!c){ alert('Guarda el cheque primero antes de imprimir.'); return; }
-  const w=window.open('','_blank');
-  w.document.write(`
+function generarHTMLComprobante(c, autoPrint){
+  return `
     <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
     <title>Comprobante de Cheque ${c.num_cheque}</title>
     <style>
@@ -3544,8 +3565,12 @@ function imprimirCheque(id){
       .footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #ddd;font-size:10px;color:#94a3b8;text-align:center}
       .firma{margin-top:3rem;display:flex;justify-content:space-between}
       .firma div{border-top:1px solid #333;width:220px;text-align:center;font-size:11px;padding-top:4px}
-      @media print{ body{padding:1rem} }
+      .toolbar{text-align:center;margin-bottom:1.5rem}
+      .toolbar button{background:#1565c0;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer}
+      @media print{ body{padding:1rem} .toolbar{display:none} }
+      .pagebreak{page-break-before:always}
     </style></head><body>
+    ${autoPrint?'':'<div class="toolbar"><button onclick="window.print()">🖨️ Imprimir</button></div>'}
     <div class="hdr">
       <h1>Comprobante de Pago — Distrito Educativo 16-06</h1>
       <p>Bonao Nordeste, Monseñor Nouel, R.D.</p>
@@ -3558,6 +3583,8 @@ function imprimirCheque(id){
       <div class="campo"><label>Cédula/RNC</label><div class="val">${c.cedula_beneficiario||'—'}</div></div>
       <div class="campo"><label>Rubro</label><div class="val">${c.rubro_nombre||'—'}</div></div>
       <div class="campo"><label>Centro/Programa</label><div class="val">${c.centro_nombre||'General / Distrito'}</div></div>
+      <div class="campo"><label>Estado</label><div class="val">${c.estado}${c.conciliado?' (Conciliado)':''}</div></div>
+      <div class="campo"><label>Registrado por</label><div class="val">${c.registrado_por||'—'}</div></div>
     </div>
     <div class="campo" style="margin-bottom:1rem"><label>Concepto</label><div class="val">${c.concepto}</div></div>
     <table>
@@ -3573,10 +3600,34 @@ function imprimirCheque(id){
       <div>Entregado por</div>
       <div>Recibido por</div>
     </div>
-    <div class="footer">Documento generado por el Sistema Financiero del Distrito 16-06 — ${new Date().toLocaleDateString('es-DO')} — Registrado por: ${c.registrado_por||'—'}</div>
-    <` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script>
-    </body></html>
-  `);
+    <div class="footer">Documento generado por el Sistema Financiero del Distrito 16-06 — ${new Date().toLocaleDateString('es-DO')}</div>
+  `;
+}
+
+function imprimirCheque(id){
+  const c=CHEQUES.find(x=>String(x.id)===String(id));
+  if(!c){ alert('Guarda el cheque primero antes de imprimir.'); return; }
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLComprobante(c,true)+`<` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script></body></html>`);
+  w.document.close();
+}
+
+function verCheque(id){
+  const c=CHEQUES.find(x=>String(x.id)===String(id));
+  if(!c){ alert('Cheque no encontrado.'); return; }
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLComprobante(c,false)+`</body></html>`);
+  w.document.close();
+}
+
+function imprimirChequesSeleccionados(){
+  const ids=[...document.querySelectorAll('.chk-cheq:checked')].map(cb=>cb.value);
+  if(!ids.length){ alert('Selecciona al menos un cheque.'); return; }
+  const seleccionados=CHEQUES.filter(c=>ids.includes(String(c.id)));
+  if(!seleccionados.length){ alert('No se encontraron los cheques seleccionados.'); return; }
+  const w=window.open('','_blank');
+  const bloques=seleccionados.map((c,i)=>`<div${i>0?' class="pagebreak"':''}>${generarHTMLComprobante(c,true)}</div>`).join('');
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Comprobantes de Cheques</title></head><body>${bloques}<` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script></body></html>`);
   w.document.close();
 }
 
