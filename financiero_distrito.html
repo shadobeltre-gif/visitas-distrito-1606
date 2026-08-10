@@ -3380,8 +3380,19 @@ function filtrarCheques(){
   }));
 }
 
+function siguienteNumCheque(){
+  if(!CHEQUES.length) return '';
+  const ultimo=[...CHEQUES].sort((a,b)=>new Date(b.created_at||b.fecha)-new Date(a.created_at||a.fecha))[0];
+  const num=(ultimo.num_cheque||'').trim();
+  const m=num.match(/^(.*?)(\d+)$/);
+  if(!m) return '';
+  const prefijo=m[1], digitos=m[2];
+  const siguiente=(parseInt(digitos,10)+1).toString().padStart(digitos.length,'0');
+  return prefijo+siguiente;
+}
+
 async function openNuevoCheque(){
-  sv('cheq-id',''); sv('cheq-fecha',today()); sv('cheq-num',''); sv('cheq-ben',''); sv('cheq-doc','');
+  sv('cheq-id',''); sv('cheq-fecha',today()); sv('cheq-num',siguienteNumCheque()); sv('cheq-ben',''); sv('cheq-doc','');
   sv('cheq-ref',''); sv('cheq-bruto',''); sv('cheq-itbis-facturado','0'); sv('cheq-itbis','0'); sv('cheq-isr','0'); sv('cheq-cargos','0');
   sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-neto',''); sv('cheq-concepto','');
   ssv('cheq-rubro',''); ssv('cheq-centro','');
