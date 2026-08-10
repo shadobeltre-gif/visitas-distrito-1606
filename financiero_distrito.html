@@ -5,7 +5,6 @@
 <link rel="icon" type="image/jpeg" href="escudo.jpg"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Distrito Educativo 16-06</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -21,10 +20,10 @@
   --r:10px;--r2:14px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
-h1,h2,h3,h4{font-family:'Syne',sans-serif}
-button{cursor:pointer;font-family:'DM Sans',sans-serif}
-input,select,textarea{font-family:'DM Sans',sans-serif}
+html,body{height:100%;font-family:Arial, sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45}
+h1,h2,h3,h4{font-family:Arial, sans-serif}
+button{cursor:pointer;font-family:Arial, sans-serif}
+input,select,textarea{font-family:Arial, sans-serif}
 
 /* LOGIN */
 #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#0d3b7a 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
@@ -96,7 +95,7 @@ input,select,textarea{font-family:'DM Sans',sans-serif}
 .sidebar.is-admin .sub-menu .nb.admin-only{display:flex}
 
 /* Grupos desplegables tambien dentro del drawer movil */
-.drawer-grupo{display:flex;align-items:center;gap:10px;padding:11px 16px;color:#7fa8d4;font-size:14px;border:none;background:transparent;width:100%;text-align:left;cursor:pointer;font-family:'DM Sans',sans-serif}
+.drawer-grupo{display:flex;align-items:center;gap:10px;padding:11px 16px;color:#7fa8d4;font-size:14px;border:none;background:transparent;width:100%;text-align:left;cursor:pointer;font-family:Arial, sans-serif}
 .drawer-grupo:hover,.drawer-grupo:active{background:rgba(255,255,255,.08);color:#fff}
 .drawer-grupo span:first-child{font-size:18px;width:22px;text-align:center;flex-shrink:0}
 .drawer-grupo .chev{margin-left:auto;font-size:11px;transition:transform .2s}
@@ -116,14 +115,14 @@ input,select,textarea{font-family:'DM Sans',sans-serif}
 
 /* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
-.chdr{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.chdr{display:flex;align-items:center;gap:8px;font-family:Arial, sans-serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
 
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;box-shadow:var(--shadow);border-left:4px solid var(--blue2);transition:transform .15s}
 .kpi:hover{transform:translateY(-2px)}
 .kpi.green{border-left-color:var(--green2)}.kpi.red{border-left-color:var(--red2)}.kpi.amber{border-left-color:var(--amber2)}.kpi.navy{border-left-color:var(--navy)}
-.kpi-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px}
+.kpi-val{font-family:Arial, sans-serif;font-size:22px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px}
 .kpi-lbl{font-size:11px;color:var(--text2);font-weight:500}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
 
@@ -166,7 +165,7 @@ input,select,textarea{font-family:'DM Sans',sans-serif}
 .ttbar input{flex:1;min-width:160px}
 .twrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
+thead th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-family:Arial, sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
 thead th:first-child{border-radius:var(--r) 0 0 0}
 thead th:last-child{border-radius:0 var(--r) 0 0}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
@@ -186,7 +185,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .mbg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1500;display:none;align-items:center;justify-content:center;padding:1rem}
 .mbg.show{display:flex}
 .mbox{background:#fff;border-radius:var(--r2);box-shadow:0 8px 32px rgba(0,0,0,.18);width:100%;max-width:560px;overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
-.mhdr{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;flex-shrink:0}
+.mhdr{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-family:Arial, sans-serif;font-weight:700;font-size:15px;flex-shrink:0}
 .mbody{padding:1.5rem;overflow-y:auto}
 .mclose{background:none;border:none;color:#7fa8d4;font-size:20px;cursor:pointer}
 .mclose:hover{color:#fff}
@@ -233,13 +232,13 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
 /* ── BARRA MÓVIL ── */
 .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:1px solid rgba(255,255,255,.1);z-index:300;height:60px}
-.mob-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:#7fa8d4;font-size:9px;font-weight:500;cursor:pointer;padding:6px 4px;font-family:'DM Sans',sans-serif}
+.mob-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:#7fa8d4;font-size:9px;font-weight:500;cursor:pointer;padding:6px 4px;font-family:Arial, sans-serif}
 .mob-nav button span{font-size:19px;line-height:1}
 .mob-nav button.active{color:#fff;background:rgba(255,255,255,.1)}
 
 /* ── DRAWER ── */
 @keyframes slideInFin{from{transform:translateX(-100%)}to{transform:translateX(0)}}
-.drawer-btn-fin{display:flex;align-items:center;gap:10px;padding:11px 16px;color:#7fa8d4;font-size:14px;border:none;background:transparent;width:100%;text-align:left;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.drawer-btn-fin{display:flex;align-items:center;gap:10px;padding:11px 16px;color:#7fa8d4;font-size:14px;border:none;background:transparent;width:100%;text-align:left;cursor:pointer;transition:all .15s;font-family:Arial, sans-serif}
 .drawer-btn-fin span:first-child{font-size:18px;width:22px;text-align:center;flex-shrink:0}
 .drawer-btn-fin:hover,.drawer-btn-fin:active{background:rgba(255,255,255,.08);color:#fff}
 .drawer-btn-fin.active{background:var(--blue2);color:#fff}
@@ -412,7 +411,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 
 <!-- CHEQUES -->
 <div id="page-cheques" class="page">
-  <div class="page-hdr"><h2>🧾 Emisión de Cheques</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCheque()">+ Nuevo cheque</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-cheques','Cheques')">📗 Excel</button></div></div>
+  <div class="page-hdr"><h2>🧾 Emisión de Cheques</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCheque()">+ Nuevo cheque</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-cheques','Cheques')">📗 Excel</button><button class="btn" onclick="abrirConfigImpresionCheque()">⚙️ Config. impresión</button></div></div>
   <div class="card">
     <div class="ttbar">
       <input type="text" id="q-cheq" placeholder="🔍 Buscar cheque..." oninput="filtrarCheques()"/>
@@ -438,11 +437,13 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="card">
     <div class="ttbar">
       <input type="text" id="q-ing" placeholder="🔍 Buscar ingreso..." oninput="filtrarIngresos()"/>
+      <select id="q-ing-est" onchange="filtrarIngresos()"><option value="">Todos</option><option value="Activo">Activo</option><option value="Anulado">Anulado</option></select>
       <input type="date" id="q-ing-d" onchange="filtrarIngresos()" title="Desde"/>
       <input type="date" id="q-ing-h" onchange="filtrarIngresos()" title="Hasta"/>
     </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem;display:flex;gap:8px;align-items:center">
       <span id="ing-count"></span>
+      <button class="btn btn-amber btn-xs" id="btn-imp-ingresos" style="display:none" onclick="imprimirIngresosSeleccionados()">🖨️ Imprimir seleccionados</button>
       <button class="btn btn-danger btn-xs" id="btn-del-ingresos" style="display:none" onclick="eliminarSeleccionados('ingresos','chk-ing')">🗑️ Eliminar seleccionados</button>
     </div>
     <div class="twrap"><table>
@@ -563,6 +564,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="kpi-grid" id="cron-kpis"></div>
   <div class="card">
     <div class="ttbar">
+      <input type="text" id="q-cron-txt" placeholder="🔍 Buscar por centro, tipo o descripción..." oninput="filtrarCronogramaVT()"/>
       <input type="week" id="q-cron-semana" onchange="filtrarCronogramaVT()"/>
     </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
@@ -580,11 +582,12 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="page-hdr"><h2>🗓️ Cronogramas de Técnicos</h2></div>
   <div class="card">
     <div class="ttbar">
+      <input type="text" id="q-cron-adm-txt" placeholder="🔍 Buscar por centro o descripción..." oninput="filtrarCronogramaAdminVT()"/>
       <select id="q-cron-adm-tec" onchange="filtrarCronogramaAdminVT()"><option value="">Todos los técnicos</option></select>
       <input type="week" id="q-cron-adm-semana" onchange="filtrarCronogramaAdminVT()"/>
     </div>
     <div class="twrap"><table>
-      <thead><tr><th>Técnico</th><th>Fecha</th><th>Día</th><th>Centro</th><th>Tipo</th><th>Descripción</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Técnico</th><th>Fecha</th><th>Día</th><th>Centro</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody id="tb-cron-vt-admin"></tbody>
     </table></div>
   </div>
@@ -623,6 +626,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="card">
     <div class="chdr">📋 Fichas pendientes de revisión</div>
     <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Revisa la foto de la ficha firmada y sellada por el director antes de aprobar el pago de la dieta.</p>
+    <input type="text" id="q-aprob-vt" placeholder="🔍 Buscar por técnico o centro..." oninput="renderAprobacionesVT()" style="margin-bottom:.75rem;width:100%"/>
     <div id="vt-aprob-lista"></div>
   </div>
 </div>
@@ -632,6 +636,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="page-hdr"><h2>💰 Dietas de Técnicos Distritales</h2><div class="phd-act"><button class="btn btn-amber" onclick="exportarExcelTabla('tb-vt-dietas','DietasTecnicos')">📗 Excel</button></div></div>
   <div class="card">
     <div class="ttbar">
+      <input type="text" id="q-dietas-txt" placeholder="🔍 Buscar técnico..." oninput="calcularDietasVT()"/>
       <input type="month" id="q-dietas-mes" onchange="calcularDietasVT()"/>
     </div>
     <div id="dietas-resumen-sel" style="display:none;font-size:13px;color:var(--text2);margin-bottom:.75rem;padding:10px 14px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -655,6 +660,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div></div>
   <div class="card">
     <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Cada técnico ingresa al sistema con su cédula. Aquí solo registras sus datos básicos — la contraseña la crea él mismo la primera vez que inicia sesión.</p>
+    <input type="text" id="q-tecvt" placeholder="🔍 Buscar técnico por nombre o cédula..." oninput="renderTecnicosVTAdmin()" style="margin-bottom:.75rem;width:100%"/>
     <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem;display:flex;align-items:center;gap:8px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" onclick="selTodo('chk-tecvt',this)" style="width:16px;height:16px"/> Seleccionar todos</label>
       <button class="btn btn-danger btn-xs" id="btn-del-tecnicos" style="display:none" onclick="eliminarSeleccionados('tecnicos','chk-tecvt')">🗑️ Eliminar seleccionados</button>
@@ -676,6 +682,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div>
   <div class="card">
     <div class="chdr">🧾 Cheques pendientes de conciliar</div>
+    <input type="text" id="q-concilia" placeholder="🔍 Buscar por No. cheque o beneficiario..." oninput="cargarConciliacion()" style="margin-bottom:.75rem;width:100%"/>
     <div class="twrap"><table>
       <thead><tr><th>Fecha</th><th>No. Cheque</th><th>Beneficiario</th><th>Monto Neto</th><th>Días</th><th>Acción</th></tr></thead>
       <tbody id="tb-concilia"></tbody>
@@ -687,6 +694,12 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <div id="page-ajustes" class="page">
   <div class="page-hdr"><h2>⚖️ Ajustes Contables</h2><div class="phd-act"><button class="btn btn-primary" onclick="nuevoAjuste()">+ Nuevo ajuste</button></div></div>
   <div class="card">
+    <div class="ttbar">
+      <input type="text" id="q-aj" placeholder="🔍 Buscar ajuste..." oninput="filtrarAjustes()"/>
+      <select id="q-aj-tipo" onchange="filtrarAjustes()"><option value="">Todos</option><option value="Débito">Débito</option><option value="Crédito">Crédito</option></select>
+      <input type="date" id="q-aj-d" onchange="filtrarAjustes()" title="Desde"/>
+      <input type="date" id="q-aj-h" onchange="filtrarAjustes()" title="Hasta"/>
+    </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
       <button class="btn btn-danger btn-xs" id="btn-del-ajustes" style="display:none" onclick="eliminarSeleccionados('ajustes','chk-aj')">🗑️ Eliminar seleccionados</button>
     </div>
@@ -701,6 +714,9 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <div id="page-centros" class="page">
   <div class="page-hdr"><h2>🏫 Centros Educativos Auxiliares</h2><div class="phd-act"><button class="btn btn-primary" onclick="openMod('m-centro')">+ Nuevo centro</button></div></div>
   <div class="card">
+    <div class="ttbar">
+      <input type="text" id="q-cen" placeholder="🔍 Buscar centro..." oninput="filtrarCentros()"/>
+    </div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">
       <button class="btn btn-danger btn-xs" id="btn-del-centros" style="display:none" onclick="eliminarSeleccionados('centros','chk-cen')">🗑️ Eliminar seleccionados</button>
     </div>
@@ -748,42 +764,42 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--blue2)" onclick="generarReporte('balance')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">💰</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Balance General</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Balance General</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Saldos y disponibilidad</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--green2)" onclick="generarReporte('ejecucion')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">📊</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Ejecución Presupuestaria</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Ejecución Presupuestaria</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Por rubro y fuente</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--amber2)" onclick="generarReporte('comprobacion')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">⚖️</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Balance de Comprobación</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Balance de Comprobación</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Débitos vs créditos</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--red2)" onclick="generarReporte('flujo')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">🔄</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Flujo de Efectivo</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Flujo de Efectivo</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Movimiento de fondos</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--navy)" onclick="generarReporte('conciliacion')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">🏦</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Conciliación Bancaria</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Conciliación Bancaria</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Estado formal</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--green2)" onclick="generarReporte('retenciones')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">🧾</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte de Retenciones</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte de Retenciones</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">ITBIS e ISR</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--amber2)" onclick="generarReporte('mensual')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">📅</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte Mensual</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte Mensual</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Resumen del mes</div>
     </div>
     <div class="card" style="cursor:pointer;transition:transform .15s;text-align:center;padding:1.25rem;border-left:4px solid var(--blue2)" onclick="generarReporte('anual')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:36px;margin-bottom:.5rem">📆</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte Anual</div>
+      <div style="font-family:Arial, sans-serif;font-weight:700;color:var(--navy);font-size:13px">Reporte Anual</div>
       <div style="font-size:11px;color:var(--text2);margin-top:3px">Cierre año fiscal</div>
     </div>
   </div>
@@ -898,16 +914,19 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div class="card">
       <div class="chdr">👤 Beneficiarios</div>
       <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-beneficiario')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-beneficiarios" style="display:none" onclick="eliminarSeleccionados('beneficiarios','chk-ben')">🗑️ Eliminar</button></div>
+      <input type="text" id="q-ben" placeholder="🔍 Buscar beneficiario..." oninput="filtrarBeneficiarios()" style="margin-bottom:.5rem;width:100%"/>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-ben',this)" style="width:16px;height:16px"/></th><th>Nombre</th><th>RNC/Cédula</th><th>Dirección</th><th>Acciones</th></tr></thead><tbody id="tb-beneficiarios"></tbody></table></div>
     </div>
     <div class="card">
       <div class="chdr">🏷️ Rubros de gasto (SIGEF)</div>
       <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-rubro')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-rubros" style="display:none" onclick="eliminarSeleccionados('rubros','chk-rub')">🗑️ Eliminar</button></div>
+      <input type="text" id="q-rub" placeholder="🔍 Buscar rubro..." oninput="filtrarRubros()" style="margin-bottom:.5rem;width:100%"/>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-rub',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="tb-rubros"></tbody></table></div>
     </div>
     <div class="card">
       <div class="chdr">💰 Fuentes de ingreso</div>
       <div class="ttbar"><button class="btn btn-success btn-sm" onclick="openMod('m-fuente')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-fuentes" style="display:none" onclick="eliminarSeleccionados('fuentes','chk-fue')">🗑️ Eliminar</button></div>
+      <input type="text" id="q-fue" placeholder="🔍 Buscar fuente..." oninput="filtrarFuentes()" style="margin-bottom:.5rem;width:100%"/>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-fue',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="tb-fuentes"></tbody></table></div>
     </div>
   </div>
@@ -916,7 +935,10 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <!-- USUARIOS -->
 <div id="page-usuarios" class="page">
   <div class="page-hdr"><h2>👥 Usuarios del sistema</h2><div class="phd-act"><button class="btn btn-primary" onclick="nuevoUsuario()">+ Agregar usuario</button><button class="btn btn-danger btn-xs" id="btn-del-usuarios" style="display:none" onclick="eliminarSeleccionados('usuarios','chk-usr')">🗑️ Eliminar seleccionados</button></div></div>
-  <div class="card"><div id="usr-list"></div></div>
+  <div class="card">
+    <input type="text" id="q-usr" placeholder="🔍 Buscar usuario..." oninput="renderUsuarios()" style="margin-bottom:.75rem;width:100%"/>
+    <div id="usr-list"></div>
+  </div>
 </div>
 
 <!-- MANUAL -->
@@ -1395,8 +1417,44 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div class="alert alert-err" id="cheq-err"></div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="guardarCheque()">💾 Guardar cheque</button>
-        <button class="btn btn-amber" id="btn-imprimir-cheque" style="display:none" onclick="imprimirCheque(gv('cheq-id'))">🖨️ Imprimir</button>
+        <button class="btn btn-amber" id="btn-imprimir-cheque" style="display:none" onclick="imprimirCheque(gv('cheq-id'))">🖨️ Imprimir comprobante</button>
+        <button class="btn btn-navy" id="btn-imprimir-cheque-fisico" style="display:none" onclick="imprimirChequeFisico(gv('cheq-id'))">💳 Imprimir en cheque</button>
         <button class="btn" id="btn-cancelar-cheque" onclick="closeMod('m-cheque')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Configuración de impresión de cheque físico -->
+<div class="mbg" id="m-config-imp">
+  <div class="mbox" style="max-width:720px">
+    <div class="mhdr">⚙️ <span>Configurar impresión en cheque pre-impreso</span><button class="mclose" onclick="closeMod('m-config-imp')">✕</button></div>
+    <div class="mbody">
+      <div class="alert" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:1rem">
+        Ajusta la posición (en milímetros, desde la esquina superior izquierda de la hoja) donde debe caer cada dato sobre tu formato de cheque pre-impreso. Usa "Imprimir prueba de alineación" para calibrar contra el papel físico antes de imprimir un cheque real. Esta configuración se guarda en este navegador/computadora.
+      </div>
+      <div class="fgrid" style="margin-bottom:.75rem">
+        <div class="fg"><label>Ancho del papel (mm)</label><input type="number" id="cfgimp-w" step="0.1"/></div>
+        <div class="fg"><label>Alto del papel (mm)</label><input type="number" id="cfgimp-h" step="0.1"/></div>
+        <div class="fg"><label>Fuente</label><select id="cfgimp-font"><option value="Courier New, monospace">Courier New (matricial)</option><option value="Arial, sans-serif">Arial</option></select></div>
+      </div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px" id="tbl-cfgimp">
+        <thead><tr>
+          <th style="text-align:left;padding:6px;border-bottom:2px solid var(--border)">Campo</th>
+          <th style="text-align:left;padding:6px;border-bottom:2px solid var(--border);width:90px">X (mm)</th>
+          <th style="text-align:left;padding:6px;border-bottom:2px solid var(--border);width:90px">Y (mm)</th>
+          <th style="text-align:left;padding:6px;border-bottom:2px solid var(--border);width:80px">Tamaño (pt)</th>
+        </tr></thead>
+        <tbody id="tb-cfgimp"></tbody>
+      </table>
+      </div>
+      <div class="alert alert-err" id="cfgimp-err" style="margin-top:.75rem"></div>
+      <div class="btn-row" style="margin-top:1rem">
+        <button class="btn btn-primary" onclick="guardarConfigImpresionCheque()">💾 Guardar configuración</button>
+        <button class="btn btn-amber" onclick="imprimirPruebaAlineacion()">📐 Imprimir prueba de alineación</button>
+        <button class="btn" onclick="restaurarConfigImpresionChequeDefault()">↺ Restaurar valores por defecto</button>
+        <button class="btn" onclick="closeMod('m-config-imp')">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1699,6 +1757,46 @@ let chartFlujo = null, chartRubros = null;
 // HELPERS
 // ═══════════════════════════════════════════════
 const RD = n => 'RD$ ' + parseFloat(n||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// Generador de vista/impresión de detalle genérico para registros de catálogo (ajustes, centros, beneficiarios, rubros, fuentes, usuarios)
+function generarHTMLDetalleGenerico(titulo, subtitulo, campos, autoPrint){
+  const filas=campos.map(c=>`<div class="campo"><label>${c.label}</label><div class="val">${c.value!==undefined&&c.value!==null&&c.value!==''?c.value:'—'}</div></div>`).join('');
+  return `
+    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+    <title>${titulo}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#0f172a;padding:2rem;max-width:650px;margin:0 auto}
+      .hdr{text-align:center;border-bottom:3px solid #071e3d;padding-bottom:1rem;margin-bottom:1.5rem}
+      .hdr h1{font-size:17px;color:#071e3d;margin:0 0 4px}
+      .hdr p{font-size:12px;color:#475569;margin:0}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+      .campo label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#475569;font-weight:bold;margin-bottom:2px}
+      .campo .val{font-size:14px;color:#0f172a}
+      .footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #ddd;font-size:10px;color:#94a3b8;text-align:center}
+      .toolbar{text-align:center;margin-bottom:1.5rem}
+      .toolbar button{background:#1565c0;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer}
+      @media print{ body{padding:1rem} .toolbar{display:none} }
+    </style></head><body>
+    ${autoPrint?'':'<div class="toolbar"><button onclick="window.print()">🖨️ Imprimir</button></div>'}
+    <div class="hdr">
+      <h1>${titulo} — Distrito Educativo 16-06</h1>
+      <p>${subtitulo||'Bonao Nordeste, Monseñor Nouel, R.D.'}</p>
+    </div>
+    <div class="grid">${filas}</div>
+    <div class="footer">Documento generado por el Sistema Financiero del Distrito 16-06 — ${new Date().toLocaleDateString('es-DO')}</div>
+  `;
+}
+function verRegistroGenerico(titulo, subtitulo, campos){
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLDetalleGenerico(titulo,subtitulo,campos,false)+'</body></html>');
+  w.document.close();
+}
+function imprimirRegistroGenerico(titulo, subtitulo, campos){
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLDetalleGenerico(titulo,subtitulo,campos,true)+`<` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script></body></html>`);
+  w.document.close();
+}
+
 const gv = id => (document.getElementById(id)||{}).value||'';
 const sv = (id,v) => { const e=document.getElementById(id); if(e) e.value=v; };
 const ssv = (id,v) => { const e=document.getElementById(id); if(!e) return; for(let i=0;i<e.options.length;i++) if(e.options[i].value===v||e.options[i].text===v){e.selectedIndex=i;break;} };
@@ -1956,7 +2054,7 @@ function selTodo(cls,chk){
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
     'chk-usr':'btn-del-usuarios'
   };
-  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':undefined);
+  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined);
 }
 async function actualizarBtnBulk(cls,btnId,extraBtnId){
   const sel=document.querySelectorAll('.'+cls+':checked').length;
@@ -2496,7 +2594,7 @@ function compartirFin(){
 }
 function mostrarToastFin(msg){
   let t=document.getElementById('toast-fin');
-  if(!t){ t=document.createElement('div'); t.id='toast-fin'; t.style.cssText='position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90%;text-align:center;font-family:"DM Sans",sans-serif'; document.body.appendChild(t); }
+  if(!t){ t=document.createElement('div'); t.id='toast-fin'; t.style.cssText='position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90%;text-align:center;font-family:Arial, sans-serif'; document.body.appendChild(t); }
   t.textContent=msg; t.style.display='block';
   setTimeout(()=>{ t.style.display='none'; },4000);
 }
@@ -2505,13 +2603,13 @@ function mostrarModalCompartirFin(url){
   const m=document.createElement('div'); m.id='modal-compartir-fin';
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem';
   m.innerHTML=`<div style="background:#fff;border-radius:20px;padding:2rem;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--navy);margin-bottom:.5rem">🔗 Compartir sistema</h3>
+    <h3 style="font-family:Arial, sans-serif;font-size:18px;font-weight:800;color:var(--navy);margin-bottom:.5rem">🔗 Compartir sistema</h3>
     <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Copia este enlace y compártelo por WhatsApp, correo o cualquier medio:</p>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--navy);word-break:break-all;font-family:monospace;margin-bottom:1rem">${url}</div>
     <div style="display:flex;flex-direction:column;gap:.6rem">
-      <button onclick="navigator.clipboard.writeText('${url}').then(()=>mostrarToastFin('✅ Enlace copiado'));document.getElementById('modal-compartir-fin').remove()" style="padding:12px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">📋 Copiar enlace</button>
-      <a href="https://wa.me/?text=${encodeURIComponent('💰 Sistema Financiero - Distrito 16-06 Bonao\n\nAccede desde cualquier dispositivo:\n'+url)}" target="_blank" style="display:block;padding:12px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;text-align:center">📲 Compartir por WhatsApp</a>
-      <button onclick="document.getElementById('modal-compartir-fin').remove()" style="padding:10px;background:var(--surface2);color:var(--text2);border:none;border-radius:10px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Cerrar</button>
+      <button onclick="navigator.clipboard.writeText('${url}').then(()=>mostrarToastFin('✅ Enlace copiado'));document.getElementById('modal-compartir-fin').remove()" style="padding:12px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:Arial, sans-serif">📋 Copiar enlace</button>
+      <a href="https://wa.me/?text=${encodeURIComponent('💰 Sistema Financiero - Distrito 16-06 Bonao\n\nAccede desde cualquier dispositivo:\n'+url)}" target="_blank" style="display:block;padding:12px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:Arial, sans-serif;text-decoration:none;text-align:center">📲 Compartir por WhatsApp</a>
+      <button onclick="document.getElementById('modal-compartir-fin').remove()" style="padding:10px;background:var(--surface2);color:var(--text2);border:none;border-radius:10px;font-size:13px;cursor:pointer;font-family:Arial, sans-serif">Cerrar</button>
     </div>
   </div>`;
   document.body.appendChild(m);
@@ -2614,6 +2712,7 @@ function openNuevoCronogramaVT(){
 }
 
 async function guardarCronogramaVT(){
+  const eid=gv('cronvt-eid');
   const centro_id=gv('cronvt-centro'), fecha=gv('cronvt-fecha'), tipo_trabajo=gv('cronvt-tipo'), descripcion=gv('cronvt-desc').trim();
   const errEl=document.getElementById('cronvt-err'); hide('cronvt-err');
 
@@ -2622,12 +2721,16 @@ async function guardarCronogramaVT(){
   if(tipo_trabajo==='acompanamiento'){
     if(!esDiaPermitidoAcompVT(fecha)){ errEl.textContent='El acompañamiento pedagógico solo puede planificarse martes, miércoles o jueves.'; show('cronvt-err'); return; }
     const semana=semanaISO(fecha);
-    const yaEnSemana=CRONOGRAMA_VT.filter(c=>String(c.tecnico_id)===String(CU.tecnico_id) && c.tipo_trabajo==='acompanamiento' && semanaISO(c.fecha)===semana).length;
+    const yaEnSemana=CRONOGRAMA_VT.filter(c=>String(c.tecnico_id)===String(CU.tecnico_id) && c.tipo_trabajo==='acompanamiento' && semanaISO(c.fecha)===semana && String(c.id)!==String(eid)).length;
     if(yaEnSemana>=3){ errEl.textContent='Ya tienes 3 acompañamientos planificados esta semana (máximo permitido).'; show('cronvt-err'); return; }
   }
 
   try{
-    await sb.from('cronograma_vt').insert({tecnico_id:CU.tecnico_id,centro_id,fecha,tipo_trabajo,descripcion:descripcion||null,estado:'planificada'});
+    if(eid){
+      await sb.from('cronograma_vt').update({centro_id,fecha,tipo_trabajo,descripcion:descripcion||null}).eq('id',eid);
+    } else {
+      await sb.from('cronograma_vt').insert({tecnico_id:CU.tecnico_id,centro_id,fecha,tipo_trabajo,descripcion:descripcion||null,estado:'planificada'});
+    }
     await cargarCronogramaVT();
     closeMod('m-cronograma-vt');
     renderCronogramaVT();
@@ -2668,8 +2771,10 @@ function renderCronogramaVT(){
 
 function filtrarCronogramaVT(){
   const semana=gv('q-cron-semana');
+  const q=(gv('q-cron-txt')||'').toLowerCase();
   let lista=[...CRONOGRAMA_VT];
   if(semana) lista=lista.filter(c=>semanaISO(c.fecha)===semana.replace('-W','-W'));
+  if(q) lista=lista.filter(c=>(nombreCentroVT(c.centro_id)+' '+nombreTipoTrabajoVT(c.tipo_trabajo)+' '+(c.descripcion||'')).toLowerCase().includes(q));
   const tbody=document.getElementById('tb-cron-vt');
   if(!tbody) return;
   tbody.innerHTML=lista.map(c=>`
@@ -2681,9 +2786,37 @@ function filtrarCronogramaVT(){
       <td>${nombreTipoTrabajoVT(c.tipo_trabajo)}</td>
       <td>${c.descripcion||'—'}</td>
       <td>${badgeEstadoCronoVT(c.estado)}</td>
-      <td>${c.estado==='planificada'?`<button class="btn btn-danger btn-sm" onclick="eliminarCronogramaVT('${c.id}')">✕</button>`:'—'}</td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-xs" onclick="verCronogramaVT('${c.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirCronogramaVT('${c.id}')" title="Imprimir">🖨️</button>
+        ${c.estado==='planificada'?`<button class="btn btn-xs btn-primary" onclick="editarCronogramaVT('${c.id}')" title="Editar">✏️</button><button class="btn btn-xs btn-danger" onclick="eliminarCronogramaVT('${c.id}')" title="Eliminar">✕</button>`:''}
+      </div></td>
     </tr>
   `).join('') || `<tr><td colspan="8" class="erow">No hay visitas planificadas. Usa "+ Planificar visita" para agregar.</td></tr>`;
+}
+function camposCronogramaVT(c){
+  return [
+    {label:'Fecha',value:fechaHVT(c.fecha)},
+    {label:'Día',value:nombreDiaVT(c.fecha)},
+    {label:'Centro',value:nombreCentroVT(c.centro_id)},
+    {label:'Tipo de trabajo',value:nombreTipoTrabajoVT(c.tipo_trabajo)},
+    {label:'Descripción',value:c.descripcion},
+    {label:'Estado',value:({planificada:'Planificada',ejecutada:'Ejecutada',no_ejecutada:'No ejecutada'})[c.estado]||c.estado}
+  ];
+}
+function verCronogramaVT(id){ const c=CRONOGRAMA_VT.find(x=>String(x.id)===String(id)); if(!c) return; verRegistroGenerico('Planificación de Visita','Detalle de la planificación',camposCronogramaVT(c)); }
+function imprimirCronogramaVT(id){ const c=CRONOGRAMA_VT.find(x=>String(x.id)===String(id)); if(!c) return; imprimirRegistroGenerico('Planificación de Visita','Detalle de la planificación',camposCronogramaVT(c)); }
+function editarCronogramaVT(id){
+  const c=CRONOGRAMA_VT.find(x=>String(x.id)===String(id));
+  if(!c) return;
+  sv('cronvt-eid',c.id); sv('cronvt-fecha',c.fecha); sv('cronvt-desc',c.descripcion||'');
+  ssv('cronvt-tipo',c.tipo_trabajo);
+  document.getElementById('cronvt-desc-wrap').style.display=c.tipo_trabajo!=='acompanamiento'?'':'none';
+  const selCen=document.getElementById('cronvt-centro');
+  selCen.innerHTML='<option value="">Seleccionar centro...</option>'+CENTROS.map(ce=>`<option value="${ce.id}">${UP(ce.nombre)}</option>`).join('');
+  ssv('cronvt-centro',String(c.centro_id));
+  document.getElementById('m-cronvt-hdr').childNodes[0].textContent='🗓️ Editar visita planificada';
+  hide('cronvt-err'); openMod('m-cronograma-vt');
 }
 
 function renderCronogramaAdminVT(){
@@ -2695,9 +2828,11 @@ function renderCronogramaAdminVT(){
 }
 function filtrarCronogramaAdminVT(){
   const tec=gv('q-cron-adm-tec'); const semana=gv('q-cron-adm-semana');
+  const q=(gv('q-cron-adm-txt')||'').toLowerCase();
   let lista=[...CRONOGRAMA_VT];
   if(tec) lista=lista.filter(c=>String(c.tecnico_id)===String(tec));
   if(semana) lista=lista.filter(c=>semanaISO(c.fecha)===semana);
+  if(q) lista=lista.filter(c=>(nombreCentroVT(c.centro_id)+' '+(c.descripcion||'')).toLowerCase().includes(q));
   const tbody=document.getElementById('tb-cron-vt-admin');
   if(!tbody) return;
   tbody.innerHTML=lista.map(c=>`
@@ -2709,8 +2844,12 @@ function filtrarCronogramaAdminVT(){
       <td>${nombreTipoTrabajoVT(c.tipo_trabajo)}</td>
       <td>${c.descripcion||'—'}</td>
       <td>${badgeEstadoCronoVT(c.estado)}</td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-xs" onclick="verCronogramaVT('${c.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirCronogramaVT('${c.id}')" title="Imprimir">🖨️</button>
+      </div></td>
     </tr>
-  `).join('') || `<tr><td colspan="7" class="erow">No hay datos con estos filtros.</td></tr>`;
+  `).join('') || `<tr><td colspan="8" class="erow">No hay datos con estos filtros.</td></tr>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -2766,9 +2905,38 @@ function filtrarFichasVT(){
       <td>${v.foto_url?'📷':'<span style="color:var(--text3)">Sin foto</span>'}</td>
       <td>${badgeVT(v.estado)}</td>
       <td>${v.estado==='pendiente'?'—':RD(montoDietaCentro(v.centro_id))}</td>
-      <td><button class="btn btn-sm" onclick="verFichaVT('${v.id}')">Ver</button></td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-xs" onclick="verFichaVT('${v.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="exportarFichaPDF('${v.id}')" title="Imprimir">🖨️</button>
+        ${(v.estado==='pendiente'&&(CU.rol!=='tecnico'||String(v.tecnico_id)===String(CU.tecnico_id)))?`<button class="btn btn-xs btn-primary" onclick="editarFichaVT('${v.id}')" title="Editar">✏️</button>`:''}
+      </div></td>
     </tr>
   `).join('') || `<tr><td colspan="9" class="erow">No hay fichas registradas con estos filtros.</td></tr>`;
+}
+
+function editarFichaVT(id){
+  const v=VISITAS_VT.find(x=>String(x.id)===String(id));
+  if(!v) return;
+  document.getElementById('vt-ficha-id').value=v.id;
+  sv('vt-fecha', v.fecha);
+  sv('vt-obs', v.observaciones||'');
+  ssv('vt-tipo', v.tipo||'Acompañamiento pedagógico');
+  document.getElementById('vt-foto-preview').innerHTML=v.foto_url?`<img src="${v.foto_url}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--border)"/>`:'';
+  document.getElementById('vt-foto-input').value='';
+  window.VT_FOTO_FILE=null;
+  const selTec=document.getElementById('vt-tecnico-sel');
+  const selCen=document.getElementById('vt-centro-sel');
+  if(CU.rol==='tecnico'){
+    document.getElementById('vt-campo-tecnico').style.display='none';
+  } else {
+    document.getElementById('vt-campo-tecnico').style.display='';
+    selTec.innerHTML='<option value="">Seleccionar técnico...</option>'+TECNICOS_VT.filter(t=>t.activo!==false).map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+    ssv('vt-tecnico-sel', String(v.tecnico_id));
+  }
+  selCen.innerHTML='<option value="">Seleccionar centro...</option>'+CENTROS.map(c=>`<option value="${c.id}">${UP(c.nombre)}</option>`).join('');
+  ssv('vt-centro-sel', String(v.centro_id));
+  document.getElementById('vt-ficha-err').style.display='none';
+  openMod('m-ficha-vt');
 }
 
 function openNuevaFichaVT(){
@@ -2952,7 +3120,9 @@ async function cambiarEstadoVT(id,nuevoEstado){
 }
 
 function renderAprobacionesVT(){
-  const pendientes=VISITAS_VT.filter(v=>v.estado==='pendiente');
+  const q=(gv('q-aprob-vt')||'').toLowerCase();
+  let pendientes=VISITAS_VT.filter(v=>v.estado==='pendiente');
+  if(q) pendientes=pendientes.filter(v=>(nombreTecnicoVT(v.tecnico_id)+' '+nombreCentroVT(v.centro_id)).toLowerCase().includes(q));
   const cont=document.getElementById('vt-aprob-lista');
   if(!cont) return;
   if(!pendientes.length){ cont.innerHTML=`<div class="erow">✅ No hay fichas pendientes. Todo al día.</div>`; return; }
@@ -2964,7 +3134,8 @@ function renderAprobacionesVT(){
           <span style="font-size:12px;color:var(--text2)">${fechaHVT(v.fecha)} · ${v.tipo||'—'}</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-sm" onclick="verFichaVT('${v.id}')">Ver ficha</button>
+          <button class="btn btn-sm" onclick="verFichaVT('${v.id}')" title="Ver detalles">👁️ Ver ficha</button>
+          <button class="btn btn-amber btn-sm" onclick="exportarFichaPDF('${v.id}')" title="Imprimir">🖨️</button>
           <button class="btn btn-success btn-sm" onclick="cambiarEstadoVT('${v.id}','aprobada')">✓ Aprobar</button>
           <button class="btn btn-danger btn-sm" onclick="cambiarEstadoVT('${v.id}','rechazada')">✕ Rechazar</button>
         </div>
@@ -2986,7 +3157,9 @@ function calcularDietasVT(){
     if(v.estado==='pagada'){ porTec[v.tecnico_id].pag++; porTec[v.tecnico_id].montoPag+=monto; }
   });
   const tbody=document.getElementById('tb-vt-dietas');
-  const filas=Object.entries(porTec).filter(([,d])=>d.aprob>0||d.pag>0);
+  const q=(gv('q-dietas-txt')||'').toLowerCase();
+  window.VT_DIETAS_RESUMEN=porTec;
+  const filas=Object.entries(porTec).filter(([,d])=>(d.aprob>0||d.pag>0)&&(!q||d.nombre.toLowerCase().includes(q)));
   if(!tbody) return;
   if(!filas.length){ tbody.innerHTML=`<tr><td colspan="7" class="erow">No hay datos para este período</td></tr>`; document.getElementById('dietas-resumen-sel').style.display='none'; return; }
   tbody.innerHTML=filas.map(([id,d])=>`
@@ -2997,9 +3170,11 @@ function calcularDietasVT(){
       <td>${d.pag}</td>
       <td>${RD(d.montoAprob)}</td>
       <td>${RD(d.montoPag)}</td>
-      <td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button class="btn btn-xs" onclick="verResumenDietaVT('${id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirResumenDietaVT('${id}')" title="Imprimir">🖨️</button>
         ${d.aprob>0?`<button class="btn btn-amber btn-sm" onclick="generarChequeDietaVT('${id}')">🧾 Cheque individual</button>`:''}
-      </td>
+      </div></td>
     </tr>
   `).join('');
   actualizarResumenSeleccionDietas();
@@ -3010,6 +3185,19 @@ function toggleTodosDietas(chkAll){
   actualizarResumenSeleccionDietas();
 }
 
+function camposResumenDietaVT(id){
+  const d=(window.VT_DIETAS_RESUMEN||{})[id];
+  if(!d) return null;
+  return [
+    {label:'Técnico',value:d.nombre},
+    {label:'Fichas aprobadas',value:d.aprob},
+    {label:'Fichas pagadas',value:d.pag},
+    {label:'Monto pendiente',value:RD(d.montoAprob)},
+    {label:'Monto pagado',value:RD(d.montoPag)}
+  ];
+}
+function verResumenDietaVT(id){ const c=camposResumenDietaVT(id); if(!c) return; verRegistroGenerico('Resumen de Dietas','Detalle por técnico',c); }
+function imprimirResumenDietaVT(id){ const c=camposResumenDietaVT(id); if(!c) return; imprimirRegistroGenerico('Resumen de Dietas','Detalle por técnico',c); }
 function actualizarResumenSeleccionDietas(){
   const mes=gv('q-dietas-mes');
   const seleccionados=[...document.querySelectorAll('.chk-dieta-tec:checked')].map(c=>c.value);
@@ -3364,7 +3552,8 @@ function renderCheques(data){
     <td><span class="badge ${c.estado==='Activo'?'b-act':c.estado==='Anulado'?'b-anu':'b-con'}">${c.estado}</span>${c.conciliado?'<span class="badge b-con" style="margin-left:3px;font-size:9px">✓</span>':''}</td>
     <td><div style="display:flex;gap:3px">
       <button class="btn btn-xs" onclick="verCheque('${c.id}')" title="Ver detalles">👁️</button>
-      <button class="btn btn-xs btn-amber" onclick="imprimirCheque('${c.id}')" title="Imprimir">🖨️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirCheque('${c.id}')" title="Imprimir comprobante">🖨️</button>
+      <button class="btn btn-xs btn-navy" onclick="imprimirChequeFisico('${c.id}')" title="Imprimir en cheque pre-impreso">💳</button>
       ${isAdmin&&c.estado==='Activo'?`<button class="btn btn-xs btn-primary" onclick="editarCheque('${c.id}')" title="Editar">✏️</button>`:''}
       ${isAdmin&&c.estado==='Activo'?`<button class="btn btn-xs btn-amber" onclick="conciliarCheque('${c.id}')" title="Conciliar">✓</button>`:''}
       ${CU&&CU.rol==='admin'&&c.estado==='Activo'?`<button class="btn btn-xs btn-danger" onclick="anularCheque('${c.id}')" title="Anular">🚫</button>`:''}
@@ -3398,6 +3587,7 @@ async function openNuevoCheque(){
   ssv('cheq-rubro',''); ssv('cheq-centro','');
   document.getElementById('m-cheq-tit').textContent='Nuevo Cheque';
   const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='none';
+  const btnImpFis=document.getElementById('btn-imprimir-cheque-fisico'); if(btnImpFis) btnImpFis.style.display='none';
   const btnCan=document.getElementById('btn-cancelar-cheque'); if(btnCan) btnCan.textContent='Cancelar';
   await poblarSelectRubros();
   await poblarSelectCentros();
@@ -3529,6 +3719,7 @@ async function guardarCheque(){
     sv('cheq-id', chequeIdFinal);
     document.getElementById('m-cheq-tit').textContent='Cheque guardado ✓';
     const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='inline-flex';
+    const btnImpFis=document.getElementById('btn-imprimir-cheque-fisico'); if(btnImpFis) btnImpFis.style.display='inline-flex';
     const btnCan=document.getElementById('btn-cancelar-cheque'); if(btnCan) btnCan.textContent='Cerrar';
     mostrarToastFin('✅ Cheque guardado. Puedes imprimirlo ahora o cerrar.');
   } else {
@@ -3642,6 +3833,164 @@ function imprimirChequesSeleccionados(){
   w.document.close();
 }
 
+// ===================== IMPRESIÓN SOBRE CHEQUE PRE-IMPRESO (matricial) =====================
+const CFGIMP_UNIDADES=[
+  {key:'stub_fecha',label:'Talón — Fecha',x:12,y:20,size:9},
+  {key:'stub_concepto',label:'Talón — Concepto',x:45,y:20,size:9},
+  {key:'stub_valor',label:'Talón — Valor',x:190,y:20,size:9},
+  {key:'dia',label:'Cheque — Día',x:196,y:60,size:10},
+  {key:'mes',label:'Cheque — Mes',x:210,y:60,size:10},
+  {key:'anio',label:'Cheque — Año',x:224,y:60,size:10},
+  {key:'beneficiario',label:'Cheque — Beneficiario',x:35,y:82,size:11},
+  {key:'monto_numerico',label:'Cheque — Monto (RD$)',x:195,y:75,size:11},
+  {key:'monto_letras',label:'Cheque — Monto en letras',x:12,y:92,size:9},
+  {key:'concepto',label:'Cheque — Concepto/Memo',x:12,y:118,size:8}
+];
+function configImpresionChequeDefault(){
+  const campos={};
+  CFGIMP_UNIDADES.forEach(c=>{ campos[c.key]={x:c.x,y:c.y,size:c.size}; });
+  return { w:241.3, h:139.7, font:'Courier New, monospace', campos };
+}
+function getConfigImpresionCheque(){
+  try{
+    const raw=localStorage.getItem('cfg_impresion_cheque');
+    if(!raw) return configImpresionChequeDefault();
+    const parsed=JSON.parse(raw);
+    const def=configImpresionChequeDefault();
+    return { w:parsed.w||def.w, h:parsed.h||def.h, font:parsed.font||def.font, campos:Object.assign({},def.campos,parsed.campos||{}) };
+  }catch(e){ return configImpresionChequeDefault(); }
+}
+function guardarConfigImpresionChequeStorage(cfg){
+  try{ localStorage.setItem('cfg_impresion_cheque', JSON.stringify(cfg)); return true; }catch(e){ return false; }
+}
+function abrirConfigImpresionCheque(){
+  const cfg=getConfigImpresionCheque();
+  sv('cfgimp-w',cfg.w); sv('cfgimp-h',cfg.h); ssv('cfgimp-font',cfg.font);
+  const tb=document.getElementById('tb-cfgimp');
+  tb.innerHTML=CFGIMP_UNIDADES.map(c=>{
+    const v=cfg.campos[c.key]||{x:c.x,y:c.y,size:c.size};
+    return `<tr>
+      <td style="padding:5px 6px;border-bottom:1px solid var(--border)">${c.label}</td>
+      <td style="padding:5px 6px;border-bottom:1px solid var(--border)"><input type="number" step="0.5" value="${v.x}" data-campo="${c.key}" data-attr="x" class="cfgimp-input" style="width:80px"/></td>
+      <td style="padding:5px 6px;border-bottom:1px solid var(--border)"><input type="number" step="0.5" value="${v.y}" data-campo="${c.key}" data-attr="y" class="cfgimp-input" style="width:80px"/></td>
+      <td style="padding:5px 6px;border-bottom:1px solid var(--border)"><input type="number" step="0.5" value="${v.size}" data-campo="${c.key}" data-attr="size" class="cfgimp-input" style="width:70px"/></td>
+    </tr>`;
+  }).join('');
+  openMod('m-config-imp');
+}
+function leerConfigImpresionChequeDesdeForm(){
+  const cfg={ w:parseFloat(gv('cfgimp-w')||241.3), h:parseFloat(gv('cfgimp-h')||139.7), font:gv('cfgimp-font')||'Courier New, monospace', campos:{} };
+  document.querySelectorAll('.cfgimp-input').forEach(inp=>{
+    const campo=inp.dataset.campo, attr=inp.dataset.attr;
+    if(!cfg.campos[campo]) cfg.campos[campo]={x:0,y:0,size:10};
+    cfg.campos[campo][attr]=parseFloat(inp.value||0);
+  });
+  return cfg;
+}
+function guardarConfigImpresionCheque(){
+  const cfg=leerConfigImpresionChequeDesdeForm();
+  const ok=guardarConfigImpresionChequeStorage(cfg);
+  const e=document.getElementById('cfgimp-err');
+  if(ok){ hide('cfgimp-err'); mostrarToastFin('✅ Configuración de impresión guardada.'); }
+  else { e.textContent='No se pudo guardar la configuración en este navegador.'; show('cfgimp-err'); }
+}
+function restaurarConfigImpresionChequeDefault(){
+  if(!confirm('¿Restaurar las posiciones por defecto? Se perderá tu ajuste actual.')) return;
+  guardarConfigImpresionChequeStorage(configImpresionChequeDefault());
+  abrirConfigImpresionCheque();
+}
+
+const UNIDADES_LETRAS=['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE','VEINTE','VEINTIUNO','VEINTIDÓS','VEINTITRÉS','VEINTICUATRO','VEINTICINCO','VEINTISÉIS','VEINTISIETE','VEINTIOCHO','VEINTINUEVE'];
+const DECENAS_LETRAS={3:'TREINTA',4:'CUARENTA',5:'CINCUENTA',6:'SESENTA',7:'SETENTA',8:'OCHENTA',9:'NOVENTA'};
+const CENTENAS_LETRAS=['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+function num99ALetras(n){
+  if(n<=29) return UNIDADES_LETRAS[n];
+  const d=Math.floor(n/10), u=n%10;
+  return u>0?DECENAS_LETRAS[d]+' Y '+UNIDADES_LETRAS[u]:DECENAS_LETRAS[d];
+}
+function num999ALetras(n){
+  if(n===100) return 'CIEN';
+  const c=Math.floor(n/100), r=n%100;
+  let s='';
+  if(c>0) s+=CENTENAS_LETRAS[c]+(r>0?' ':'');
+  if(r>0) s+=num99ALetras(r);
+  return s;
+}
+function numeroALetras(n){
+  n=Math.floor(Math.abs(n));
+  if(n===0) return 'CERO';
+  const millones=Math.floor(n/1000000);
+  const miles=Math.floor((n%1000000)/1000);
+  const resto=n%1000;
+  let partes=[];
+  if(millones>0) partes.push((millones===1?'UN MILLÓN':num999ALetras(millones)+' MILLONES'));
+  if(miles>0) partes.push((miles===1?'MIL':num999ALetras(miles)+' MIL'));
+  if(resto>0||partes.length===0) partes.push(num999ALetras(resto));
+  return partes.join(' ').replace(/\s+/g,' ').trim();
+}
+function montoEnLetras(monto){
+  const entero=Math.floor(monto);
+  const centavos=Math.round((monto-entero)*100);
+  return `${numeroALetras(entero)} PESOS DOMINICANOS CON ${String(centavos).padStart(2,'0')}/100`;
+}
+
+function generarHTMLChequeFisico(c){
+  const cfg=getConfigImpresionCheque();
+  const fecha=new Date(c.fecha+'T00:00:00');
+  const dia=String(fecha.getDate()).padStart(2,'0');
+  const mes=String(fecha.getMonth()+1).padStart(2,'0');
+  const anio=String(fecha.getFullYear());
+  const valores={
+    stub_fecha:fecha.toLocaleDateString('es-DO'),
+    stub_concepto:c.concepto,
+    stub_valor:RD(c.monto_neto),
+    dia, mes, anio,
+    beneficiario:c.beneficiario,
+    monto_numerico:RD(c.monto_neto),
+    monto_letras:montoEnLetras(parseFloat(c.monto_neto||0)),
+    concepto:c.concepto
+  };
+  const capas=CFGIMP_UNIDADES.map(campo=>{
+    const pos=cfg.campos[campo.key]||{x:campo.x,y:campo.y,size:campo.size};
+    const texto=(valores[campo.key]||'').toString();
+    return `<div style="position:absolute;left:${pos.x}mm;top:${pos.y}mm;font-size:${pos.size}pt;white-space:nowrap;font-family:${cfg.font}">${texto}</div>`;
+  }).join('');
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Cheque ${c.num_cheque}</title>
+    <style>
+      @page{ size:${cfg.w}mm ${cfg.h}mm; margin:0; }
+      body{ margin:0; padding:0; }
+      .hoja{ position:relative; width:${cfg.w}mm; height:${cfg.h}mm; }
+    </style></head><body>
+    <div class="hoja">${capas}</div>
+    <` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script>
+    </body></html>`;
+}
+function imprimirChequeFisico(id){
+  const c=CHEQUES.find(x=>String(x.id)===String(id));
+  if(!c){ alert('Guarda el cheque primero antes de imprimir.'); return; }
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLChequeFisico(c));
+  w.document.close();
+}
+function imprimirPruebaAlineacion(){
+  const cfg=leerConfigImpresionChequeDesdeForm();
+  const capas=CFGIMP_UNIDADES.map(campo=>{
+    const pos=cfg.campos[campo.key]||{x:campo.x,y:campo.y,size:campo.size};
+    return `<div style="position:absolute;left:${pos.x}mm;top:${pos.y}mm;font-size:${pos.size}pt;white-space:nowrap;font-family:${cfg.font};border:1px dashed #999;padding:1px 2px">${campo.label}</div>`;
+  }).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Prueba de alineación</title>
+    <style>
+      @page{ size:${cfg.w}mm ${cfg.h}mm; margin:0; }
+      body{ margin:0; padding:0; }
+      .hoja{ position:relative; width:${cfg.w}mm; height:${cfg.h}mm; background-image:linear-gradient(to right, #eee 1px, transparent 1px),linear-gradient(to bottom, #eee 1px, transparent 1px); background-size:10mm 10mm; }
+    </style></head><body>
+    <div class="hoja">${capas}</div>
+    <` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script>
+    </body></html>`);
+  w.document.close();
+}
+
 async function anularCheque(id){
   const c=CHEQUES.find(x=>x.id===id);
   if(!confirm('¿Anular el cheque '+c.num_cheque+' de '+c.beneficiario+'?')) return;
@@ -3666,7 +4015,7 @@ function renderIngresos(data){
   if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="13">Sin ingresos registrados</td></tr>'; return; }
   const isAdmin=CU&&(CU.rol==='admin'||CU.rol==='supervisor');
   tb.innerHTML=data.map((i,idx)=>`<tr>
-    <td><input type="checkbox" class="chk-ing" value="${i.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-ing','btn-del-ingresos')"/></td>
+    <td><input type="checkbox" class="chk-ing" value="${i.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-ing','btn-del-ingresos','btn-imp-ingresos')"/></td>
     <td style="color:var(--text3)">${idx+1}</td>
     <td>${new Date(i.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
     <td><strong>${i.num_deposito}</strong></td>
@@ -3679,6 +4028,8 @@ function renderIngresos(data){
     <td><span class="badge ${i.estado==='Activo'?'b-act':'b-anu'}">${i.estado}</span></td>
     <td style="font-size:11px;color:var(--text3)">${i.registrado_por||'—'}</td>
     <td><div style="display:flex;gap:3px">
+      <button class="btn btn-xs" onclick="verIngreso('${i.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirIngreso('${i.id}')" title="Imprimir">🖨️</button>
       ${isAdmin&&i.estado==='Activo'?`<button class="btn btn-xs btn-primary" onclick="editarIngreso('${i.id}')" title="Editar">✏️</button>`:''}
       ${isAdmin&&i.estado==='Activo'?`<button class="btn btn-xs btn-danger" onclick="anularIngreso('${i.id}')" title="Anular">🚫</button>`:''}
     </div></td>
@@ -3687,13 +4038,76 @@ function renderIngresos(data){
 
 
 function filtrarIngresos(){
-  const q=gv('q-ing').toLowerCase(), dd=gv('q-ing-d'), dh=gv('q-ing-h');
+  const q=gv('q-ing').toLowerCase(), est=gv('q-ing-est'), dd=gv('q-ing-d'), dh=gv('q-ing-h');
   renderIngresos(INGRESOS.filter(i=>{
-    const mq=!q||[i.num_deposito,i.fuente_nombre,i.concepto].some(f=>(f||'').toLowerCase().includes(q));
-    return mq&&(!dd||i.fecha>=dd)&&(!dh||i.fecha<=dh);
+    const mq=!q||[i.num_deposito,i.fuente_nombre,i.concepto,i.beneficiario].some(f=>(f||'').toLowerCase().includes(q));
+    return mq&&(!est||i.estado===est)&&(!dd||i.fecha>=dd)&&(!dh||i.fecha<=dh);
   }));
 }
 
+function generarHTMLComprobanteIngreso(i, autoPrint){
+  return `
+    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+    <title>Comprobante de Ingreso ${i.num_deposito}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#0f172a;padding:2rem;max-width:750px;margin:0 auto}
+      .hdr{text-align:center;border-bottom:3px solid #071e3d;padding-bottom:1rem;margin-bottom:1.5rem}
+      .hdr h1{font-size:18px;color:#071e3d;margin:0 0 4px}
+      .hdr p{font-size:12px;color:#475569;margin:0}
+      .num{text-align:center;font-size:22px;font-weight:bold;color:#15803d;margin:1rem 0}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+      .campo label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#475569;font-weight:bold;margin-bottom:2px}
+      .campo .val{font-size:14px;color:#0f172a}
+      .total{font-size:20px;font-weight:bold;color:#15803d;text-align:right;border-top:2px solid #071e3d;padding-top:.75rem;margin-top:1rem}
+      .footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #ddd;font-size:10px;color:#94a3b8;text-align:center}
+      .toolbar{text-align:center;margin-bottom:1.5rem}
+      .toolbar button{background:#15803d;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer}
+      @media print{ body{padding:1rem} .toolbar{display:none} }
+      .pagebreak{page-break-before:always}
+    </style></head><body>
+    ${autoPrint?'':'<div class="toolbar"><button onclick="window.print()">🖨️ Imprimir</button></div>'}
+    <div class="hdr">
+      <h1>Comprobante de Ingreso — Distrito Educativo 16-06</h1>
+      <p>Bonao Nordeste, Monseñor Nouel, R.D.</p>
+    </div>
+    <div class="num">DEPÓSITO No. ${i.num_deposito}</div>
+    <div class="grid">
+      <div class="campo"><label>Fecha</label><div class="val">${new Date(i.fecha+'T00:00:00').toLocaleDateString('es-DO')}</div></div>
+      <div class="campo"><label>Referencia</label><div class="val">${i.referencia||'—'}</div></div>
+      <div class="campo"><label>Fuente</label><div class="val">${i.fuente_nombre||'—'}</div></div>
+      <div class="campo"><label>Beneficiario/Programa</label><div class="val">${i.beneficiario||'—'}</div></div>
+      <div class="campo"><label>Actividad</label><div class="val">${i.actividad||'—'}</div></div>
+      <div class="campo"><label>Estado</label><div class="val">${i.estado}</div></div>
+    </div>
+    <div class="campo" style="margin-bottom:1rem"><label>Concepto</label><div class="val">${i.concepto}</div></div>
+    <div class="total">Monto: ${RD(i.monto)}</div>
+    <div class="footer">Documento generado por el Sistema Financiero del Distrito 16-06 — ${new Date().toLocaleDateString('es-DO')} — Registrado por: ${i.registrado_por||'—'}</div>
+  `;
+}
+function imprimirIngreso(id){
+  const i=INGRESOS.find(x=>String(x.id)===String(id));
+  if(!i){ alert('Guarda el ingreso primero antes de imprimir.'); return; }
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLComprobanteIngreso(i,true)+`<` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script></body></html>`);
+  w.document.close();
+}
+function verIngreso(id){
+  const i=INGRESOS.find(x=>String(x.id)===String(id));
+  if(!i){ alert('Ingreso no encontrado.'); return; }
+  const w=window.open('','_blank');
+  w.document.write(generarHTMLComprobanteIngreso(i,false)+`</body></html>`);
+  w.document.close();
+}
+function imprimirIngresosSeleccionados(){
+  const ids=[...document.querySelectorAll('.chk-ing:checked')].map(cb=>cb.value);
+  if(!ids.length){ alert('Selecciona al menos un ingreso.'); return; }
+  const seleccionados=INGRESOS.filter(i=>ids.includes(String(i.id)));
+  if(!seleccionados.length){ alert('No se encontraron los ingresos seleccionados.'); return; }
+  const w=window.open('','_blank');
+  const bloques=seleccionados.map((i,idx)=>`<div${idx>0?' class="pagebreak"':''}>${generarHTMLComprobanteIngreso(i,true)}</div>`).join('');
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Comprobantes de Ingresos</title></head><body>${bloques}<` + `script>window.onload=function(){setTimeout(function(){window.print()},300)}<` + `/script></body></html>`);
+  w.document.close();
+}
 
 
 async function anularIngreso(id){
@@ -3758,7 +4172,8 @@ function cargarConciliacion(){
   document.getElementById('con-libros').textContent=RD(totalIng-totalEgr);
   document.getElementById('con-transito').textContent=RD(transito);
   document.getElementById('con-banco').textContent=RD(totalIng-totalEgr+transito);
-  const pendientes=CHEQUES.filter(c=>c.estado==='Activo'&&!c.conciliado);
+  const q=(gv('q-concilia')||'').toLowerCase();
+  const pendientes=CHEQUES.filter(c=>c.estado==='Activo'&&!c.conciliado&&(!q||[c.num_cheque,c.beneficiario].some(f=>(f||'').toLowerCase().includes(q))));
   const tb=document.getElementById('tb-concilia');
   if(!pendientes.length){ tb.innerHTML='<tr class="erow"><td colspan="6">No hay cheques pendientes de conciliar ✅</td></tr>'; return; }
   const hoy=new Date();
@@ -3770,7 +4185,11 @@ function cargarConciliacion(){
       <td>${c.beneficiario}</td>
       <td><strong style="color:var(--red2)">${RD(c.monto_neto)}</strong></td>
       <td><span class="badge ${dias>30?'b-anu':dias>15?'b-pen':'b-act'}">${dias} días</span></td>
-      <td><button class="btn btn-success btn-xs" onclick="conciliarCheque('${c.id}')">✓ Conciliar</button></td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-xs" onclick="verCheque('${c.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirCheque('${c.id}')" title="Imprimir">🖨️</button>
+        <button class="btn btn-success btn-xs" onclick="conciliarCheque('${c.id}')">✓ Conciliar</button>
+      </div></td>
     </tr>`;
   }).join('');
 }
@@ -3778,12 +4197,13 @@ function cargarConciliacion(){
 // ═══════════════════════════════════════════════
 // AJUSTES
 // ═══════════════════════════════════════════════
-function renderAjustes(){
+function renderAjustes(data){
+  data=data||AJUSTES;
   const tb=document.getElementById('tb-ajustes');
   const isAdmin=CU&&CU.rol==='admin';
-  if(!AJUSTES.length){ tb.innerHTML='<tr class="erow"><td colspan="8">Sin ajustes registrados</td></tr>'; return; }
-  tb.innerHTML=AJUSTES.map((a,i)=>`<tr>
-    <td><input type="checkbox" class="chk-aj" value="${a.id}" style="width:16px;height:16px;cursor:pointer"/></td>
+  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="8">Sin ajustes registrados</td></tr>'; return; }
+  tb.innerHTML=data.map((a,i)=>`<tr>
+    <td><input type="checkbox" class="chk-aj" value="${a.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-aj','btn-del-ajustes')"/></td>
     <td style="color:var(--text3)">${i+1}</td>
     <td>${new Date(a.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
     <td><span class="badge ${a.tipo_ajuste==='Débito'?'b-anu':'b-act'}">${a.tipo_ajuste}</span></td>
@@ -3791,31 +4211,69 @@ function renderAjustes(){
     <td><strong>${RD(a.monto)}</strong></td>
     <td style="font-size:11px;color:var(--text3)">${a.registrado_por||'—'}</td>
     <td><div style="display:flex;gap:4px">
+      <button class="btn btn-xs" onclick="verAjuste('${a.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirAjuste('${a.id}')" title="Imprimir">🖨️</button>
       ${isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarAjuste('${a.id}')" title="Editar">✏️</button>`:''}
-      ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarAjuste('${a.id}')" title="Eliminar">🗑️</button>`:'—'}
+      ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarAjuste('${a.id}')" title="Eliminar">🗑️</button>`:''}
     </div></td>
   </tr>`).join('');
 }
+function filtrarAjustes(){
+  const q=gv('q-aj').toLowerCase(), tipo=gv('q-aj-tipo'), dd=gv('q-aj-d'), dh=gv('q-aj-h');
+  renderAjustes(AJUSTES.filter(a=>{
+    const mq=!q||[a.concepto,a.registrado_por].some(f=>(f||'').toLowerCase().includes(q));
+    return mq&&(!tipo||a.tipo_ajuste===tipo)&&(!dd||a.fecha>=dd)&&(!dh||a.fecha<=dh);
+  }));
+}
+function camposAjuste(a){
+  return [
+    {label:'Fecha',value:new Date(a.fecha+'T00:00:00').toLocaleDateString('es-DO')},
+    {label:'Tipo',value:a.tipo_ajuste},
+    {label:'Monto',value:RD(a.monto)},
+    {label:'Registrado por',value:a.registrado_por},
+    {label:'Concepto',value:a.concepto}
+  ];
+}
+function verAjuste(id){ const a=AJUSTES.find(x=>String(x.id)===String(id)); if(!a) return; verRegistroGenerico('Ajuste Contable','Detalle del ajuste',camposAjuste(a)); }
+function imprimirAjuste(id){ const a=AJUSTES.find(x=>String(x.id)===String(id)); if(!a) return; imprimirRegistroGenerico('Ajuste Contable','Detalle del ajuste',camposAjuste(a)); }
 
 // ═══════════════════════════════════════════════
 // CENTROS
 // ═══════════════════════════════════════════════
-function renderCentros(){
+function renderCentros(data){
+  data=data||CENTROS;
   const tb=document.getElementById('tb-centros');
   const isAdmin=CU&&CU.rol==='admin';
-  if(!CENTROS.length){ tb.innerHTML='<tr class="erow"><td colspan="7">Sin centros registrados</td></tr>'; return; }
-  tb.innerHTML=CENTROS.map((c,i)=>`<tr>
+  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="6">Sin centros registrados</td></tr>'; return; }
+  tb.innerHTML=data.map((c,i)=>`<tr>
     <td><input type="checkbox" class="chk-cen" value="${c.id}" style="width:16px;height:16px;cursor:pointer"/></td>
     <td><code style="font-size:11px">${c.codigo}</code></td>
     <td><strong>${c.nombre}</strong></td>
     <td>${c.director||'—'}</td>
     <td>${c.zona||'—'}</td>
     <td><div style="display:flex;gap:4px">
+      <button class="btn btn-xs" onclick="verCentro('${c.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirCentro('${c.id}')" title="Imprimir">🖨️</button>
       ${isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarCentro('${c.id}')" title="Editar">✏️</button>`:''}
-      ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarCentro('${c.id}')" title="Eliminar">🗑️</button>`:'—'}
+      ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarCentro('${c.id}')" title="Eliminar">🗑️</button>`:''}
     </div></td>
   </tr>`).join('');
 }
+function filtrarCentros(){
+  const q=gv('q-cen').toLowerCase();
+  renderCentros(CENTROS.filter(c=>!q||[c.codigo,c.nombre,c.director,c.zona].some(f=>(f||'').toLowerCase().includes(q))));
+}
+function camposCentro(c){
+  return [
+    {label:'Código',value:c.codigo},
+    {label:'Nombre del centro',value:c.nombre},
+    {label:'Director',value:c.director},
+    {label:'Zona',value:c.zona},
+    {label:'Monto de dieta',value:c.monto_dieta?RD(c.monto_dieta):null}
+  ];
+}
+function verCentro(id){ const c=CENTROS.find(x=>String(x.id)===String(id)); if(!c) return; verRegistroGenerico('Centro Educativo Auxiliar','Detalle del centro',camposCentro(c)); }
+function imprimirCentro(id){ const c=CENTROS.find(x=>String(x.id)===String(id)); if(!c) return; imprimirRegistroGenerico('Centro Educativo Auxiliar','Detalle del centro',camposCentro(c)); }
 async function guardarCentro(){
   const codigo=UP(gv('cen-codigo')), nombre=UP(gv('cen-nombre'));
   if(!codigo||!nombre) return;
@@ -3832,35 +4290,58 @@ async function eliminarCentro(id){ if(!confirm('¿Eliminar centro?')) return; aw
 // ═══════════════════════════════════════════════
 function renderCatalogos(){
   const isAdmin=CU&&CU.rol==='admin';
-  const acts=(isAdmin?'<button class="btn btn-xs btn-primary" onclick="editarBeneficiario(\'ID\')">✏️</button><button class="btn btn-xs btn-danger" onclick="eliminarBeneficiario(\'ID\')">🗑️</button>':'—');
   // Beneficiarios
+  const qb=(gv('q-ben')||'').toLowerCase();
   const tb=document.getElementById('tb-beneficiarios');
   if(tb){
-    if(!BENEFICIARIOS.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Sin beneficiarios — agrégalos desde el botón +</td></tr>'; }
-    else { tb.innerHTML=BENEFICIARIOS.map(b=>{
-      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarBeneficiario('${b.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarBeneficiario('${b.id}')">🗑️</button>`:'—';
-      return `<tr><td><input type="checkbox" class="chk-ben" value="${b.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><strong>${b.nombre}</strong><div style="font-size:11px;color:var(--text3)">${b.tipo||''}</div></td><td style="font-size:12px">${b.rnc||'—'}</td><td style="font-size:11px;color:var(--text2)">${b.direccion||'—'}</td><td><div style="display:flex;gap:4px">${ac}</div></td></tr>`;
+    const lista=BENEFICIARIOS.filter(b=>!qb||[b.nombre,b.rnc,b.direccion].some(f=>(f||'').toLowerCase().includes(qb)));
+    if(!lista.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Sin beneficiarios — agrégalos desde el botón +</td></tr>'; }
+    else { tb.innerHTML=lista.map(b=>{
+      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarBeneficiario('${b.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarBeneficiario('${b.id}')">🗑️</button>`:'';
+      return `<tr><td><input type="checkbox" class="chk-ben" value="${b.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><strong>${b.nombre}</strong><div style="font-size:11px;color:var(--text3)">${b.tipo||''}</div></td><td style="font-size:12px">${b.rnc||'—'}</td><td style="font-size:11px;color:var(--text2)">${b.direccion||'—'}</td><td><div style="display:flex;gap:4px">
+        <button class="btn btn-xs" onclick="verBeneficiario('${b.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirBeneficiario('${b.id}')" title="Imprimir">🖨️</button>
+        ${ac}</div></td></tr>`;
     }).join(''); }
   }
   // Rubros
+  const qr=(gv('q-rub')||'').toLowerCase();
   const tr=document.getElementById('tb-rubros');
   if(tr){
-    if(!RUBROS.length){ tr.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin rubros</td></tr>'; }
-    else { tr.innerHTML=RUBROS.map(r=>{
-      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarRubro('${r.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarRubro('${r.id}')">🗑️</button>`:'—';
-      return `<tr><td><input type="checkbox" class="chk-rub" value="${r.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px">${r.codigo}</code></td><td style="font-size:12px">${r.nombre}</td><td><div style="display:flex;gap:4px">${ac}</div></td></tr>`;
+    const lista=RUBROS.filter(r=>!qr||[r.codigo,r.nombre].some(f=>(f||'').toLowerCase().includes(qr)));
+    if(!lista.length){ tr.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin rubros</td></tr>'; }
+    else { tr.innerHTML=lista.map(r=>{
+      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarRubro('${r.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarRubro('${r.id}')">🗑️</button>`:'';
+      return `<tr><td><input type="checkbox" class="chk-rub" value="${r.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px">${r.codigo}</code></td><td style="font-size:12px">${r.nombre}</td><td><div style="display:flex;gap:4px">
+        <button class="btn btn-xs" onclick="verRubro('${r.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirRubro('${r.id}')" title="Imprimir">🖨️</button>
+        ${ac}</div></td></tr>`;
     }).join(''); }
   }
   // Fuentes
+  const qf=(gv('q-fue')||'').toLowerCase();
   const tf=document.getElementById('tb-fuentes');
   if(tf){
-    if(!FUENTES.length){ tf.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin fuentes</td></tr>'; }
-    else { tf.innerHTML=FUENTES.map(f=>{
-      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarFuente('${f.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarFuente('${f.id}')">🗑️</button>`:'—';
-      return `<tr><td><input type="checkbox" class="chk-fue" value="${f.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px">${f.codigo}</code></td><td style="font-size:12px">${f.nombre}</td><td><div style="display:flex;gap:4px">${ac}</div></td></tr>`;
+    const lista=FUENTES.filter(f=>!qf||[f.codigo,f.nombre].some(v=>(v||'').toLowerCase().includes(qf)));
+    if(!lista.length){ tf.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin fuentes</td></tr>'; }
+    else { tf.innerHTML=lista.map(f=>{
+      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarFuente('${f.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarFuente('${f.id}')">🗑️</button>`:'';
+      return `<tr><td><input type="checkbox" class="chk-fue" value="${f.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px">${f.codigo}</code></td><td style="font-size:12px">${f.nombre}</td><td><div style="display:flex;gap:4px">
+        <button class="btn btn-xs" onclick="verFuente('${f.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirFuente('${f.id}')" title="Imprimir">🖨️</button>
+        ${ac}</div></td></tr>`;
     }).join(''); }
   }
 }
+function filtrarBeneficiarios(){ renderCatalogos(); }
+function filtrarRubros(){ renderCatalogos(); }
+function filtrarFuentes(){ renderCatalogos(); }
+function verBeneficiario(id){ const b=BENEFICIARIOS.find(x=>String(x.id)===String(id)); if(!b) return; verRegistroGenerico('Beneficiario','Detalle del beneficiario',[{label:'Nombre',value:b.nombre},{label:'Tipo',value:b.tipo},{label:'RNC/Cédula',value:b.rnc},{label:'Dirección',value:b.direccion}]); }
+function imprimirBeneficiario(id){ const b=BENEFICIARIOS.find(x=>String(x.id)===String(id)); if(!b) return; imprimirRegistroGenerico('Beneficiario','Detalle del beneficiario',[{label:'Nombre',value:b.nombre},{label:'Tipo',value:b.tipo},{label:'RNC/Cédula',value:b.rnc},{label:'Dirección',value:b.direccion}]); }
+function verRubro(id){ const r=RUBROS.find(x=>String(x.id)===String(id)); if(!r) return; verRegistroGenerico('Rubro de Gasto (SIGEF)','Detalle del rubro',[{label:'Código',value:r.codigo},{label:'Nombre',value:r.nombre}]); }
+function imprimirRubro(id){ const r=RUBROS.find(x=>String(x.id)===String(id)); if(!r) return; imprimirRegistroGenerico('Rubro de Gasto (SIGEF)','Detalle del rubro',[{label:'Código',value:r.codigo},{label:'Nombre',value:r.nombre}]); }
+function verFuente(id){ const f=FUENTES.find(x=>String(x.id)===String(id)); if(!f) return; verRegistroGenerico('Fuente de Ingreso','Detalle de la fuente',[{label:'Código',value:f.codigo},{label:'Nombre',value:f.nombre}]); }
+function imprimirFuente(id){ const f=FUENTES.find(x=>String(x.id)===String(id)); if(!f) return; imprimirRegistroGenerico('Fuente de Ingreso','Detalle de la fuente',[{label:'Código',value:f.codigo},{label:'Nombre',value:f.nombre}]); }
 
 async function guardarBeneficiario(){
   const nombre=UP(gv('ben-nombre')), rnc=UP(gv('ben-rnc')), tipo=gv('ben-tipo'), dir=UP(gv('ben-dir'));
@@ -3900,16 +4381,28 @@ function nuevoUsuario(){
 }
 function renderUsuarios(){
   const el=document.getElementById('usr-list');
-  el.innerHTML=USERS_FIN.map(u=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
+  const q=(gv('q-usr')||'').toLowerCase();
+  const lista=USERS_FIN.filter(u=>!q||[u.nombre,u.user].some(f=>(f||'').toLowerCase().includes(q)));
+  if(!lista.length){ el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--text3)">Sin usuarios encontrados</div>'; return; }
+  el.innerHTML=lista.map(u=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
     ${u.id!==CU.id?`<input type="checkbox" class="chk-usr" value="${u.id}" onclick="actualizarBtnBulk('chk-usr','btn-del-usuarios')" style="width:16px;height:16px;flex-shrink:0"/>`:'<span style="width:16px;flex-shrink:0"></span>'}
     <div style="width:42px;height:42px;border-radius:50%;background:${u.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${u.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
     <div style="flex:1"><strong style="color:var(--navy)">${u.nombre}</strong><div style="font-size:12px;color:var(--text2)">@${u.user}</div></div>
     <span class="badge ${u.rol==='admin'?'b-con':u.rol==='supervisor'?'b-act':'b-pen'}">${u.rol==='admin'?'👑 Admin':u.rol==='supervisor'?'👤 Supervisor':'👁️ Auxiliar'}</span>
     <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="verUsuario('${u.id}')" title="Ver detalles">👁️</button>
       <button class="btn btn-sm" onclick="editarUsuario('${u.id}')">✏️</button>
       ${u.id!==CU.id?`<button class="btn btn-danger btn-sm" onclick="eliminarUsuario('${u.id}')">✕</button>`:''}
     </div>
   </div>`).join('');
+}
+function verUsuario(id){
+  const u=USERS_FIN.find(x=>String(x.id)===String(id)); if(!u) return;
+  verRegistroGenerico('Usuario del Sistema','Detalle del usuario',[
+    {label:'Nombre',value:u.nombre},
+    {label:'Usuario',value:'@'+u.user},
+    {label:'Rol',value:u.rol==='admin'?'Administrador':u.rol==='supervisor'?'Supervisor':'Auxiliar'}
+  ]);
 }
 async function guardarUsuario(){
   const editing=gv('usr-eid'), nombre=UP(gv('usr-nombre')).trim(), user=gv('usr-user').trim().toLowerCase(), pass=gv('usr-pass'), rol=gv('usr-rol'), color=gv('usr-color');
@@ -3984,17 +4477,30 @@ async function eliminarTecnicoVT(id){
 function renderTecnicosVTAdmin(){
   const el=document.getElementById('tecvt-list');
   if(!el) return;
-  el.innerHTML=TECNICOS_VT.map(t=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
+  const q=(gv('q-tecvt')||'').toLowerCase();
+  const lista=TECNICOS_VT.filter(t=>!q||[t.nombre,t.cedula].some(f=>(f||'').toLowerCase().includes(q)));
+  el.innerHTML=lista.map(t=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.75rem;background:var(--surface2)">
     <input type="checkbox" class="chk-tecvt" value="${t.id}" onclick="actualizarBtnBulk('chk-tecvt','btn-del-tecnicos')" style="width:16px;height:16px;flex-shrink:0"/>
     <div style="width:42px;height:42px;border-radius:50%;background:#0ea5e9;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
     <div style="flex:1"><strong style="color:var(--navy)">${t.nombre}</strong><div style="font-size:12px;color:var(--text2)">${t.cedula||'—'} · ${t.cargo||'—'}</div></div>
     <span class="badge ${t.activo!==false?'b-act':'b-anu'}">${t.activo!==false?'Activo':'Inactivo'}</span>
     <span class="badge ${t.pass?'b-con':'b-pen'}" title="${t.pass?'Ya creó su contraseña':'Aún no ha iniciado sesión'}">${t.pass?'🔑 Con acceso':'⏳ Sin acceso'}</span>
     <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="verTecnicoVT('${t.id}')" title="Ver detalles">👁️</button>
       <button class="btn btn-sm" onclick="editarTecnicoVT('${t.id}')">✏️</button>
       <button class="btn btn-danger btn-sm" onclick="eliminarTecnicoVT('${t.id}')">✕</button>
     </div>
   </div>`).join('') || `<p style="color:var(--text3);text-align:center;padding:2rem">No hay técnicos registrados todavía.</p>`;
+}
+function verTecnicoVT(id){
+  const t=TECNICOS_VT.find(x=>String(x.id)===String(id)); if(!t) return;
+  verRegistroGenerico('Técnico Distrital','Detalle del técnico',[
+    {label:'Nombre',value:t.nombre},
+    {label:'Cédula',value:t.cedula},
+    {label:'Cargo',value:t.cargo},
+    {label:'Estado',value:t.activo!==false?'Activo':'Inactivo'},
+    {label:'Acceso al sistema',value:t.pass?'Ya creó su contraseña':'Aún no ha iniciado sesión'}
+  ]);
 }
 
 function exportarTecnicosExcel(){
@@ -4173,12 +4679,12 @@ function generarReporte(tipo){
   const fecha=now.toLocaleDateString('es-DO',{year:'numeric',month:'long',day:'numeric'});
   const periodo=now.toLocaleDateString('es-DO',{year:'numeric',month:'long'});
   const ks='background:var(--surface2);border-radius:var(--r2);padding:.75rem;text-align:center;border:1px solid var(--border)';
-  const kn='font-family:"Syne",sans-serif;font-size:18px;font-weight:800;color:var(--navy)';
+  const kn='font-family:Arial, sans-serif;font-size:18px;font-weight:800;color:var(--navy)';
   const kl='font-size:11px;color:var(--text2);margin-top:4px';
   const ts='width:100%;border-collapse:collapse;font-size:12px;margin-top:.75rem';
   const th='background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:11px';
   const td='padding:7px 10px;border-bottom:1px solid var(--border)';
-  const hdr=`<div style="text-align:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--navy)"><h2 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--navy)">DISTRITO EDUCATIVO 16-06 — BONAO NORDESTE</h2><p style="font-size:12px;color:var(--text2)">Monseñor Nouel, República Dominicana</p><p style="font-size:11px;color:var(--text3);margin-top:3px">Generado: ${fecha} | Período: ${periodoFiltro}</p>${f.fuente?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Fuente: ${f.fuente}</p>`:''}${f.rubro?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Rubro: ${f.rubro}</p>`:''}</div>`;
+  const hdr=`<div style="text-align:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--navy)"><h2 style="font-family:Arial, sans-serif;font-size:17px;font-weight:800;color:var(--navy)">DISTRITO EDUCATIVO 16-06 — BONAO NORDESTE</h2><p style="font-size:12px;color:var(--text2)">Monseñor Nouel, República Dominicana</p><p style="font-size:11px;color:var(--text3);margin-top:3px">Generado: ${fecha} | Período: ${periodoFiltro}</p>${f.fuente?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Fuente: ${f.fuente}</p>`:''}${f.rubro?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Rubro: ${f.rubro}</p>`:''}</div>`;
   let titulo='', html='';
 
   if(tipo==='balance'){
@@ -4261,6 +4767,7 @@ function exportarReporteExcel(){
 // ═══════════════════════════════════════════════
 document.getElementById('m-cheque').addEventListener('click',e=>{ if(e.target===document.getElementById('m-cheque')) closeMod('m-cheque'); });
 document.getElementById('m-ingreso').addEventListener('click',e=>{ if(e.target===document.getElementById('m-ingreso')){ closeMod('m-ingreso'); return; } });
+document.getElementById('m-config-imp').addEventListener('click',e=>{ if(e.target===document.getElementById('m-config-imp')) closeMod('m-config-imp'); });
 
 // Al abrir modal ingreso poblar fuentes
 const origOpenMod=openMod;
