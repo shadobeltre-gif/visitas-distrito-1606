@@ -1791,6 +1791,7 @@ let chartFlujo = null, chartRubros = null;
 // HELPERS
 // ═══════════════════════════════════════════════
 const RD = n => 'RD$ ' + parseFloat(n||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const NUM_SIN_PREFIJO = n => parseFloat(n||0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 // Generador de vista/impresión de detalle genérico para registros de catálogo (ajustes, centros, beneficiarios, rubros, fuentes, usuarios)
 function generarHTMLDetalleGenerico(titulo, subtitulo, campos, autoPrint){
@@ -3907,7 +3908,7 @@ function renderPreviewCfgImp(){
     stub_fecha:'10/08/2026', stub_concepto:'PAGO DE SERVICIOS', stub_valor:'RD$ 1,500.00',
     dia:'10', mes:'08', anio:'2026',
     beneficiario:'JUAN PÉREZ MARTÍNEZ',
-    monto_numerico:'RD$ 1,500.00',
+    monto_numerico:'1,500.00',
     monto_letras:'MIL QUINIENTOS PESOS DOMINICANOS CON 00/100'
   };
   wrap.innerHTML=CFGIMP_UNIDADES.map(campo=>{
@@ -4004,7 +4005,7 @@ function generarHTMLChequeFisico(c){
     stub_valor:RD(c.monto_neto),
     dia, mes, anio,
     beneficiario:c.beneficiario,
-    monto_numerico:RD(c.monto_neto),
+    monto_numerico:NUM_SIN_PREFIJO(c.monto_neto),
     monto_letras:montoEnLetras(parseFloat(c.monto_neto||0))
   };
   const negritaCSS=cfg.negrita?'text-shadow:0.35px 0 currentColor,-0.35px 0 currentColor,0 0.35px currentColor,0 -0.35px currentColor,0.35px 0.35px currentColor,-0.35px -0.35px currentColor;':'';
