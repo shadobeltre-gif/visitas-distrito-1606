@@ -411,7 +411,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 
 <!-- CHEQUES -->
 <div id="page-cheques" class="page">
-  <div class="page-hdr"><h2>🧾 Emisión de Cheques</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCheque()">+ Nuevo cheque</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-cheques','Cheques')">📗 Excel</button><button class="btn" onclick="abrirConfigImpresionCheque()">⚙️ Config. impresión</button></div></div>
+  <div class="page-hdr"><h2>🧾 Emisión de Cheques</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCheque()">+ Nuevo cheque</button><button class="btn btn-success" onclick="abrirImportarCheques()">⬆️ Importar</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-cheques','Cheques')">📗 Excel</button><button class="btn" onclick="abrirConfigImpresionCheque()">⚙️ Config. impresión</button></div></div>
   <div class="card">
     <div class="ttbar">
       <input type="text" id="q-cheq" placeholder="🔍 Buscar cheque..." oninput="filtrarCheques()"/>
@@ -1696,6 +1696,36 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
         <div class="btn-row">
           <button class="btn btn-success" onclick="confirmarImportarTecnicos()">✓ Confirmar e importar</button>
           <button class="btn" onclick="cerrarImportarTecnicos()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Importar Cheques (Mónica 9 u otro sistema) -->
+<div class="mbg" id="m-importar-cheques">
+  <div class="mbox" style="max-width:820px">
+    <div class="mhdr">⬆️ Importar Cheques (Mónica 9 u otro sistema)<button class="mclose" onclick="cerrarImportarCheques()">✕</button></div>
+    <div class="mbody">
+      <div id="imp-chq-paso1">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Exporta tus cheques desde Mónica 9 a Excel (.xlsx) o CSV, y súbelo aquí. La primera fila debe tener encabezados. El sistema buscará automáticamente columnas como <strong>Fecha</strong>, <strong>No. Cheque</strong>, <strong>Beneficiario</strong>, <strong>Concepto</strong> y <strong>Monto</strong> (no importa el orden ni mayúsculas/minúsculas ni acentos).</p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:1rem">Estos cheques se importarán como <strong>ya emitidos/históricos</strong> — no vuelven a pasar por retenciones de ITBIS/ISR (el monto que traigas se registra directo como monto neto). Rubro quedará como "IMPORTADO" y podrás editarlo después si lo necesitas.</p>
+        <input type="file" id="imp-chq-file" accept=".xlsx,.xls,.csv" onchange="leerArchivoCheques(event)" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px"/>
+        <div class="alert alert-err" id="imp-chq-err" style="margin-top:1rem"></div>
+      </div>
+      <div id="imp-chq-paso2" style="display:none">
+        <div class="alert alert-warn show" style="margin-bottom:1rem">
+          <span id="imp-chq-resumen"></span>
+        </div>
+        <div class="twrap" style="max-height:320px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>No. Cheque</th><th>Beneficiario</th><th>Concepto</th><th>Monto</th><th>Estado</th></tr></thead>
+            <tbody id="imp-chq-preview"></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="confirmarImportarCheques()">✓ Confirmar e importar</button>
+          <button class="btn" onclick="cerrarImportarCheques()">Cancelar</button>
         </div>
       </div>
     </div>
@@ -4666,6 +4696,162 @@ async function confirmarImportarTecnicos(){
     renderTecnicosVTAdmin();
     cerrarImportarTecnicos();
     mostrarToastFin(`✅ ${rows.length} técnico(s) importado(s) correctamente.`);
+  } catch(e){
+    alert('Error al importar: '+e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='✓ Confirmar e importar';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// IMPORTAR CHEQUES (Mónica 9 u otro sistema)
+// ═══════════════════════════════════════════════
+let IMPORT_CHQ_FILAS=[];
+function abrirImportarCheques(){
+  document.getElementById('imp-chq-paso1').style.display='block';
+  document.getElementById('imp-chq-paso2').style.display='none';
+  document.getElementById('imp-chq-file').value='';
+  hide('imp-chq-err');
+  IMPORT_CHQ_FILAS=[];
+  openMod('m-importar-cheques');
+}
+function cerrarImportarCheques(){ closeMod('m-importar-cheques'); }
+
+function parseFechaImport(v){
+  if(v===undefined||v===null||v==='') return '';
+  if(typeof v==='number'){
+    // fecha serial de Excel
+    const d=XLSX.SSF.parse_date_code(v);
+    if(!d) return '';
+    return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const s=v.toString().trim();
+  // dd/mm/yyyy o dd-mm-yyyy
+  let m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  // yyyy-mm-dd ya viene bien
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return '';
+}
+function parseMontoImport(v){
+  if(v===undefined||v===null||v==='') return NaN;
+  if(typeof v==='number') return v;
+  const limpio=v.toString().replace(/[^\d.,\-]/g,'').replace(/,/g,'');
+  return parseFloat(limpio);
+}
+
+function leerArchivoCheques(ev){
+  const file=ev.target.files[0];
+  const errEl=document.getElementById('imp-chq-err');
+  hide('imp-chq-err');
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:false});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const filasRaw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(filasRaw.length<2){ errEl.textContent='El archivo no tiene datos (solo encabezados o vacío).'; show('imp-chq-err'); return; }
+
+      const headers=filasRaw[0];
+      const idxFecha=buscarColumna(headers,['fecha','fecha emision','fecha de emision','fecha cheque']);
+      const idxNum=buscarColumna(headers,['no. cheque','no cheque','numero cheque','número cheque','num cheque','no.','numero','número','cheque']);
+      const idxBen=buscarColumna(headers,['beneficiario','proveedor','pagado a','nombre','a favor de']);
+      const idxConcepto=buscarColumna(headers,['concepto','descripcion','descripción','detalle','memo']);
+      const idxMonto=buscarColumna(headers,['monto','importe','valor','total','monto neto','importe total']);
+      const idxRef=buscarColumna(headers,['referencia','ref','no. referencia']);
+
+      if(idxFecha===-1||idxNum===-1||idxBen===-1||idxMonto===-1){
+        errEl.textContent='No se encontraron las columnas obligatorias (Fecha, No. Cheque, Beneficiario, Monto). Verifica los encabezados de la primera fila del archivo exportado.';
+        show('imp-chq-err');
+        return;
+      }
+
+      const numerosExistentes=new Set(CHEQUES.map(c=>(c.num_cheque||'').trim().toUpperCase()));
+      const numerosEnArchivo=new Set();
+      IMPORT_CHQ_FILAS=[];
+
+      for(let i=1;i<filasRaw.length;i++){
+        const fila=filasRaw[i];
+        const fechaRaw=fila[idxFecha];
+        const numRaw=(fila[idxNum]||'').toString().trim();
+        const benRaw=(fila[idxBen]||'').toString().trim();
+        const conceptoRaw=idxConcepto>=0?(fila[idxConcepto]||'').toString().trim():'';
+        const refRaw=idxRef>=0?(fila[idxRef]||'').toString().trim():'';
+        const montoRaw=fila[idxMonto];
+        if(!numRaw && !benRaw && (montoRaw===''||montoRaw===undefined)) continue; // fila vacía
+
+        const fecha=parseFechaImport(fechaRaw);
+        const monto=parseMontoImport(montoRaw);
+        const numUp=numRaw.toUpperCase();
+
+        let estado='✓ Lista para importar';
+        if(!fecha||!numRaw||!benRaw||isNaN(monto)){ estado='⚠️ Faltan datos o formato inválido — se omitirá'; }
+        else if(numerosExistentes.has(numUp)){ estado='⚠️ No. de cheque ya existe en el sistema — se omitirá'; }
+        else if(numerosEnArchivo.has(numUp)){ estado='⚠️ No. de cheque duplicado en el archivo — se omitirá'; }
+
+        if(numRaw) numerosEnArchivo.add(numUp);
+        IMPORT_CHQ_FILAS.push({
+          fecha, num_cheque:numRaw, beneficiario:UP(benRaw), concepto:UP(conceptoRaw)||'IMPORTADO DE MÓNICA 9', referencia:refRaw,
+          monto:isNaN(monto)?0:monto, valido:estado.startsWith('✓')
+        });
+      }
+
+      if(!IMPORT_CHQ_FILAS.length){ errEl.textContent='No se encontraron filas válidas para importar.'; show('imp-chq-err'); return; }
+
+      const validas=IMPORT_CHQ_FILAS.filter(f=>f.valido).length;
+      const omitidas=IMPORT_CHQ_FILAS.length-validas;
+      document.getElementById('imp-chq-resumen').textContent=`${IMPORT_CHQ_FILAS.length} fila(s) encontradas — ${validas} se importarán, ${omitidas} se omitirán (revisa la tabla).`;
+      document.getElementById('imp-chq-preview').innerHTML=IMPORT_CHQ_FILAS.map(f=>`
+        <tr style="${f.valido?'':'opacity:.55'}">
+          <td>${f.fecha?new Date(f.fecha+'T00:00:00').toLocaleDateString('es-DO'):'—'}</td>
+          <td>${f.num_cheque||'—'}</td>
+          <td>${f.beneficiario||'—'}</td>
+          <td style="font-size:11px">${f.concepto}</td>
+          <td>${RD(f.monto)}</td>
+          <td style="font-size:11px">${f.valido?'✓ Lista':'⚠️ Revisar'}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('imp-chq-paso1').style.display='none';
+      document.getElementById('imp-chq-paso2').style.display='block';
+    } catch(err){
+      errEl.textContent='No se pudo leer el archivo: '+err.message;
+      show('imp-chq-err');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function confirmarImportarCheques(){
+  const validas=IMPORT_CHQ_FILAS.filter(f=>f.valido);
+  if(!validas.length){ alert('No hay filas válidas para importar.'); return; }
+  const btn=document.querySelector('#imp-chq-paso2 .btn-success');
+  btn.disabled=true; btn.textContent='Importando...';
+  try{
+    const ahora=new Date().toISOString();
+    const rows=validas.map((f,idx)=>({
+      id:'C'+Date.now()+'_'+idx,
+      fecha:f.fecha, num_cheque:f.num_cheque, referencia:f.referencia||null,
+      beneficiario:f.beneficiario, cedula_beneficiario:null,
+      rubro_id:null, rubro_nombre:'IMPORTADO',
+      centro_id:null, centro_nombre:null,
+      fuente_id:null, fuente_nombre:null,
+      transferencia_id:null, transferencia_nombre:null,
+      monto_bruto:f.monto, itbis_facturado:0, pct_itbis:0, mto_itbis:0,
+      pct_isr:0, mto_isr:0, cargos_bancarios:0, monto_neto:f.monto,
+      concepto:f.concepto, estado:'Activo', conciliado:false,
+      registrado_por:(CU.nombre||'Sistema')+' (importado de Mónica 9)', created_at:ahora
+    }));
+    const {error}=await sb.from('cheques_fin').insert(rows);
+    if(error) throw error;
+    await cargarChequesFin();
+    renderCheques();
+    cargarDashboard();
+    cerrarImportarCheques();
+    mostrarToastFin(`✅ ${rows.length} cheque(s) importado(s) correctamente.`);
   } catch(e){
     alert('Error al importar: '+e.message);
   } finally {
