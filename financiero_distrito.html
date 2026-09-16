@@ -412,6 +412,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
 <!-- CHEQUES -->
 <div id="page-cheques" class="page">
   <div class="page-hdr"><h2>🧾 Emisión de Cheques</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevoCheque()">+ Nuevo cheque</button><button class="btn btn-success" onclick="abrirImportarCheques()">⬆️ Importar</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-cheques','Cheques')">📗 Excel</button><button class="btn" onclick="abrirConfigImpresionCheque()">⚙️ Config. impresión</button></div></div>
+
   <div class="card">
     <div class="ttbar">
       <input type="text" id="q-cheq" placeholder="🔍 Buscar cheque..." oninput="filtrarCheques()"/>
@@ -422,6 +423,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div id="ch-count" style="font-size:12px;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;gap:8px">
       <span id="ch-count-txt"></span>
       <button class="btn btn-amber btn-xs" id="btn-imp-cheques" style="display:none" onclick="imprimirChequesSeleccionados()">🖨️ Imprimir seleccionados</button>
+      <button class="btn btn-navy btn-xs" id="btn-ver-cheques" style="display:none" onclick="verChequesSeleccionados()">👁️ Consultar seleccionados</button>
       <button class="btn btn-danger btn-xs" id="btn-del-cheques" style="display:none" onclick="eliminarSeleccionados('cheques','chk-cheq')">🗑️ Eliminar seleccionados</button>
     </div>
     <div class="twrap"><table>
@@ -816,17 +818,18 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     </div>
   </div>
 
-  <!-- KPIs transferencia activa -->
+  <!-- KPIs resumen de transferencias activas (pueden ser varias a la vez) -->
   <div id="trx-activa-card" class="card" style="border-left:4px solid var(--green2);display:none">
-    <div class="chdr">🟢 Transferencia activa</div>
+    <div class="chdr">🟢 Resumen — Transferencias activas</div>
     <div class="kpi-grid">
-      <div class="kpi green"><div class="kpi-val" id="trx-nombre-act">—</div><div class="kpi-lbl">Transferencia en curso</div></div>
-      <div class="kpi"><div class="kpi-val" id="trx-monto-act">RD$ 0.00</div><div class="kpi-lbl">Monto recibido</div></div>
-      <div class="kpi red"><div class="kpi-val" id="trx-ejecutado-act">RD$ 0.00</div><div class="kpi-lbl">Ejecutado</div></div>
-      <div class="kpi amber"><div class="kpi-val" id="trx-saldo-act">RD$ 0.00</div><div class="kpi-lbl">Saldo disponible</div></div>
+      <div class="kpi green"><div class="kpi-val" id="trx-nombre-act">—</div><div class="kpi-lbl">Transferencias activas</div></div>
+      <div class="kpi"><div class="kpi-val" id="trx-monto-act">RD$ 0.00</div><div class="kpi-lbl">Total recibido</div></div>
+      <div class="kpi red"><div class="kpi-val" id="trx-ejecutado-act">RD$ 0.00</div><div class="kpi-lbl">Total ejecutado (centros)</div></div>
+      <div class="kpi amber"><div class="kpi-val" id="trx-saldo-act">RD$ 0.00</div><div class="kpi-lbl">Saldo disponible global</div></div>
       <div class="kpi"><div class="kpi-val" id="trx-pct-act">0%</div><div class="kpi-lbl">% Ejecutado</div></div>
       <div class="kpi navy"><div class="kpi-val" id="trx-cheques-act">0</div><div class="kpi-lbl">Cheques emitidos</div></div>
     </div>
+    <div id="trx-activas-lista" style="margin-top:.5rem"></div>
     <div style="margin-top:.75rem">
       <div style="background:var(--surface2);border-radius:8px;height:12px;overflow:hidden">
         <div id="trx-barra" style="height:100%;background:linear-gradient(90deg,var(--green2),var(--amber2));border-radius:8px;transition:width .5s;width:0%"></div>
@@ -857,14 +860,61 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div class="twrap"><table>
       <thead><tr>
         <th>#</th><th>Código</th><th>Descripción</th><th>Año</th><th>Fecha recepción</th>
-        <th>Monto recibido</th><th>Ejecutado</th><th>Saldo</th><th>% Ejec.</th>
+        <th>Monto recibido</th><th>Distribuido a centros</th><th>Sin distribuir</th><th>% Distrib.</th>
         <th>Estado</th><th>Acciones</th>
       </tr></thead>
       <tbody id="tb-transferencias"></tbody>
     </table></div>
   </div>
 
-  <!-- Libro auxiliar por centro -->
+  <!-- Auxiliar consolidado por centro/programa (todas las transferencias activas + cerradas) -->
+  <div class="card">
+    <div class="chdr">📊 Distribución de transferencias por centro</div>
+    <div style="height:260px;position:relative">
+      <canvas id="ch-dist-centros"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">📚 Auxiliar por Centro / Programa — saldo consolidado</div>
+    <div class="ttbar">
+      <input type="text" id="q-aux-centro" placeholder="🔍 Buscar centro..." oninput="filtrarAuxiliarCentros()"/>
+      <button class="btn btn-amber btn-sm" onclick="exportarExcelTabla('tb-aux-centros','AuxiliarCentros')">📗 Excel</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">Clic en un centro para ver su historial de movimientos (transferencias recibidas y cheques ejecutados).</div>
+    <div class="twrap"><table>
+      <thead><tr>
+        <th>Código</th><th>Centro / Programa</th><th>Total transferido</th>
+        <th>Ejecutado</th><th>Saldo</th><th>% Ejec.</th><th>No. Cheques</th>
+      </tr></thead>
+      <tbody id="tb-aux-centros"></tbody>
+      <tfoot><tr style="background:var(--navy);color:#fff">
+        <td colspan="2" style="padding:8px 12px;font-weight:700">TOTAL</td>
+        <td style="padding:8px 12px;font-weight:700" id="aux-total-ing">RD$ 0.00</td>
+        <td style="padding:8px 12px;font-weight:700" id="aux-total-ejec">RD$ 0.00</td>
+        <td style="padding:8px 12px;font-weight:700" id="aux-total-saldo">RD$ 0.00</td>
+        <td></td>
+        <td style="padding:8px 12px" id="aux-total-cheques">0</td>
+      </tr></tfoot>
+    </table></div>
+  </div>
+
+  <!-- Movimientos del centro/programa seleccionado -->
+  <div class="card" id="aux-mov-card" style="display:none">
+    <div class="chdr" id="aux-mov-titulo">📋 Movimientos del centro</div>
+    <div class="twrap"><table>
+      <thead><tr>
+        <th>Fecha</th><th>Tipo</th><th>Documento</th><th>Detalle</th><th>Monto</th><th>Saldo</th>
+      </tr></thead>
+      <tbody id="tb-aux-movimientos"></tbody>
+      <tfoot><tr style="background:var(--navy);color:#fff">
+        <td colspan="4" style="padding:8px 12px;font-weight:700">SALDO ACTUAL</td>
+        <td colspan="2" style="padding:8px 12px;font-weight:700" id="aux-mov-total">RD$ 0.00</td>
+      </tr></tfoot>
+    </table></div>
+  </div>
+
+  <!-- Libro auxiliar por transferencia individual (histórico, por transferencia específica) -->
   <div class="card" id="trx-libro-card" style="display:none">
     <div class="chdr" id="trx-libro-titulo">📚 Libro auxiliar por centro</div>
     <div class="ttbar">
@@ -1379,10 +1429,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div class="mbody">
       <input type="hidden" id="cheq-id"/>
       <div style="font-size:11px;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--blue2)">📋 Datos del cheque</div>
-      <div id="trx-activa-info" style="background:var(--green-bg);border:1px solid #86efac;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--green);margin-bottom:.75rem;display:none">
-        💳 Transferencia activa: <strong id="trx-activa-nombre">—</strong>
-        — Saldo disponible: <strong id="trx-activa-saldo">—</strong>
-      </div>
+      <div id="centro-saldo-info" style="background:var(--green-bg);border:1px solid #86efac;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--green);margin-bottom:.75rem;display:none"></div>
       <div class="fgrid" style="margin-bottom:1rem">
         <div class="fg"><label>Fecha <span class="req">*</span></label><input type="date" id="cheq-fecha"/></div>
         <div class="fg"><label>No. Cheque <span class="req">*</span></label><input type="text" id="cheq-num" placeholder="001-001"/></div>
@@ -1400,7 +1447,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
         <div class="fg"><label>Beneficiario <span class="req">*</span></label><input type="text" id="cheq-ben" placeholder="O escribe el nombre manualmente"/></div>
         <div class="fg"><label>Cédula / RNC</label><input type="text" id="cheq-doc" placeholder="Auto o manual" style="background:var(--surface2)"/></div>
         <div class="fg"><label>Rubro <span class="req">*</span></label><select id="cheq-rubro"><option value="">Seleccionar...</option></select></div>
-        <div class="fg"><label>Centro educativo</label><select id="cheq-centro"><option value="">General / Distrito</option></select></div>
+        <div class="fg"><label>Centro o programa</label><select id="cheq-centro" onchange="actualizarSaldoCentroSeleccionado()"><option value="">General / Distrito</option></select></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--amber2)">💰 Montos y retenciones</div>
       <div class="fgrid" style="margin-bottom:1rem">
@@ -1408,10 +1455,12 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
         <div class="fg"><label>ITBIS facturado (RD$) — incluido en el bruto</label><input type="number" id="cheq-itbis-facturado" placeholder="0.00" step="0.01" value="0" oninput="calcNeto()"/></div>
         <div class="fg"><label>% Retención ITBIS</label><input type="number" id="cheq-itbis" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
         <div class="fg"><label>% Retención ISR</label><input type="number" id="cheq-isr" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
-        <div class="fg"><label>Cargos bancarios (RD$)</label><input type="number" id="cheq-cargos" placeholder="0.00" step="0.01" value="0" oninput="calcNeto()"/></div>
+        <div class="fg"><label>% Cargo bancario<br><span style="font-weight:400;color:var(--text3)">No se descuenta del cheque</span></label><input type="number" id="cheq-cargos" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
         <div class="fg"><label>Monto ITBIS retenido</label><input type="number" id="cheq-mto-itbis" readonly style="background:var(--surface2);color:var(--amber)" placeholder="0.00"/></div>
         <div class="fg"><label>Monto ISR retenido</label><input type="number" id="cheq-mto-isr" readonly style="background:var(--surface2);color:var(--red2)" placeholder="0.00"/></div>
+        <div class="fg"><label>Monto cargo bancario</label><input type="number" id="cheq-mto-cargos" readonly style="background:var(--surface2);color:var(--text2)" placeholder="0.00"/></div>
         <div class="fg"><label>Monto neto a pagar (RD$)</label><input type="number" id="cheq-neto" readonly style="background:var(--surface2);color:var(--green);font-weight:700" placeholder="0.00"/></div>
+        <div class="fg"><label>Total que rebaja el balance del centro<br><span style="font-weight:400;color:var(--text3)">Neto + cargo bancario</span></label><input type="number" id="cheq-total-afecta" readonly style="background:var(--surface2);color:var(--navy);font-weight:700" placeholder="0.00"/></div>
       </div>
       <div class="fg full" style="margin-bottom:1rem"><label>Concepto <span class="req">*</span></label><textarea id="cheq-concepto" placeholder="Descripción del pago..."></textarea></div>
       <div class="alert alert-err" id="cheq-err"></div>
@@ -1785,7 +1834,7 @@ let USERS_FIN = [];
 let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [];
 let TECNICOS_VT = [], VISITAS_VT = [], CRONOGRAMA_VT = [];
 const MONTO_DIETA_VT = 500;
-let chartFlujo = null, chartRubros = null;
+let chartFlujo = null, chartRubros = null, chartDistCentros = null;
 
 // ═══════════════════════════════════════════════
 // HELPERS
@@ -2089,15 +2138,19 @@ function selTodo(cls,chk){
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
     'chk-usr':'btn-del-usuarios'
   };
-  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined);
+  if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined,cls==='chk-cheq'?'btn-ver-cheques':undefined);
 }
-async function actualizarBtnBulk(cls,btnId,extraBtnId){
+async function actualizarBtnBulk(cls,btnId,extraBtnId,verBtnId){
   const sel=document.querySelectorAll('.'+cls+':checked').length;
   const btn=document.getElementById(btnId);
   if(btn){ btn.style.display=sel>0?'inline-flex':'none'; btn.textContent='🗑️ Eliminar '+sel+' seleccionados'; }
   if(extraBtnId){
     const btn2=document.getElementById(extraBtnId);
     if(btn2){ btn2.style.display=sel>0?'inline-flex':'none'; btn2.textContent='🖨️ Imprimir '+sel+' seleccionados'; }
+  }
+  if(verBtnId){
+    const btn3=document.getElementById(verBtnId);
+    if(btn3){ btn3.style.display=sel>0?'inline-flex':'none'; btn3.textContent='👁️ Consultar '+sel+' seleccionados'; }
   }
 }
 async function eliminarSeleccionados(tabla,cls){
@@ -2206,29 +2259,166 @@ async function guardarIngreso(){
 // ═══════════════════════════════════════════════
 // TRANSFERENCIAS
 // ═══════════════════════════════════════════════
-function getTransferenciaActiva(){
-  return TRANSFERENCIAS.find(t=>t.estado==='Activa')||null;
+// Ahora se permiten varias transferencias activas a la vez
+function getTransferenciasActivas(){
+  return TRANSFERENCIAS.filter(t=>t.estado==='Activa');
+}
+
+// Balance auxiliar de un centro/programa: suma de todo lo que se le ha distribuido
+// (de cualquier transferencia Activa o Cerrada) menos todo lo que se le ha ejecutado en cheques.
+function calcularSaldoCentro(centroId){
+  const ingresos=TRANSFERENCIAS.filter(t=>t.estado==='Activa'||t.estado==='Cerrada').reduce((s,t)=>{
+    const d=t.distribucion?JSON.parse(t.distribucion):{};
+    return s+(d[centroId]?parseFloat(d[centroId].monto||0):0);
+  },0);
+  const chequesCentro=CHEQUES.filter(c=>c.centro_id===centroId&&c.estado!=='Anulado');
+  const ejecutado=chequesCentro.reduce((s,c)=>s+montoTotalCheque(c),0);
+  return {ingresos,ejecutado,saldo:ingresos-ejecutado,numCheques:chequesCentro.length};
 }
 
 function renderKPIActiva(){
-  const act=getTransferenciaActiva();
+  const activas=getTransferenciasActivas();
   const card=document.getElementById('trx-activa-card');
   if(!card) return;
-  if(!act){ card.style.display='none'; return; }
+  if(!activas.length){ card.style.display='none'; renderAuxiliarCentros(); return; }
   card.style.display='block';
-  const ejecutado=CHEQUES.filter(c=>c.transferencia_id===act.id&&c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
-  const saldo=parseFloat(act.monto_total||0)-ejecutado;
-  const pct=act.monto_total>0?Math.min(100,(ejecutado/act.monto_total*100)):0;
-  const numCheques=CHEQUES.filter(c=>c.transferencia_id===act.id&&c.estado!=='Anulado').length;
-  document.getElementById('trx-nombre-act').textContent=act.descripcion||act.nombre;
-  document.getElementById('trx-monto-act').textContent=RD(act.monto_total);
-  document.getElementById('trx-ejecutado-act').textContent=RD(ejecutado);
+  const totalRecibido=activas.reduce((s,t)=>s+parseFloat(t.monto_total||0),0);
+  const totalDistribuido=activas.reduce((s,t)=>{
+    const d=t.distribucion?JSON.parse(t.distribucion):{};
+    return s+Object.values(d).reduce((s2,v)=>s2+parseFloat(v.monto||0),0);
+  },0);
+  if(!CENTROS.length){ /* se completa al cargar */ }
+  const totalEjecutado=CENTROS.reduce((s,c)=>s+calcularSaldoCentro(c.id).ejecutado,0);
+  const saldo=totalDistribuido-totalEjecutado;
+  const pct=totalDistribuido>0?Math.min(100,(totalEjecutado/totalDistribuido*100)):0;
+  const numCheques=CENTROS.reduce((s,c)=>s+calcularSaldoCentro(c.id).numCheques,0);
+  document.getElementById('trx-nombre-act').textContent=activas.length+' transferencia'+(activas.length>1?'s':'')+' activa'+(activas.length>1?'s':'');
+  document.getElementById('trx-monto-act').textContent=RD(totalRecibido);
+  document.getElementById('trx-ejecutado-act').textContent=RD(totalEjecutado);
   document.getElementById('trx-saldo-act').textContent=RD(saldo);
   document.getElementById('trx-pct-act').textContent=pct.toFixed(1)+'%';
   document.getElementById('trx-cheques-act').textContent=numCheques;
   document.getElementById('trx-barra').style.width=pct+'%';
   document.getElementById('trx-barra-pct').textContent=pct.toFixed(1)+'% ejecutado';
   document.getElementById('trx-barra').style.background=pct>=90?'linear-gradient(90deg,var(--red2),var(--amber2))':pct>=70?'linear-gradient(90deg,var(--amber2),var(--green2))':'linear-gradient(90deg,var(--green2),var(--blue2))';
+  const detEl=document.getElementById('trx-activas-lista');
+  if(detEl) detEl.innerHTML=activas.map(t=>`<span class="badge b-act" style="margin:2px">${t.descripcion||t.nombre} — ${RD(t.monto_total)}</span>`).join('');
+  renderAuxiliarCentros();
+}
+
+// ═══════════════════════════════════════════════
+// AUXILIAR POR CENTRO / PROGRAMA (saldo consolidado, todas las transferencias)
+// ═══════════════════════════════════════════════
+function filtrarAuxiliarCentros(){
+  const q=(gv('q-aux-centro')||'').toLowerCase();
+  const filtrados=!q?CENTROS:CENTROS.filter(c=>(c.nombre||'').toLowerCase().includes(q)||(c.codigo||'').toLowerCase().includes(q));
+  renderAuxiliarCentros(filtrados);
+}
+
+function renderAuxiliarCentros(lista){
+  const centros=lista||CENTROS;
+  const tb=document.getElementById('tb-aux-centros');
+  if(!tb) return;
+  if(!centros.length){ tb.innerHTML='<tr class="erow"><td colspan="7">Sin centros registrados</td></tr>'; return; }
+  let totalIng=0, totalEjec=0, totalCheq=0;
+  const filas=centros.map(c=>{
+    const s=calcularSaldoCentro(c.id);
+    totalIng+=s.ingresos; totalEjec+=s.ejecutado; totalCheq+=s.numCheques;
+    const pct=s.ingresos>0?(s.ejecutado/s.ingresos*100):0;
+    return {c,...s,pct};
+  }).filter(r=>r.ingresos>0||r.ejecutado>0);
+  tb.innerHTML=filas.length?filas.map(r=>`<tr style="cursor:pointer" onclick="verMovimientosCentro('${r.c.id}')">
+    <td><code style="font-size:11px">${r.c.codigo}</code></td>
+    <td style="font-size:12px">${r.c.nombre}</td>
+    <td style="text-align:right;color:var(--green2)">${RD(r.ingresos)}</td>
+    <td style="text-align:right;color:var(--red2)">${RD(r.ejecutado)}</td>
+    <td style="text-align:right;color:${r.saldo<=0?'var(--red2)':r.saldo<r.ingresos*0.1?'var(--amber)':'var(--green2)'}"><strong>${RD(r.saldo)}</strong></td>
+    <td style="text-align:center">${r.pct.toFixed(1)}%</td>
+    <td style="text-align:center">${r.numCheques} <span style="font-size:10px;color:var(--text3)">👁</span></td>
+  </tr>`).join(''):'<tr class="erow"><td colspan="7">Aún no hay distribuciones aplicadas a centros</td></tr>';
+  document.getElementById('aux-total-ing').textContent=RD(totalIng);
+  document.getElementById('aux-total-ejec').textContent=RD(totalEjec);
+  document.getElementById('aux-total-saldo').textContent=RD(totalIng-totalEjec);
+  document.getElementById('aux-total-cheques').textContent=totalCheq;
+  renderChartDistribucionCentros(filas);
+}
+
+function renderChartDistribucionCentros(filas){
+  const canvas=document.getElementById('ch-dist-centros'); if(!canvas) return;
+  if(chartDistCentros) chartDistCentros.destroy();
+  if(!filas||!filas.length) return;
+  chartDistCentros=new Chart(canvas.getContext('2d'),{type:'bar',data:{
+    labels:filas.map(r=>r.c.codigo),
+    datasets:[
+      {label:'Transferido',data:filas.map(r=>r.ingresos),backgroundColor:'rgba(22,163,74,.65)',borderColor:'#16a34a',borderWidth:1},
+      {label:'Ejecutado',data:filas.map(r=>r.ejecutado),backgroundColor:'rgba(220,38,38,.65)',borderColor:'#dc2626',borderWidth:1}
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#94a3b8',callback:v=>'RD$ '+v.toLocaleString()},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{color:'#94a3b8'}}},plugins:{legend:{labels:{color:'#0f172a'}}}}});
+}
+
+function verMovimientosCentro(centroId){
+  const c=CENTROS.find(x=>x.id===centroId); if(!c) return;
+  const card=document.getElementById('aux-mov-card');
+  const tit=document.getElementById('aux-mov-titulo');
+  if(!card||!tit) return;
+  card.style.display='block';
+  tit.textContent='📋 Movimientos — '+c.nombre;
+  const movs=[];
+  TRANSFERENCIAS.filter(t=>t.estado==='Activa'||t.estado==='Cerrada').forEach(t=>{
+    const d=t.distribucion?JSON.parse(t.distribucion):{};
+    if(d[centroId]&&parseFloat(d[centroId].monto||0)>0){
+      movs.push({fecha:t.fecha,tipo:'TRANSFERENCIA',doc:t.codigo,detalle:t.descripcion,monto:parseFloat(d[centroId].monto)});
+    }
+  });
+  CHEQUES.filter(ch=>ch.centro_id===centroId&&ch.estado!=='Anulado').forEach(ch=>{
+    movs.push({fecha:ch.fecha,tipo:'CHEQUE',doc:ch.num_cheque,detalle:ch.beneficiario+' — '+ch.concepto,monto:-montoTotalCheque(ch)});
+  });
+  movs.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  let saldo=0;
+  const tb=document.getElementById('tb-aux-movimientos');
+  if(!movs.length){ tb.innerHTML='<tr class="erow"><td colspan="6">Sin movimientos</td></tr>'; document.getElementById('aux-mov-total').textContent='RD$ 0.00'; }
+  else{
+    tb.innerHTML=movs.map(m=>{
+      saldo+=m.monto;
+      return `<tr>
+        <td>${new Date(m.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
+        <td><span class="badge ${m.tipo==='CHEQUE'?'b-anu':'b-act'}" style="background:${m.tipo==='CHEQUE'?'#fee2e2':'#dcfce7'};color:${m.tipo==='CHEQUE'?'var(--red)':'var(--green)'}">${m.tipo}</span></td>
+        <td><strong>${m.doc}</strong></td>
+        <td style="font-size:12px;color:var(--text2)">${m.detalle}</td>
+        <td style="text-align:right;color:${m.monto<0?'var(--red2)':'var(--green2)'}"><strong>${m.monto<0?'-':'+'}${RD(Math.abs(m.monto))}</strong></td>
+        <td style="text-align:right"><strong style="color:${saldo>=0?'var(--green2)':'var(--red2)'}">${RD(saldo)}</strong></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('aux-mov-total').textContent=RD(saldo);
+  }
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Muestra en el modal de cheque el saldo del centro/programa seleccionado
+function actualizarSaldoCentroSeleccionado(){
+  const box=document.getElementById('centro-saldo-info');
+  if(!box) return;
+  const val=gv('cheq-centro');
+  const totalAfecta=parseFloat(gv('cheq-total-afecta')||0);
+  if(!val){
+    box.style.display='block';
+    box.style.background='var(--surface2)'; box.style.color='var(--text2)'; box.style.borderColor='var(--border2)';
+    box.innerHTML='ℹ️ Cheque contra <strong>Fondo General/Distrito</strong> — no se controla contra el auxiliar de ningún centro.';
+    return;
+  }
+  const [centroId,centroNombre]=val.split(':');
+  const s=calcularSaldoCentro(centroId);
+  const idActual=gv('cheq-id');
+  const chequeActual=idActual?CHEQUES.find(c=>c.id===idActual):null;
+  const yaContado=(chequeActual&&chequeActual.centro_id===centroId&&chequeActual.estado!=='Anulado')?montoTotalCheque(chequeActual):0;
+  const saldoBase=s.saldo+yaContado;
+  const saldoDespues=saldoBase-totalAfecta;
+  box.style.display='block';
+  box.style.background=saldoDespues<0?'var(--red-bg)':'var(--green-bg)';
+  box.style.color=saldoDespues<0?'var(--red)':'var(--green)';
+  box.style.borderColor=saldoDespues<0?'#fca5a5':'#86efac';
+  box.innerHTML=`💰 Saldo disponible en <strong>${centroNombre}</strong>: <strong>${RD(saldoBase)}</strong>`+
+    (totalAfecta>0?` — Después de este cheque: <strong>${RD(saldoDespues)}</strong>`:'')+
+    (saldoDespues<0?' ⚠️ Saldo insuficiente':'');
 }
 
 function renderTransferencias(data){
@@ -2238,9 +2428,10 @@ function renderTransferencias(data){
   if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="11">Sin transferencias registradas</td></tr>'; return; }
   const isAdmin=CU&&CU.rol==='admin';
   tb.innerHTML=data.map((t,i)=>{
-    const ejecutado=CHEQUES.filter(c=>c.transferencia_id===t.id&&c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
-    const saldo=parseFloat(t.monto_total||0)-ejecutado;
-    const pct=t.monto_total>0?(ejecutado/t.monto_total*100):0;
+    const dist=t.distribucion?JSON.parse(t.distribucion):{};
+    const distribuido=Object.values(dist).reduce((s,v)=>s+parseFloat(v.monto||0),0);
+    const saldo=parseFloat(t.monto_total||0)-distribuido;
+    const pct=t.monto_total>0?(distribuido/t.monto_total*100):0;
     const nums=['','1RA','2DA','3RA','4TA','5TA'];
     return `<tr>
       <td style="color:var(--text3)">${i+1}</td>
@@ -2249,7 +2440,7 @@ function renderTransferencias(data){
       <td style="text-align:center"><strong>${t.anio}</strong></td>
       <td>${t.fecha?new Date(t.fecha+'T00:00:00').toLocaleDateString('es-DO'):'—'}</td>
       <td><strong style="color:var(--green2)">${RD(t.monto_total)}</strong></td>
-      <td style="color:var(--red2)">${RD(ejecutado)}</td>
+      <td style="color:var(--red2)">${RD(distribuido)}</td>
       <td style="color:${saldo<=0?'var(--red2)':saldo<parseFloat(t.monto_total)*0.1?'var(--amber)':'var(--green2)'}"><strong>${RD(saldo)}</strong></td>
       <td>
         <div style="background:var(--surface2);border-radius:4px;height:8px;width:60px;display:inline-block;vertical-align:middle;overflow:hidden">
@@ -2341,11 +2532,7 @@ async function guardarTransferencia(){
   const fuenteVal=gv('trx-fuente');
   hide('trx-err');
   if(!anio||!num||!fecha||!monto){ const e=document.getElementById('trx-err'); e.textContent='Completa todos los campos obligatorios.'; show('trx-err'); return; }
-  // Verificar que solo haya una activa
-  if(estado==='Activa'){
-    const otraActiva=TRANSFERENCIAS.find(t=>t.estado==='Activa'&&t.id!==gv('trx-id'));
-    if(otraActiva){ const e=document.getElementById('trx-err'); e.textContent='⚠️ Ya existe una transferencia activa: '+otraActiva.descripcion+'. Ciérrala antes de activar otra.'; show('trx-err'); return; }
-  }
+  // Ahora se permiten varias transferencias activas simultáneamente — sin restricción de exclusividad
   const nums=['','1RA','2DA','3RA','4TA','5TA'];
   const [fId,fNombre]=(fuenteVal||':').split(':');
   const nombre=(nums[num]||num+'TA')+'. TRANSFERENCIA '+anio;
@@ -2364,17 +2551,7 @@ async function guardarTransferencia(){
 
 async function activarTransferencia(id){
   const t=TRANSFERENCIAS.find(x=>x.id===id); if(!t) return;
-  const otraActiva=TRANSFERENCIAS.find(x=>x.estado==='Activa'&&x.id!==id);
-  if(otraActiva){
-    const ejecutado=CHEQUES.filter(c=>c.transferencia_id===otraActiva.id&&c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
-    const saldo=parseFloat(otraActiva.monto_total||0)-ejecutado;
-    if(saldo>0.01){
-      alert(`⚠️ No puede activar esta transferencia.\n\nLa transferencia "${otraActiva.descripcion}" aún tiene saldo disponible de ${RD(saldo)}.\n\nDebe agotarla antes de activar la siguiente.`);
-      return;
-    }
-    // Cerrar la anterior automáticamente
-    await sb.from('transferencias_fin').update({estado:'Cerrada'}).eq('id',otraActiva.id);
-  }
+  // Ahora pueden coexistir varias transferencias activas — ya no se cierra ni se bloquea ninguna otra
   await sb.from('transferencias_fin').update({estado:'Activa'}).eq('id',id);
   await cargarTransferencias(); renderTransferencias(); renderKPIActiva();
   mostrarToastFin('✅ Transferencia activada: '+t.descripcion);
@@ -3498,7 +3675,8 @@ function cargarDashboard(){
   const totalIngresos=ingMes.reduce((s,i)=>s+parseFloat(i.monto||0),0);
   const transito=cheqActivos.filter(c=>c.estado==='Activo'&&!c.conciliado).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
   const totalIngAll=INGRESOS.filter(i=>i.estado!=='Anulado').reduce((s,i)=>s+parseFloat(i.monto||0),0);
-  const totalEgrAll=CHEQUES.filter(c=>c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
+  // Incluye el cargo bancario como salida real del banco (aunque no se reste del cheque al beneficiario)
+  const totalEgrAll=CHEQUES.filter(c=>c.estado!=='Anulado').reduce((s,c)=>s+montoTotalCheque(c),0);
   const balance=totalIngAll-totalEgrAll;
   const conciliado=INGRESOS.filter(i=>i.estado!=='Anulado').reduce((s,i)=>s+parseFloat(i.monto||0),0)-CHEQUES.filter(c=>c.conciliado&&c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
   const anulados=CHEQUES.filter(c=>c.estado==='Anulado').length;
@@ -3555,14 +3733,25 @@ function calcNeto(){
   const itbisFacturado=parseFloat(gv('cheq-itbis-facturado')||0);
   const pctItbis=parseFloat(gv('cheq-itbis')||0);
   const pctIsr=parseFloat(gv('cheq-isr')||0);
-  const cargos=parseFloat(gv('cheq-cargos')||0);
+  const pctCargos=parseFloat(gv('cheq-cargos')||0);
   const mtoItbis=itbisFacturado*pctItbis/100;
   const mtoIsr=bruto*pctIsr/100;
-  const neto=bruto-mtoItbis-mtoIsr-cargos;
+  const mtoCargos=bruto*pctCargos/100;
+  // El cargo bancario se calcula (como % del bruto, igual que ISR) pero NO se rebaja del monto a pagar al beneficiario
+  const neto=bruto-mtoItbis-mtoIsr;
+  // Lo que sí se rebaja del balance del centro/programa (neto pagado + cargo bancario)
+  const totalAfecta=neto+mtoCargos;
   sv('cheq-mto-itbis',mtoItbis.toFixed(2));
   sv('cheq-mto-isr',mtoIsr.toFixed(2));
+  sv('cheq-mto-cargos',mtoCargos.toFixed(2));
   sv('cheq-neto',neto.toFixed(2));
+  const elTot=document.getElementById('cheq-total-afecta');
+  if(elTot) elTot.value=totalAfecta.toFixed(2);
+  actualizarSaldoCentroSeleccionado();
 }
+
+// Total real que sale del centro/programa por un cheque: lo pagado al beneficiario + el cargo bancario
+function montoTotalCheque(c){ return parseFloat(c&&c.monto_neto||0)+parseFloat(c&&c.cargos_bancarios||0); }
 
 function renderCheques(data){
   data=data||CHEQUES;
@@ -3572,7 +3761,7 @@ function renderCheques(data){
   if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="14">Sin cheques registrados</td></tr>'; return; }
   const isAdmin=CU&&(CU.rol==='admin'||CU.rol==='supervisor');
   tb.innerHTML=data.map((c,i)=>`<tr>
-    <td><input type="checkbox" class="chk-cheq" value="${c.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-cheq','btn-del-cheques','btn-imp-cheques')"/></td>
+    <td><input type="checkbox" class="chk-cheq" value="${c.id}" style="width:16px;height:16px;cursor:pointer" onchange="actualizarBtnBulk('chk-cheq','btn-del-cheques','btn-imp-cheques','btn-ver-cheques')"/></td>
     <td style="color:var(--text3)">${i+1}</td>
     <td>${new Date(c.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
     <td><strong>${c.num_cheque}</strong>${c.referencia?`<div class="cs">Ref: ${c.referencia}</div>`:''}</td>
@@ -3604,21 +3793,32 @@ function filtrarCheques(){
   }));
 }
 
+// Analiza un número de cheque en {prefijo, digitos, valor}
+function parsearNumCheque(num){
+  const m=(num||'').trim().match(/^(.*?)(\d+)$/);
+  if(!m) return null;
+  return {prefijo:m[1], digitos:m[2], valor:parseInt(m[2],10)};
+}
+
+// Próximo número de cheque: toma el más alto ya registrado en el sistema y le suma 1.
+// Así el sistema asume automáticamente el último número que se registre y continúa desde
+// ahí sin variar, sin importar el orden en que se hayan guardado los cheques (nunca repite
+// ni retrocede).
 function siguienteNumCheque(){
-  if(!CHEQUES.length) return '';
-  const ultimo=[...CHEQUES].sort((a,b)=>new Date(b.created_at||b.fecha)-new Date(a.created_at||a.fecha))[0];
-  const num=(ultimo.num_cheque||'').trim();
-  const m=num.match(/^(.*?)(\d+)$/);
-  if(!m) return '';
-  const prefijo=m[1], digitos=m[2];
-  const siguiente=(parseInt(digitos,10)+1).toString().padStart(digitos.length,'0');
-  return prefijo+siguiente;
+  let base=null;
+  CHEQUES.forEach(c=>{
+    const p=parsearNumCheque(c.num_cheque);
+    if(p&&(!base||p.valor>base.valor)) base=p;
+  });
+  if(!base) return '';
+  const siguiente=(base.valor+1).toString().padStart(base.digitos.length,'0');
+  return base.prefijo+siguiente;
 }
 
 async function openNuevoCheque(){
   sv('cheq-id',''); sv('cheq-fecha',today()); sv('cheq-num',siguienteNumCheque()); sv('cheq-ben',''); sv('cheq-doc','');
   sv('cheq-ref',''); sv('cheq-bruto',''); sv('cheq-itbis-facturado','0'); sv('cheq-itbis','0'); sv('cheq-isr','0'); sv('cheq-cargos','0');
-  sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-neto',''); sv('cheq-concepto','');
+  sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-mto-cargos','0'); sv('cheq-neto',''); sv('cheq-concepto','');
   ssv('cheq-rubro',''); ssv('cheq-centro','');
   document.getElementById('m-cheq-tit').textContent='Nuevo Cheque';
   const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='none';
@@ -3628,27 +3828,8 @@ async function openNuevoCheque(){
   await poblarSelectCentros();
   await poblarSelectBeneficiarios();
   await poblarSelectFuentes();
-  // Mostrar transferencia activa
-  const act=getTransferenciaActiva();
-  const infoEl=document.getElementById('trx-activa-info');
-  if(infoEl){
-    if(act){
-      const ejecutado=CHEQUES.filter(c=>c.transferencia_id===act.id&&c.estado!=='Anulado').reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
-      const saldo=parseFloat(act.monto_total||0)-ejecutado;
-      document.getElementById('trx-activa-nombre').textContent=act.descripcion;
-      document.getElementById('trx-activa-saldo').textContent=RD(saldo);
-      infoEl.style.display='block';
-      infoEl.style.background=saldo<=0?'var(--red-bg)':'var(--green-bg)';
-      infoEl.style.color=saldo<=0?'var(--red)':'var(--green)';
-      infoEl.style.borderColor=saldo<=0?'#fca5a5':'#86efac';
-    } else {
-      infoEl.style.display='block';
-      infoEl.style.background='var(--amber-bg)';
-      infoEl.style.color='var(--amber)';
-      infoEl.style.borderColor='#fde68a';
-      infoEl.innerHTML='⚠️ No hay transferencia activa. Ve a <strong>Transferencias</strong> y activa una antes de emitir cheques.';
-    }
-  }
+  sv('cheq-total-afecta','0.00');
+  actualizarSaldoCentroSeleccionado();
   openMod('m-cheque');
 }
 
@@ -3693,7 +3874,7 @@ function autoRncBeneficiario(){
 
 async function guardarCheque(){
   const fecha=gv('cheq-fecha'), num=UP(gv('cheq-num')), ben=UP(gv('cheq-ben')), concepto=UP(gv('cheq-concepto')), rubroVal=gv('cheq-rubro');
-  const bruto=parseFloat(gv('cheq-bruto')||0), itbis=parseFloat(gv('cheq-itbis')||0), isr=parseFloat(gv('cheq-isr')||0), cargos=parseFloat(gv('cheq-cargos')||0), neto=parseFloat(gv('cheq-neto')||0);
+  const bruto=parseFloat(gv('cheq-bruto')||0), itbis=parseFloat(gv('cheq-itbis')||0), isr=parseFloat(gv('cheq-isr')||0), pctCargos=parseFloat(gv('cheq-cargos')||0), neto=parseFloat(gv('cheq-neto')||0);
   hide('cheq-err');
   if(!fecha||!num||!ben||!rubroVal||!bruto||!concepto){ const e=document.getElementById('cheq-err'); e.textContent='Completa todos los campos obligatorios.'; show('cheq-err'); return; }
   const [rubroId,rubroNombre]=rubroVal.split(':');
@@ -3705,12 +3886,12 @@ async function guardarCheque(){
     rubro_id:rubroId, rubro_nombre:rubroNombre,
     centro_id:centroId||null, centro_nombre:centroNombre||null,
     fuente_id:fuenteId||null, fuente_nombre:fuenteNombre||null,
-    transferencia_id:getTransferenciaActiva()?.id||null,
-    transferencia_nombre:getTransferenciaActiva()?.descripcion||null,
+    // El cheque ya no se ata a "la" transferencia activa: el balance se controla por centro/programa
+    transferencia_id:null, transferencia_nombre:null,
     monto_bruto:bruto, itbis_facturado:parseFloat(gv('cheq-itbis-facturado')||0), pct_itbis:itbis,
     mto_itbis:parseFloat(gv('cheq-mto-itbis')||0),
     pct_isr:isr, mto_isr:parseFloat(gv('cheq-mto-isr')||0),
-    cargos_bancarios:cargos, monto_neto:neto,
+    pct_cargos:pctCargos, cargos_bancarios:parseFloat(gv('cheq-mto-cargos')||0), monto_neto:neto,
     concepto, estado:'Activo', conciliado:false,
     registrado_por:CU.nombre, created_at:new Date().toISOString()
   };
@@ -3767,8 +3948,8 @@ async function editarCheque(id){
   sv('cheq-id',c.id); sv('cheq-fecha',c.fecha); sv('cheq-num',c.num_cheque);
   sv('cheq-ref',c.referencia||''); sv('cheq-ben',c.beneficiario); sv('cheq-doc',c.cedula_beneficiario||'');
   sv('cheq-bruto',c.monto_bruto); sv('cheq-itbis-facturado',c.itbis_facturado||0); sv('cheq-itbis',c.pct_itbis||0); sv('cheq-isr',c.pct_isr||0);
-  sv('cheq-cargos',c.cargos_bancarios||0); sv('cheq-mto-itbis',c.mto_itbis||0); sv('cheq-mto-isr',c.mto_isr||0);
-  sv('cheq-neto',c.monto_neto); sv('cheq-concepto',c.concepto);
+  sv('cheq-cargos',c.pct_cargos||0); sv('cheq-mto-itbis',c.mto_itbis||0); sv('cheq-mto-isr',c.mto_isr||0);
+  sv('cheq-concepto',c.concepto);
   document.getElementById('m-cheq-tit').textContent='Editar Cheque';
   const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='inline-flex';
   await poblarSelectRubros();
@@ -3778,7 +3959,18 @@ async function editarCheque(id){
   ssv('cheq-rubro',c.rubro_id+':'+c.rubro_nombre);
   ssv('cheq-centro',c.centro_id?c.centro_id+':'+c.centro_nombre:'');
   ssv('cheq-fuente',c.fuente_id?c.fuente_id+':'+c.fuente_nombre:'');
+  calcNeto(); // recalcula neto, total-afecta y el saldo del centro con los valores ya cargados
   openMod('m-cheque');
+}
+
+// Prefijo para el Concepto del comprobante: REFERENCIA - CÓDIGO DEL CENTRO - CENTRO/PROGRAMA
+function prefijoConceptoCheque(c){
+  const partes=[];
+  if(c.referencia) partes.push(c.referencia);
+  const centro=c.centro_id?CENTROS.find(x=>String(x.id)===String(c.centro_id)):null;
+  if(centro&&centro.codigo) partes.push(centro.codigo);
+  partes.push(c.centro_nombre||'General/Distrito');
+  return partes.join(' - ');
 }
 
 function generarHTMLComprobante(c, autoPrint){
@@ -3823,15 +4015,15 @@ function generarHTMLComprobante(c, autoPrint){
       <div class="campo"><label>Estado</label><div class="val">${c.estado}${c.conciliado?' (Conciliado)':''}</div></div>
       <div class="campo"><label>Registrado por</label><div class="val">${c.registrado_por||'—'}</div></div>
     </div>
-    <div class="campo" style="margin-bottom:1rem"><label>Concepto</label><div class="val">${c.concepto}</div></div>
+    <div class="campo" style="margin-bottom:1rem"><label>Concepto</label><div class="val">${prefijoConceptoCheque(c)} — ${c.concepto}</div></div>
     <table>
       <tr><th>Detalle</th><th>Monto</th></tr>
       <tr><td>Monto bruto / Total facturado</td><td>${RD(c.monto_bruto)}</td></tr>
       ${c.itbis_facturado?`<tr><td>ITBIS facturado (incluido)</td><td>${RD(c.itbis_facturado)}</td></tr>`:''}
       <tr><td>Retención ITBIS (${c.pct_itbis||0}%)</td><td>-${RD(c.mto_itbis||0)}</td></tr>
       <tr><td>Retención ISR (${c.pct_isr||0}%)</td><td>-${RD(c.mto_isr||0)}</td></tr>
-      <tr><td>Cargos bancarios</td><td>-${RD(c.cargos_bancarios||0)}</td></tr>
       <tr class="total-row"><td>MONTO NETO PAGADO</td><td>${RD(c.monto_neto)}</td></tr>
+      ${c.cargos_bancarios>0?`<tr><td style="font-size:11px;color:#64748b">Cargo bancario (${c.pct_cargos||0}%) — no se descuenta del pago; afecta el auxiliar del centro/programa</td><td style="font-size:11px;color:#64748b">${RD(c.cargos_bancarios)}</td></tr>`:''}
     </table>
     <div class="firma">
       <div>Entregado por</div>
@@ -3868,11 +4060,38 @@ function imprimirChequesSeleccionados(){
   w.document.close();
 }
 
+// Consulta por lote: abre los cheques seleccionados en una sola pestaña para revisarlos,
+// SIN disparar la impresión automáticamente. Desde ahí se puede imprimir (o "Guardar como PDF"
+// con el diálogo de impresión del navegador) cuando se necesite.
+function verChequesSeleccionados(){
+  const ids=[...document.querySelectorAll('.chk-cheq:checked')].map(cb=>cb.value);
+  if(!ids.length){ alert('Selecciona al menos un cheque.'); return; }
+  const seleccionados=CHEQUES.filter(c=>ids.includes(String(c.id)));
+  if(!seleccionados.length){ alert('No se encontraron los cheques seleccionados.'); return; }
+  const totalNeto=seleccionados.reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
+  const bloques=seleccionados.map((c,i)=>`<div${i>0?' class="pagebreak"':''}>${generarHTMLComprobante(c,true)}</div>`).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Consulta de ${seleccionados.length} cheque(s)</title>
+    <style>
+      .toolbar-batch{text-align:center;margin:1.5rem 0;font-family:Arial,sans-serif}
+      .toolbar-batch button{background:#1565c0;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:14px;cursor:pointer}
+      .resumen-batch{text-align:center;font-family:Arial,sans-serif;color:#475569;font-size:13px;margin-bottom:.5rem}
+      @media print{ .toolbar-batch{display:none} .resumen-batch{display:none} }
+    </style></head><body>
+    <div class="toolbar-batch"><button onclick="window.print()">🖨️ Imprimir estos ${seleccionados.length} cheques</button></div>
+    <div class="resumen-batch">Consulta de ${seleccionados.length} cheque(s) — Total neto: ${RD(totalNeto)}</div>
+    ${bloques}
+    </body></html>`);
+  w.document.close();
+}
+
 // ===================== IMPRESIÓN SOBRE CHEQUE PRE-IMPRESO (matricial) =====================
 const CFGIMP_UNIDADES=[
+  {key:'stub_num_cheque',label:'Talón — No. Cheque',x:12,y:10,size:9},
   {key:'stub_fecha',label:'Talón — Fecha',x:12,y:15,size:10},
   {key:'stub_concepto',label:'Talón — Concepto',x:35,y:15,size:10},
   {key:'stub_valor',label:'Talón — Valor',x:124,y:15,size:10},
+  {key:'stub_retenido',label:'Talón — Monto Retenido',x:124,y:20,size:9},
   {key:'dia',label:'Cheque — Día',x:170,y:51,size:10},
   {key:'mes',label:'Cheque — Mes',x:179,y:51,size:10},
   {key:'anio',label:'Cheque — Año',x:187,y:51,size:9},
@@ -3905,7 +4124,9 @@ function renderPreviewCfgImp(){
   wrap.style.width=(cfg.w*scale)+'px';
   wrap.style.height=(cfg.h*scale)+'px';
   const muestras={
+    stub_num_cheque:'001-045',
     stub_fecha:'10/08/2026', stub_concepto:'PAGO DE SERVICIOS', stub_valor:'RD$ 1,500.00',
+    stub_retenido:'RD$ 150.00',
     dia:'10', mes:'08', anio:'2026',
     beneficiario:'JUAN PÉREZ MARTÍNEZ',
     monto_numerico:'1,500.00',
@@ -4011,9 +4232,11 @@ function generarHTMLChequeFisico(c){
   const mes=String(fecha.getMonth()+1).padStart(2,'0');
   const anio=String(fecha.getFullYear());
   const valores={
+    stub_num_cheque:c.num_cheque,
     stub_fecha:fecha.toLocaleDateString('es-DO'),
-    stub_concepto:c.concepto,
+    stub_concepto:prefijoConceptoCheque(c)+' — '+c.concepto,
     stub_valor:RD(c.monto_neto),
+    stub_retenido:'Ret: '+RD(parseFloat(c.mto_itbis||0)+parseFloat(c.mto_isr||0)),
     dia, mes, anio,
     beneficiario:c.beneficiario,
     monto_numerico:NUM_SIN_PREFIJO(c.monto_neto),
@@ -4066,7 +4289,7 @@ async function anularCheque(id){
   const c=CHEQUES.find(x=>x.id===id);
   if(!confirm('¿Anular el cheque '+c.num_cheque+' de '+c.beneficiario+'?')) return;
   await sb.from('cheques_fin').update({estado:'Anulado'}).eq('id',id);
-  await cargarChequesFin(); renderCheques(); cargarDashboard();
+  await cargarChequesFin(); renderCheques(); cargarDashboard(); renderKPIActiva();
 }
 
 async function conciliarCheque(id){
@@ -4192,7 +4415,7 @@ async function anularIngreso(id){
 // ═══════════════════════════════════════════════
 function cargarLibro(){
   const dd=gv('lb-d'), dh=gv('lb-h'), tipo=gv('lb-tipo');
-  const cheq=CHEQUES.filter(c=>c.estado!=='Anulado').map(c=>({fecha:c.fecha,doc:c.num_cheque,ref:c.referencia||'',tipo:'CHEQUE',partida:c.beneficiario,concepto:c.concepto,debito:parseFloat(c.monto_neto||0),itbis:parseFloat(c.mto_itbis||0),isr:parseFloat(c.mto_isr||0),cargos:parseFloat(c.cargos_bancarios||0),credito:0,estado:c.estado}));
+  const cheq=CHEQUES.filter(c=>c.estado!=='Anulado').map(c=>({fecha:c.fecha,doc:c.num_cheque,ref:c.referencia||'',tipo:'CHEQUE',partida:c.beneficiario,concepto:c.concepto,debito:montoTotalCheque(c),itbis:parseFloat(c.mto_itbis||0),isr:parseFloat(c.mto_isr||0),cargos:parseFloat(c.cargos_bancarios||0),credito:0,estado:c.estado}));
   const ing=INGRESOS.filter(i=>i.estado!=='Anulado').map(i=>({fecha:i.fecha,doc:i.num_deposito,ref:'',tipo:'DEPOSITO',partida:i.fuente_nombre,concepto:i.concepto,debito:0,itbis:0,isr:0,cargos:0,credito:parseFloat(i.monto||0),estado:i.estado}));
   const ajus=AJUSTES.map(a=>({fecha:a.fecha,doc:'AJ-'+a.id.slice(-4),ref:'',tipo:'AJUSTE',partida:'Ajuste',concepto:a.concepto,debito:a.tipo_ajuste==='Débito'?parseFloat(a.monto||0):0,itbis:0,isr:0,cargos:0,credito:a.tipo_ajuste==='Crédito'?parseFloat(a.monto||0):0,estado:'Activo'}));
   let todos=[...cheq,...ing,...ajus].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
@@ -4963,7 +5186,7 @@ function generarReporte(tipo){
 function exportarExcel(){
   if(!CHEQUES.length&&!INGRESOS.length){ alert('No hay datos para exportar.'); return; }
   const wb=XLSX.utils.book_new();
-  const wsCh=XLSX.utils.json_to_sheet(CHEQUES.map(c=>({'Fecha':c.fecha,'No. Cheque':c.num_cheque,'Referencia':c.referencia||'','Beneficiario':c.beneficiario,'RNC/Cédula':c.cedula_beneficiario||'','Rubro':c.rubro_nombre,'Centro':c.centro_nombre||'','Fuente':c.fuente_nombre||'','Concepto':c.concepto,'Monto Bruto':c.monto_bruto,'% ITBIS':c.pct_itbis||0,'Monto ITBIS':c.mto_itbis||0,'% ISR':c.pct_isr||0,'Monto ISR':c.mto_isr||0,'Cargos Bancarios':c.cargos_bancarios||0,'Monto Neto':c.monto_neto,'Estado':c.estado,'Conciliado':c.conciliado?'Sí':'No','Registrado por':c.registrado_por})));
+  const wsCh=XLSX.utils.json_to_sheet(CHEQUES.map(c=>({'Fecha':c.fecha,'No. Cheque':c.num_cheque,'Referencia':c.referencia||'','Beneficiario':c.beneficiario,'RNC/Cédula':c.cedula_beneficiario||'','Rubro':c.rubro_nombre,'Centro':c.centro_nombre||'','Fuente':c.fuente_nombre||'','Concepto':c.concepto,'Monto Bruto':c.monto_bruto,'% ITBIS':c.pct_itbis||0,'Monto ITBIS':c.mto_itbis||0,'% ISR':c.pct_isr||0,'Monto ISR':c.mto_isr||0,'% Cargo Bancario':c.pct_cargos||0,'Cargos Bancarios':c.cargos_bancarios||0,'Monto Neto':c.monto_neto,'Estado':c.estado,'Conciliado':c.conciliado?'Sí':'No','Registrado por':c.registrado_por})));
   XLSX.utils.book_append_sheet(wb,wsCh,'Cheques');
   const wsIng=XLSX.utils.json_to_sheet(INGRESOS.map(i=>({'Fecha':i.fecha,'No. Depósito':i.num_deposito,'Fuente':i.fuente_nombre,'Concepto':i.concepto,'Monto':i.monto,'Estado':i.estado,'Registrado por':i.registrado_por})));
   XLSX.utils.book_append_sheet(wb,wsIng,'Ingresos');
