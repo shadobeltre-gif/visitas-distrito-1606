@@ -979,6 +979,12 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <input type="text" id="q-fue" placeholder="🔍 Buscar fuente..." oninput="filtrarFuentes()" style="margin-bottom:.5rem;width:100%"/>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-fue',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="tb-fuentes"></tbody></table></div>
     </div>
+    <div class="card">
+      <div class="chdr">🔖 Códigos de Referencia</div>
+      <div class="ttbar"><button class="btn btn-navy btn-sm" onclick="openMod('m-referencia')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-referencias" style="display:none" onclick="eliminarSeleccionados('referencias','chk-refc')">🗑️ Eliminar</button></div>
+      <input type="text" id="q-refc" placeholder="🔍 Buscar código de referencia..." oninput="filtrarReferencias()" style="margin-bottom:.5rem;width:100%"/>
+      <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-refc',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Centro/Programa</th><th>Acciones</th></tr></thead><tbody id="tb-referencias"></tbody></table></div>
+    </div>
   </div>
 </div>
 
@@ -1433,26 +1439,35 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div class="fgrid" style="margin-bottom:1rem">
         <div class="fg"><label>Fecha <span class="req">*</span></label><input type="date" id="cheq-fecha"/></div>
         <div class="fg"><label>No. Cheque <span class="req">*</span></label><input type="text" id="cheq-num" placeholder="001-001"/></div>
-        <div class="fg"><label>Código de referencia</label><input type="text" id="cheq-ref" placeholder="REF-001"/></div>
+        <div class="fg"><label>Código de referencia</label>
+          <div style="display:flex;gap:6px">
+            <select id="cheq-ref" style="flex:1"><option value="">Seleccionar...</option></select>
+            <button type="button" class="btn btn-xs btn-navy" onclick="abrirNuevaReferenciaDesdeCheque()" title="Agregar nuevo código de referencia">+ Nuevo</button>
+          </div>
+        </div>
         <div class="fg"><label>Transferencia / Programa</label><select id="cheq-fuente"><option value="">General / Fondo Propio</option></select></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--green2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--green2)">👤 Beneficiario</div>
       <div class="fgrid" style="margin-bottom:1rem">
         <div class="fg full">
           <label>Seleccionar beneficiario</label>
-          <select id="cheq-ben-sel" onchange="autoRncBeneficiario()" style="width:100%">
-            <option value="">-- Seleccionar de la lista --</option>
-          </select>
+          <div style="display:flex;gap:6px">
+            <select id="cheq-ben-sel" onchange="autoRncBeneficiario()" style="flex:1">
+              <option value="">-- Seleccionar de la lista --</option>
+            </select>
+            <button type="button" class="btn btn-xs btn-primary" onclick="abrirNuevoBeneficiarioDesdeCheque()" title="Agregar nuevo beneficiario">+ Nuevo</button>
+          </div>
         </div>
-        <div class="fg"><label>Beneficiario <span class="req">*</span></label><input type="text" id="cheq-ben" placeholder="O escribe el nombre manualmente"/></div>
+        <div class="fg"><label>Beneficiario <span class="req">*</span></label><input type="text" id="cheq-ben" readonly style="background:var(--surface2)" placeholder="Se completa al elegir de la lista"/></div>
         <div class="fg"><label>Cédula / RNC</label><input type="text" id="cheq-doc" placeholder="Auto o manual" style="background:var(--surface2)"/></div>
         <div class="fg"><label>Rubro <span class="req">*</span></label><select id="cheq-rubro"><option value="">Seleccionar...</option></select></div>
         <div class="fg"><label>Centro o programa</label><select id="cheq-centro" onchange="actualizarSaldoCentroSeleccionado()"><option value="">General / Distrito</option></select></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--amber2)">💰 Montos y retenciones</div>
       <div class="fgrid" style="margin-bottom:1rem">
-        <div class="fg"><label>Monto bruto/Total facturado (RD$) <span class="req">*</span></label><input type="number" id="cheq-bruto" placeholder="0.00" step="0.01" oninput="calcNeto()"/></div>
-        <div class="fg"><label>ITBIS facturado (RD$) — incluido en el bruto</label><input type="number" id="cheq-itbis-facturado" placeholder="0.00" step="0.01" value="0" oninput="calcNeto()"/></div>
+        <div class="fg"><label>Monto bruto facturado (RD$) <span class="req">*</span></label><input type="number" id="cheq-bruto" placeholder="0.00" step="0.01" oninput="calcNeto()"/></div>
+        <div class="fg"><label>ITBIS facturado (RD$)<br><span style="font-weight:400;color:var(--text3)">Se suma al bruto</span></label><input type="number" id="cheq-itbis-facturado" placeholder="0.00" step="0.01" value="0" oninput="calcNeto()"/></div>
+        <div class="fg"><label>Total facturado (RD$)<br><span style="font-weight:400;color:var(--text3)">Bruto + ITBIS</span></label><input type="number" id="cheq-total-facturado" readonly style="background:var(--surface2);color:var(--navy)" placeholder="0.00"/></div>
         <div class="fg"><label>% Retención ITBIS</label><input type="number" id="cheq-itbis" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
         <div class="fg"><label>% Retención ISR</label><input type="number" id="cheq-isr" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
         <div class="fg"><label>% Cargo bancario<br><span style="font-weight:400;color:var(--text3)">No se descuenta del cheque</span></label><input type="number" id="cheq-cargos" placeholder="0" step="0.01" value="0" oninput="calcNeto()"/></div>
@@ -1684,6 +1699,19 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div>
 </div>
 
+<!-- Código de Referencia -->
+<div class="mbg" id="m-referencia">
+  <div class="mbox" style="max-width:420px">
+    <div class="mhdr">🔖 Código de Referencia<button class="mclose" onclick="closeMod('m-referencia')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="ref-id"/>
+      <div class="fg" style="margin-bottom:1rem"><label>Código <span class="req">*</span></label><input type="text" id="ref-codigo" placeholder="REF-001"/></div>
+      <div class="fg" style="margin-bottom:1.25rem"><label>Centro o programa / Descripción <span class="req">*</span></label><input type="text" id="ref-nombre" placeholder="Nombre del centro o programa"/></div>
+      <div class="btn-row"><button class="btn btn-navy" onclick="guardarReferencia()">💾 Guardar</button><button class="btn" onclick="closeMod('m-referencia')">Cancelar</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- Usuario -->
 <div class="mbg" id="m-usuario">
   <div class="mbox" style="max-width:480px">
@@ -1831,7 +1859,7 @@ try{
 // ═══════════════════════════════════════════════
 let CU = null;
 let USERS_FIN = [];
-let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [];
+let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [], REFERENCIAS = [];
 let TECNICOS_VT = [], VISITAS_VT = [], CRONOGRAMA_VT = [];
 const MONTO_DIETA_VT = 500;
 let chartFlujo = null, chartRubros = null, chartDistCentros = null;
@@ -2136,6 +2164,7 @@ function selTodo(cls,chk){
     'chk-fic':'btn-del-fichas','chk-cron':'btn-del-cronograma','chk-tecvt':'btn-del-tecnicos',
     'chk-aj':'btn-del-ajustes','chk-cen':'btn-del-centros',
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
+    'chk-refc':'btn-del-referencias',
     'chk-usr':'btn-del-usuarios'
   };
   if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined,cls==='chk-cheq'?'btn-ver-cheques':undefined);
@@ -2162,6 +2191,7 @@ async function eliminarSeleccionados(tabla,cls){
     fichas:'visitas_vt',cronograma:'cronograma_vt',tecnicos:'tecnicos_vt',
     ajustes:'ajustes_fin',centros:'centros_fin',
     beneficiarios:'beneficiarios_fin',rubros:'rubros_fin',fuentes:'fuentes_fin',
+    referencias:'referencias_fin',
     usuarios:'usuarios_fin'
   };
   for(const id of ids) await sb.from(tablaMap[tabla]).delete().eq('id',id);
@@ -2175,6 +2205,7 @@ async function eliminarSeleccionados(tabla,cls){
   if(tabla==='beneficiarios'){ await cargarBeneficiarios(); renderCatalogos(); }
   if(tabla==='rubros'){ await cargarRubros(); renderCatalogos(); }
   if(tabla==='fuentes'){ await cargarFuentes(); renderCatalogos(); }
+  if(tabla==='referencias'){ await cargarReferencias(); renderCatalogos(); poblarSelectReferencias(); }
   if(tabla==='usuarios'){ await cargarUsuariosFin(); renderUsuarios(); }
   cargarDashboard();
 }
@@ -2232,6 +2263,12 @@ async function editarFuente(id){
   const f=FUENTES.find(x=>x.id===id); if(!f) return;
   sv('fue-id',f.id); sv('fue-codigo',f.codigo); sv('fue-nombre',f.nombre);
   openMod('m-fuente');
+}
+
+function editarReferencia(id){
+  const r=REFERENCIAS.find(x=>x.id===id); if(!r) return;
+  sv('ref-id',r.id); sv('ref-codigo',r.codigo); sv('ref-nombre',r.nombre);
+  openMod('m-referencia');
 }
 
 async function editarIngreso(id){
@@ -2858,7 +2895,7 @@ async function cargarUsuariosFin(){
 }
 
 async function cargarTodo(){
-  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarTransferencias(),cargarTecnicosVT()]);
+  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarReferencias(),cargarTransferencias(),cargarTecnicosVT()]);
 }
 
 async function cargarTecnicosVT(){ const {data}=await sb.from('tecnicos_vt').select('*').order('nombre'); TECNICOS_VT=data||[]; }
@@ -3509,6 +3546,10 @@ async function cargarBeneficiarios(){
   const {data}=await sb.from('beneficiarios_fin').select('*').order('nombre');
   BENEFICIARIOS=data||[];
 }
+async function cargarReferencias(){
+  const {data}=await sb.from('referencias_fin').select('*').order('codigo');
+  REFERENCIAS=data||[];
+}
 
 async function cargarChequesFin(){ const {data}=await sb.from('cheques_fin').select('*').order('fecha',{ascending:false}); CHEQUES=data||[]; }
 async function cargarIngresosFin(){ const {data}=await sb.from('ingresos_fin').select('*').order('fecha',{ascending:false}); INGRESOS=data||[]; }
@@ -3737,13 +3778,17 @@ function calcNeto(){
   const mtoItbis=itbisFacturado*pctItbis/100;
   const mtoIsr=bruto*pctIsr/100;
   const mtoCargos=bruto*pctCargos/100;
+  // Total facturado = bruto + ITBIS facturado (ya no se asume que el ITBIS viene incluido en el bruto)
+  const totalFacturado=bruto+itbisFacturado;
   // El cargo bancario se calcula (como % del bruto, igual que ISR) pero NO se rebaja del monto a pagar al beneficiario
-  const neto=bruto-mtoItbis-mtoIsr;
+  const neto=totalFacturado-mtoItbis-mtoIsr;
   // Lo que sí se rebaja del balance del centro/programa (neto pagado + cargo bancario)
   const totalAfecta=neto+mtoCargos;
   sv('cheq-mto-itbis',mtoItbis.toFixed(2));
   sv('cheq-mto-isr',mtoIsr.toFixed(2));
   sv('cheq-mto-cargos',mtoCargos.toFixed(2));
+  const elFact=document.getElementById('cheq-total-facturado');
+  if(elFact) elFact.value=totalFacturado.toFixed(2);
   sv('cheq-neto',neto.toFixed(2));
   const elTot=document.getElementById('cheq-total-afecta');
   if(elTot) elTot.value=totalAfecta.toFixed(2);
@@ -3817,9 +3862,9 @@ function siguienteNumCheque(){
 
 async function openNuevoCheque(){
   sv('cheq-id',''); sv('cheq-fecha',today()); sv('cheq-num',siguienteNumCheque()); sv('cheq-ben',''); sv('cheq-doc','');
-  sv('cheq-ref',''); sv('cheq-bruto',''); sv('cheq-itbis-facturado','0'); sv('cheq-itbis','0'); sv('cheq-isr','0'); sv('cheq-cargos','0');
-  sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-mto-cargos','0'); sv('cheq-neto',''); sv('cheq-concepto','');
-  ssv('cheq-rubro',''); ssv('cheq-centro','');
+  sv('cheq-bruto',''); sv('cheq-itbis-facturado','0'); sv('cheq-itbis','0'); sv('cheq-isr','0'); sv('cheq-cargos','0');
+  sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-mto-cargos','0'); sv('cheq-total-facturado','0'); sv('cheq-neto',''); sv('cheq-concepto','');
+  ssv('cheq-rubro',''); ssv('cheq-centro',''); ssv('cheq-ref','');
   document.getElementById('m-cheq-tit').textContent='Nuevo Cheque';
   const btnImp=document.getElementById('btn-imprimir-cheque'); if(btnImp) btnImp.style.display='none';
   const btnImpFis=document.getElementById('btn-imprimir-cheque-fisico'); if(btnImpFis) btnImpFis.style.display='none';
@@ -3828,6 +3873,7 @@ async function openNuevoCheque(){
   await poblarSelectCentros();
   await poblarSelectBeneficiarios();
   await poblarSelectFuentes();
+  await poblarSelectReferencias();
   sv('cheq-total-afecta','0.00');
   actualizarSaldoCentroSeleccionado();
   openMod('m-cheque');
@@ -3864,6 +3910,14 @@ async function poblarSelectFuentes(){
   const si=document.getElementById('ing-fuente');
   if(si) si.innerHTML='<option value="">Seleccionar...</option>'+FUENTES.map(f=>`<option value="${f.id}:${f.nombre}">${f.nombre}</option>`).join('');
 }
+async function poblarSelectReferencias(){
+  const sel=document.getElementById('cheq-ref'); if(!sel) return;
+  if(!REFERENCIAS.length) await cargarReferencias();
+  const actual=sel.value;
+  sel.innerHTML='<option value="">Seleccionar...</option>'+REFERENCIAS.map(r=>`<option value="${r.codigo}">${r.codigo} — ${r.nombre}</option>`).join('');
+  if(actual) sel.value=actual;
+}
+function abrirNuevoBeneficiarioDesdeCheque(){ sv('ben-id',''); sv('ben-nombre',''); sv('ben-rnc',''); ssv('ben-tipo',''); sv('ben-dir',''); openMod('m-beneficiario'); }
 function autoRncBeneficiario(){
   const val=gv('cheq-ben-sel');
   if(!val) return;
@@ -3946,7 +4000,7 @@ async function guardarCheque(){
 async function editarCheque(id){
   const c=CHEQUES.find(x=>x.id===id); if(!c) return;
   sv('cheq-id',c.id); sv('cheq-fecha',c.fecha); sv('cheq-num',c.num_cheque);
-  sv('cheq-ref',c.referencia||''); sv('cheq-ben',c.beneficiario); sv('cheq-doc',c.cedula_beneficiario||'');
+  sv('cheq-ben',c.beneficiario); sv('cheq-doc',c.cedula_beneficiario||'');
   sv('cheq-bruto',c.monto_bruto); sv('cheq-itbis-facturado',c.itbis_facturado||0); sv('cheq-itbis',c.pct_itbis||0); sv('cheq-isr',c.pct_isr||0);
   sv('cheq-cargos',c.pct_cargos||0); sv('cheq-mto-itbis',c.mto_itbis||0); sv('cheq-mto-isr',c.mto_isr||0);
   sv('cheq-concepto',c.concepto);
@@ -3956,9 +4010,12 @@ async function editarCheque(id){
   await poblarSelectCentros();
   await poblarSelectBeneficiarios();
   await poblarSelectFuentes();
+  await poblarSelectReferencias();
   ssv('cheq-rubro',c.rubro_id+':'+c.rubro_nombre);
   ssv('cheq-centro',c.centro_id?c.centro_id+':'+c.centro_nombre:'');
   ssv('cheq-fuente',c.fuente_id?c.fuente_id+':'+c.fuente_nombre:'');
+  ssv('cheq-ben-sel',c.beneficiario+'::'+(c.cedula_beneficiario||''));
+  ssv('cheq-ref',c.referencia||'');
   calcNeto(); // recalcula neto, total-afecta y el saldo del centro con los valores ya cargados
   openMod('m-cheque');
 }
@@ -4018,8 +4075,8 @@ function generarHTMLComprobante(c, autoPrint){
     <div class="campo" style="margin-bottom:1rem"><label>Concepto</label><div class="val">${prefijoConceptoCheque(c)} — ${c.concepto}</div></div>
     <table>
       <tr><th>Detalle</th><th>Monto</th></tr>
-      <tr><td>Monto bruto / Total facturado</td><td>${RD(c.monto_bruto)}</td></tr>
-      ${c.itbis_facturado?`<tr><td>ITBIS facturado (incluido)</td><td>${RD(c.itbis_facturado)}</td></tr>`:''}
+      <tr><td>Monto bruto facturado</td><td>${RD(c.monto_bruto)}</td></tr>
+      ${c.itbis_facturado?`<tr><td>(+) ITBIS facturado</td><td>${RD(c.itbis_facturado)}</td></tr><tr><td>Total facturado</td><td>${RD(parseFloat(c.monto_bruto||0)+parseFloat(c.itbis_facturado||0))}</td></tr>`:''}
       <tr><td>Retención ITBIS (${c.pct_itbis||0}%)</td><td>-${RD(c.mto_itbis||0)}</td></tr>
       <tr><td>Retención ISR (${c.pct_isr||0}%)</td><td>-${RD(c.mto_isr||0)}</td></tr>
       <tr class="total-row"><td>MONTO NETO PAGADO</td><td>${RD(c.monto_neto)}</td></tr>
@@ -4626,16 +4683,33 @@ function renderCatalogos(){
         ${ac}</div></td></tr>`;
     }).join(''); }
   }
+  // Códigos de Referencia
+  const qrc=(gv('q-refc')||'').toLowerCase();
+  const trc=document.getElementById('tb-referencias');
+  if(trc){
+    const lista=REFERENCIAS.filter(r=>!qrc||[r.codigo,r.nombre].some(v=>(v||'').toLowerCase().includes(qrc)));
+    if(!lista.length){ trc.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin códigos de referencia — agrégalos desde el botón +</td></tr>'; }
+    else { trc.innerHTML=lista.map(r=>{
+      const ac=isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarReferencia('${r.id}')">✏️</button> <button class="btn btn-xs btn-danger" onclick="eliminarReferencia('${r.id}')">🗑️</button>`:'';
+      return `<tr><td><input type="checkbox" class="chk-refc" value="${r.id}" style="width:16px;height:16px;cursor:pointer"/></td><td><code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px">${r.codigo}</code></td><td style="font-size:12px">${r.nombre}</td><td><div style="display:flex;gap:4px">
+        <button class="btn btn-xs" onclick="verReferencia('${r.id}')" title="Ver detalles">👁️</button>
+        <button class="btn btn-xs btn-amber" onclick="imprimirReferencia('${r.id}')" title="Imprimir">🖨️</button>
+        ${ac}</div></td></tr>`;
+    }).join(''); }
+  }
 }
 function filtrarBeneficiarios(){ renderCatalogos(); }
 function filtrarRubros(){ renderCatalogos(); }
 function filtrarFuentes(){ renderCatalogos(); }
+function filtrarReferencias(){ renderCatalogos(); }
 function verBeneficiario(id){ const b=BENEFICIARIOS.find(x=>String(x.id)===String(id)); if(!b) return; verRegistroGenerico('Beneficiario','Detalle del beneficiario',[{label:'Nombre',value:b.nombre},{label:'Tipo',value:b.tipo},{label:'RNC/Cédula',value:b.rnc},{label:'Dirección',value:b.direccion}]); }
 function imprimirBeneficiario(id){ const b=BENEFICIARIOS.find(x=>String(x.id)===String(id)); if(!b) return; imprimirRegistroGenerico('Beneficiario','Detalle del beneficiario',[{label:'Nombre',value:b.nombre},{label:'Tipo',value:b.tipo},{label:'RNC/Cédula',value:b.rnc},{label:'Dirección',value:b.direccion}]); }
 function verRubro(id){ const r=RUBROS.find(x=>String(x.id)===String(id)); if(!r) return; verRegistroGenerico('Rubro de Gasto (SIGEF)','Detalle del rubro',[{label:'Código',value:r.codigo},{label:'Nombre',value:r.nombre}]); }
 function imprimirRubro(id){ const r=RUBROS.find(x=>String(x.id)===String(id)); if(!r) return; imprimirRegistroGenerico('Rubro de Gasto (SIGEF)','Detalle del rubro',[{label:'Código',value:r.codigo},{label:'Nombre',value:r.nombre}]); }
 function verFuente(id){ const f=FUENTES.find(x=>String(x.id)===String(id)); if(!f) return; verRegistroGenerico('Fuente de Ingreso','Detalle de la fuente',[{label:'Código',value:f.codigo},{label:'Nombre',value:f.nombre}]); }
 function imprimirFuente(id){ const f=FUENTES.find(x=>String(x.id)===String(id)); if(!f) return; imprimirRegistroGenerico('Fuente de Ingreso','Detalle de la fuente',[{label:'Código',value:f.codigo},{label:'Nombre',value:f.nombre}]); }
+function verReferencia(id){ const r=REFERENCIAS.find(x=>String(x.id)===String(id)); if(!r) return; verRegistroGenerico('Código de Referencia','Detalle del código',[{label:'Código',value:r.codigo},{label:'Centro/Programa',value:r.nombre}]); }
+function imprimirReferencia(id){ const r=REFERENCIAS.find(x=>String(x.id)===String(id)); if(!r) return; imprimirRegistroGenerico('Código de Referencia','Detalle del código',[{label:'Código',value:r.codigo},{label:'Centro/Programa',value:r.nombre}]); }
 
 async function guardarBeneficiario(){
   const nombre=UP(gv('ben-nombre')), rnc=UP(gv('ben-rnc')), tipo=gv('ben-tipo'), dir=UP(gv('ben-dir'));
@@ -4645,6 +4719,10 @@ async function guardarBeneficiario(){
   if(id){ await sb.from('beneficiarios_fin').update(row).eq('id',id); }
   else { row.id='B'+Date.now(); await sb.from('beneficiarios_fin').insert(row); }
   await cargarBeneficiarios(); renderCatalogos(); closeMod('m-beneficiario'); sv('ben-id','');
+  // Si se agregó desde el formulario de cheque, refresca el select y deja el nuevo beneficiario elegido
+  await poblarSelectBeneficiarios();
+  ssv('cheq-ben-sel', nombre+'::'+(rnc||''));
+  autoRncBeneficiario();
 }
 async function eliminarBeneficiario(id){ if(!confirm('¿Eliminar beneficiario?')) return; await sb.from('beneficiarios_fin').delete().eq('id',id); await cargarBeneficiarios(); renderCatalogos(); }
 async function guardarRubro(){
@@ -4663,6 +4741,19 @@ async function guardarFuente(){
   await cargarFuentes(); renderCatalogos(); closeMod('m-fuente'); sv('fue-id','');
 }
 async function eliminarFuente(id){ if(!confirm('¿Eliminar fuente?')) return; await sb.from('fuentes_fin').delete().eq('id',id); await cargarFuentes(); renderCatalogos(); }
+
+async function guardarReferencia(){
+  const codigo=UP(gv('ref-codigo')), nombre=UP(gv('ref-nombre')); if(!codigo||!nombre) return;
+  const id=gv('ref-id');
+  if(id){ await sb.from('referencias_fin').update({codigo,nombre}).eq('id',id); }
+  else { await sb.from('referencias_fin').insert({id:'REF'+Date.now(),codigo,nombre}); }
+  await cargarReferencias(); renderCatalogos(); closeMod('m-referencia'); sv('ref-id','');
+  // Si se agregó desde el formulario de cheque, refresca el select y deja el nuevo código elegido
+  await poblarSelectReferencias();
+  ssv('cheq-ref', codigo);
+}
+async function eliminarReferencia(id){ if(!confirm('¿Eliminar este código de referencia?')) return; await sb.from('referencias_fin').delete().eq('id',id); await cargarReferencias(); renderCatalogos(); await poblarSelectReferencias(); }
+function abrirNuevaReferenciaDesdeCheque(){ sv('ref-id',''); sv('ref-codigo',''); sv('ref-nombre',''); openMod('m-referencia'); }
 
 // ═══════════════════════════════════════════════
 // USUARIOS
