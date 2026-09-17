@@ -749,6 +749,11 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
           <option value="">Todos los rubros</option>
         </select>
       </div>
+      <div class="fg"><label>Centro / Programa</label>
+        <select id="rep-centro" onchange="actualizarFiltrosReporte()">
+          <option value="">Todos los centros/programas</option>
+        </select>
+      </div>
       <div class="fg"><label>Estado cheque</label>
         <select id="rep-estado" onchange="actualizarFiltrosReporte()">
           <option value="">Todos</option>
@@ -984,6 +989,12 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <div class="ttbar"><button class="btn btn-navy btn-sm" onclick="openMod('m-referencia')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-referencias" style="display:none" onclick="eliminarSeleccionados('referencias','chk-refc')">🗑️ Eliminar</button></div>
       <input type="text" id="q-refc" placeholder="🔍 Buscar código de referencia..." oninput="filtrarReferencias()" style="margin-bottom:.5rem;width:100%"/>
       <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-refc',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Centro/Programa</th><th>Acciones</th></tr></thead><tbody id="tb-referencias"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="chdr">🏫 Centros Educativos</div>
+      <div class="ttbar"><button class="btn btn-primary btn-sm" onclick="openMod('m-centro')">+ Agregar</button><button class="btn btn-danger btn-xs" id="btn-del-centros-cat" style="display:none" onclick="eliminarSeleccionados('centros','chk-cencat')">🗑️ Eliminar</button></div>
+      <input type="text" id="q-cencat" placeholder="🔍 Buscar centro..." oninput="filtrarCentrosCat()" style="margin-bottom:.5rem;width:100%"/>
+      <div class="twrap"><table><thead><tr><th><input type="checkbox" onclick="selTodo('chk-cencat',this)" style="width:16px;height:16px"/></th><th>Código</th><th>Centro</th><th>Acciones</th></tr></thead><tbody id="tb-centros-cat"></tbody></table></div>
     </div>
   </div>
 </div>
@@ -1582,6 +1593,8 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
         <div class="fg"><label>Código <span class="req">*</span></label><input type="text" id="cen-codigo" placeholder="CE-001"/></div>
         <div class="fg"><label>Nombre del centro <span class="req">*</span></label><input type="text" id="cen-nombre" placeholder="Nombre del centro"/></div>
         <div class="fg"><label>Director</label><input type="text" id="cen-director" placeholder="Nombre del director"/></div>
+        <div class="fg"><label>Teléfono</label><input type="text" id="cen-telefono" placeholder="809-000-0000" style="text-transform:none"/></div>
+        <div class="fg full"><label>Dirección</label><input type="text" id="cen-direccion" placeholder="Dirección del centro"/></div>
         <div class="fg"><label>Zona/Sector</label><input type="text" id="cen-zona" placeholder="Zona o sector"/></div>
         <div class="fg"><label>Monto de dieta (RD$)</label><input type="number" id="cen-monto-dieta" placeholder="500" step="0.01" style="text-transform:none"/></div>
       </div>
@@ -2095,7 +2108,7 @@ async function nav(id,btn){
   if(id==='conciliacion') cargarConciliacion();
   if(id==='ajustes') renderAjustes();
   if(id==='centros') renderCentros();
-  if(id==='catalogos') renderCatalogos();
+  if(id==='catalogos'){ renderCatalogos(); renderCentrosCat(); }
   if(id==='usuarios') renderUsuarios();  if(id==='transferencias'){ await cargarTransferencias(); renderTransferencias(); renderKPIActiva(); }
   if(id==='config-fin'){ cargarConfig(); verificarConexion(); }
   if(id==='reportes'){ inicializarFiltrosReporte(); actualizarFiltrosReporte(); }
@@ -2164,7 +2177,7 @@ function selTodo(cls,chk){
     'chk-fic':'btn-del-fichas','chk-cron':'btn-del-cronograma','chk-tecvt':'btn-del-tecnicos',
     'chk-aj':'btn-del-ajustes','chk-cen':'btn-del-centros',
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
-    'chk-refc':'btn-del-referencias',
+    'chk-refc':'btn-del-referencias','chk-cencat':'btn-del-centros-cat',
     'chk-usr':'btn-del-usuarios'
   };
   if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined,cls==='chk-cheq'?'btn-ver-cheques':undefined);
@@ -2241,7 +2254,7 @@ async function eliminarAjuste(id){ if(!confirm('¿Eliminar este ajuste?')) retur
 function editarCentro(id){
   const c=CENTROS.find(x=>x.id===id); if(!c) return;
   sv('cen-id',c.id); sv('cen-codigo',c.codigo); sv('cen-nombre',c.nombre);
-  sv('cen-director',c.director||''); sv('cen-zona',c.zona||'');
+  sv('cen-director',c.director||''); sv('cen-telefono',c.telefono||''); sv('cen-direccion',c.direccion||''); sv('cen-zona',c.zona||'');
   sv('cen-monto-dieta',c.monto_dieta||500);
   openMod('m-centro');
 }
@@ -2783,16 +2796,21 @@ function descargarHTMLConfig(){
 function inicializarFiltrosReporte(){
   const sf=document.getElementById('rep-fuente');
   const sr=document.getElementById('rep-rubro');
+  const sc=document.getElementById('rep-centro');
   if(sf&&FUENTES.length) sf.innerHTML='<option value="">Todas las fuentes</option>'+FUENTES.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
   if(sr&&RUBROS.length) sr.innerHTML='<option value="">Todos los rubros</option>'+RUBROS.map(r=>`<option value="${r.nombre}">${r.nombre}</option>`).join('');
+  if(sc&&CENTROS.length) sc.innerHTML='<option value="">Todos los centros/programas</option>'+CENTROS.map(c=>`<option value="${c.id}:${c.nombre}">${c.codigo} — ${c.nombre}</option>`).join('');
 }
 function getFiltrosReporte(){
+  const [centroId,centroNombre]=(gv('rep-centro')||'').split(':');
   return {
     desde:gv('rep-desde')||'',
     hasta:gv('rep-hasta')||'',
     fuente:gv('rep-fuente')||'',
     rubro:gv('rep-rubro')||'',
-    estado:gv('rep-estado')||''
+    estado:gv('rep-estado')||'',
+    centro:centroId||'',
+    centroNombre:centroNombre||''
   };
 }
 function aplicarFiltrosACheques(){
@@ -2803,6 +2821,7 @@ function aplicarFiltrosACheques(){
     if(f.fuente&&c.fuente_nombre!==f.fuente) return false;
     if(f.rubro&&c.rubro_nombre!==f.rubro) return false;
     if(f.estado&&c.estado!==f.estado) return false;
+    if(f.centro&&c.centro_id!==f.centro) return false;
     return true;
   });
 }
@@ -2817,12 +2836,12 @@ function aplicarFiltrosAIngresos(){
 }
 function actualizarFiltrosReporte(){
   const f=getFiltrosReporte();
-  const activos=Object.values(f).filter(v=>v).length;
+  const activos=[f.desde,f.hasta,f.fuente,f.rubro,f.estado,f.centro].filter(v=>v).length;
   const resumen=document.getElementById('rep-resumen');
   if(resumen) resumen.textContent=activos>0?`${activos} filtro(s) activo(s) — Haz clic en el reporte para ver con filtros`:'';
 }
 function limpiarFiltrosReporte(){
-  ['rep-desde','rep-hasta','rep-fuente','rep-rubro','rep-estado'].forEach(id=>sv(id,''));
+  ['rep-desde','rep-hasta','rep-fuente','rep-rubro','rep-estado','rep-centro'].forEach(id=>sv(id,''));
   actualizarFiltrosReporte();
 }
 
@@ -4595,8 +4614,8 @@ function renderCentros(data){
   data=data||CENTROS;
   const tb=document.getElementById('tb-centros');
   const isAdmin=CU&&CU.rol==='admin';
-  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="6">Sin centros registrados</td></tr>'; return; }
-  tb.innerHTML=data.map((c,i)=>`<tr>
+  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="6">Sin centros registrados</td></tr>'; }
+  else tb.innerHTML=data.map((c,i)=>`<tr>
     <td><input type="checkbox" class="chk-cen" value="${c.id}" style="width:16px;height:16px;cursor:pointer"/></td>
     <td><code style="font-size:11px">${c.codigo}</code></td>
     <td><strong>${c.nombre}</strong></td>
@@ -4609,7 +4628,27 @@ function renderCentros(data){
       ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarCentro('${c.id}')" title="Eliminar">🗑️</button>`:''}
     </div></td>
   </tr>`).join('');
+  renderCentrosCat();
 }
+function renderCentrosCat(){
+  const q=(gv('q-cencat')||'').toLowerCase();
+  const tb=document.getElementById('tb-centros-cat'); if(!tb) return;
+  const isAdmin=CU&&CU.rol==='admin';
+  const data=CENTROS.filter(c=>!q||[c.codigo,c.nombre,c.director,c.zona].some(f=>(f||'').toLowerCase().includes(q)));
+  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="4" style="text-align:center;padding:2rem;color:var(--text3)">Sin centros registrados — agrégalos desde el botón +</td></tr>'; return; }
+  tb.innerHTML=data.map(c=>`<tr>
+    <td><input type="checkbox" class="chk-cencat" value="${c.id}" style="width:16px;height:16px;cursor:pointer"/></td>
+    <td><code style="font-size:11px">${c.codigo}</code></td>
+    <td style="font-size:12px"><strong>${c.nombre}</strong><div style="font-size:11px;color:var(--text3)">${c.director||''}</div></td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn btn-xs" onclick="verCentro('${c.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirCentro('${c.id}')" title="Imprimir">🖨️</button>
+      ${isAdmin?`<button class="btn btn-xs btn-primary" onclick="editarCentro('${c.id}')" title="Editar">✏️</button>`:''}
+      ${isAdmin?`<button class="btn btn-xs btn-danger" onclick="eliminarCentro('${c.id}')" title="Eliminar">🗑️</button>`:''}
+    </div></td>
+  </tr>`).join('');
+}
+function filtrarCentrosCat(){ renderCentrosCat(); }
 function filtrarCentros(){
   const q=gv('q-cen').toLowerCase();
   renderCentros(CENTROS.filter(c=>!q||[c.codigo,c.nombre,c.director,c.zona].some(f=>(f||'').toLowerCase().includes(q))));
@@ -4619,6 +4658,8 @@ function camposCentro(c){
     {label:'Código',value:c.codigo},
     {label:'Nombre del centro',value:c.nombre},
     {label:'Director',value:c.director},
+    {label:'Teléfono',value:c.telefono},
+    {label:'Dirección',value:c.direccion},
     {label:'Zona',value:c.zona},
     {label:'Monto de dieta',value:c.monto_dieta?RD(c.monto_dieta):null}
   ];
@@ -4629,7 +4670,7 @@ async function guardarCentro(){
   const codigo=UP(gv('cen-codigo')), nombre=UP(gv('cen-nombre'));
   if(!codigo||!nombre) return;
   const id=gv('cen-id');
-  const row={codigo,nombre,director:UP(gv('cen-director')),zona:UP(gv('cen-zona')),monto_dieta:parseFloat(gv('cen-monto-dieta'))||500};
+  const row={codigo,nombre,director:UP(gv('cen-director')),telefono:gv('cen-telefono'),direccion:UP(gv('cen-direccion')),zona:UP(gv('cen-zona')),monto_dieta:parseFloat(gv('cen-monto-dieta'))||500};
   if(id){ await sb.from('centros_fin').update(row).eq('id',id); }
   else { row.id='CE'+Date.now(); await sb.from('centros_fin').insert(row); }
   await cargarCentrosFin(); renderCentros(); closeMod('m-centro'); sv('cen-id','');
@@ -4716,13 +4757,16 @@ async function guardarBeneficiario(){
   if(!nombre||!rnc){ alert('Nombre y RNC/Cédula son obligatorios.'); return; }
   const id=gv('ben-id');
   const row={nombre,rnc,tipo,direccion:dir};
-  if(id){ await sb.from('beneficiarios_fin').update(row).eq('id',id); }
-  else { row.id='B'+Date.now(); await sb.from('beneficiarios_fin').insert(row); }
+  let resp;
+  if(id){ resp=await sb.from('beneficiarios_fin').update(row).eq('id',id); }
+  else { row.id='B'+Date.now(); resp=await sb.from('beneficiarios_fin').insert(row); }
+  if(resp.error){ alert('No se pudo guardar el beneficiario:\n\n'+resp.error.message); return; }
   await cargarBeneficiarios(); renderCatalogos(); closeMod('m-beneficiario'); sv('ben-id','');
   // Si se agregó desde el formulario de cheque, refresca el select y deja el nuevo beneficiario elegido
   await poblarSelectBeneficiarios();
   ssv('cheq-ben-sel', nombre+'::'+(rnc||''));
   autoRncBeneficiario();
+  mostrarToastFin('✅ Beneficiario guardado.');
 }
 async function eliminarBeneficiario(id){ if(!confirm('¿Eliminar beneficiario?')) return; await sb.from('beneficiarios_fin').delete().eq('id',id); await cargarBeneficiarios(); renderCatalogos(); }
 async function guardarRubro(){
@@ -4743,14 +4787,20 @@ async function guardarFuente(){
 async function eliminarFuente(id){ if(!confirm('¿Eliminar fuente?')) return; await sb.from('fuentes_fin').delete().eq('id',id); await cargarFuentes(); renderCatalogos(); }
 
 async function guardarReferencia(){
-  const codigo=UP(gv('ref-codigo')), nombre=UP(gv('ref-nombre')); if(!codigo||!nombre) return;
+  const codigo=UP(gv('ref-codigo')), nombre=UP(gv('ref-nombre')); if(!codigo||!nombre){ alert('Completa el código y el nombre.'); return; }
   const id=gv('ref-id');
-  if(id){ await sb.from('referencias_fin').update({codigo,nombre}).eq('id',id); }
-  else { await sb.from('referencias_fin').insert({id:'REF'+Date.now(),codigo,nombre}); }
+  let resp;
+  if(id){ resp=await sb.from('referencias_fin').update({codigo,nombre}).eq('id',id); }
+  else { resp=await sb.from('referencias_fin').insert({id:'REF'+Date.now(),codigo,nombre}); }
+  if(resp.error){
+    alert('No se pudo guardar el código de referencia:\n\n'+resp.error.message+'\n\nSi el mensaje dice que la tabla "referencias_fin" no existe, hay que crearla primero en Supabase (SQL Editor).');
+    return;
+  }
   await cargarReferencias(); renderCatalogos(); closeMod('m-referencia'); sv('ref-id','');
   // Si se agregó desde el formulario de cheque, refresca el select y deja el nuevo código elegido
   await poblarSelectReferencias();
   ssv('cheq-ref', codigo);
+  mostrarToastFin('✅ Código de referencia guardado.');
 }
 async function eliminarReferencia(id){ if(!confirm('¿Eliminar este código de referencia?')) return; await sb.from('referencias_fin').delete().eq('id',id); await cargarReferencias(); renderCatalogos(); await poblarSelectReferencias(); }
 function abrirNuevaReferenciaDesdeCheque(){ sv('ref-id',''); sv('ref-codigo',''); sv('ref-nombre',''); openMod('m-referencia'); }
@@ -5225,7 +5275,7 @@ function generarReporte(tipo){
   const ts='width:100%;border-collapse:collapse;font-size:12px;margin-top:.75rem';
   const th='background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:11px';
   const td='padding:7px 10px;border-bottom:1px solid var(--border)';
-  const hdr=`<div style="text-align:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--navy)"><h2 style="font-family:Arial, sans-serif;font-size:17px;font-weight:800;color:var(--navy)">DISTRITO EDUCATIVO 16-06 — BONAO NORDESTE</h2><p style="font-size:12px;color:var(--text2)">Monseñor Nouel, República Dominicana</p><p style="font-size:11px;color:var(--text3);margin-top:3px">Generado: ${fecha} | Período: ${periodoFiltro}</p>${f.fuente?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Fuente: ${f.fuente}</p>`:''}${f.rubro?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Rubro: ${f.rubro}</p>`:''}</div>`;
+  const hdr=`<div style="text-align:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--navy)"><h2 style="font-family:Arial, sans-serif;font-size:17px;font-weight:800;color:var(--navy)">DISTRITO EDUCATIVO 16-06 — BONAO NORDESTE</h2><p style="font-size:12px;color:var(--text2)">Monseñor Nouel, República Dominicana</p><p style="font-size:11px;color:var(--text3);margin-top:3px">Generado: ${fecha} | Período: ${periodoFiltro}</p>${f.fuente?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Fuente: ${f.fuente}</p>`:''}${f.rubro?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Rubro: ${f.rubro}</p>`:''}${f.centro?`<p style="font-size:11px;color:var(--blue2);margin-top:2px">Centro/Programa: ${f.centroNombre}</p>`:''}</div>`;
   let titulo='', html='';
 
   if(tipo==='balance'){
