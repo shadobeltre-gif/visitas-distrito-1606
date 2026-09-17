@@ -785,7 +785,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   <div class="card" id="pla-resultado-card" style="display:none">
     <div class="chdr" id="pla-resultado-titulo">Resultado</div>
     <div class="btn-row" style="margin-bottom:.75rem">
-      <button class="btn btn-amber btn-sm" onclick="exportarExcelTabla('pla-tabla-principal','Planilla')">📗 Excel</button>
+      <button class="btn btn-amber btn-sm" onclick="exportarPlanillaOCuenta()">📗 Excel</button>
       <button class="btn btn-navy btn-sm" onclick="window.print()">🖨️ Imprimir</button>
     </div>
     <div id="pla-resultado-cont"></div>
@@ -2700,7 +2700,7 @@ function generarPlanillaAuxiliar(){
       <td style="${td};text-align:center">${i+1}</td>
       <td style="${td};text-align:left">${new Date(c.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
       <td style="${td};text-align:left">${c.num_cheque}</td>
-      <td style="${td};text-align:left;white-space:normal;min-width:160px">${c.concepto||''}</td>
+      <td style="${td};text-align:left;white-space:normal;min-width:160px">${c.beneficiario||''}</td>
       <td style="${td}">${RD(c.monto_neto)}</td>
       <td style="${td}">${RD(c.mto_isr||0)}</td>
       <td style="${td}">${RD(c.mto_itbis||0)}</td>
@@ -2751,6 +2751,7 @@ function generarPlanillaAuxiliar(){
   document.getElementById('pla-resultado-titulo').textContent='📑 Planilla Auxiliar — '+d.centro.nombre;
   document.getElementById('pla-resultado-cont').innerHTML=html;
   document.getElementById('pla-resultado-card').style.display='block';
+  window.PLA_TIPO_ACTUAL='planilla';
   document.getElementById('pla-resultado-card').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function generarRendicionCuentas(){
@@ -2760,28 +2761,25 @@ function generarRendicionCuentas(){
   const d=datosPlanilla(centroId,trxId);
   if(!d){ const e=document.getElementById('pla-err'); e.textContent='No se pudo calcular la rendición de cuentas.'; show('pla-err'); return; }
   const categorias=[
-    {titulo:'2. SERVICIOS NO PERSONALES 40%', prefijo:'2', pct:0.40},
-    {titulo:'3. MATERIALES Y SUMINISTRO 40%', prefijo:'3', pct:0.40},
-    {titulo:'ACTIVO NO FINANCIERO 20%', prefijo:'6', pct:0.20}
+    {titulo:'2. SERVICIOS NO PERSONALES', prefijo:'2'},
+    {titulo:'3. MATERIALES Y SUMINISTRO', prefijo:'3'},
+    {titulo:'ACTIVO NO FINANCIERO', prefijo:'6'}
   ];
   const th='background:var(--navy);color:#fff;padding:6px 10px;text-align:right;font-size:11px';
   const td='padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-size:12px';
-  let granEjecutado=0, granPresupuesto=0;
+  let granEjecutado=0;
   const bloques=categorias.map(cat=>{
     const rubrosCat=RUBROS.filter(r=>(r.codigo||'').startsWith(cat.prefijo)).sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
-    const presupuestoTrimestral=Math.round(d.transferido*cat.pct*100)/100;
     let subEjec=0;
     const filas=rubrosCat.map(r=>{
       const ejec=d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
       subEjec+=ejec;
-      return `<tr><td style="${td};text-align:left">${r.codigo}</td><td style="${td};text-align:left;white-space:normal">${r.nombre}</td><td style="${td}">—</td><td style="${td}">${RD(0)}</td><td style="${td}">${RD(ejec)}</td><td style="${td}">${RD(-ejec)}</td></tr>`;
+      return `<tr><td style="${td};text-align:left">${r.codigo}</td><td style="${td};text-align:left;white-space:normal">${r.nombre}</td><td style="${td}">—</td><td style="${td}">—</td><td style="${td}">${RD(ejec)}</td><td style="${td}">—</td></tr>`;
     }).join('');
-    granEjecutado+=subEjec; granPresupuesto+=presupuestoTrimestral;
-    const disp=presupuestoTrimestral-subEjec;
+    granEjecutado+=subEjec;
     return `<tr><td colspan="6" style="padding:8px 10px;font-weight:700;background:var(--surface2);text-align:left">${cat.titulo}</td></tr>${filas}
-      <tr style="font-weight:700"><td colspan="2" style="${td};text-align:left">Sub-total</td><td style="${td}">—</td><td style="${td}">${RD(presupuestoTrimestral)}</td><td style="${td}">${RD(subEjec)}</td><td style="${td};color:${disp>=0?'var(--green2)':'var(--red2)'}">${RD(disp)}</td></tr>`;
+      <tr style="font-weight:700"><td colspan="2" style="${td};text-align:left">Sub-total</td><td style="${td}">—</td><td style="${td}">—</td><td style="${td}">${RD(subEjec)}</td><td style="${td}">—</td></tr>`;
   }).join('');
-  const dispGeneral=granPresupuesto-granEjecutado;
   const html=`
     <div style="text-align:center;margin-bottom:1rem">
       <h3 style="font-family:Arial,sans-serif;color:var(--navy)">MINISTERIO DE EDUCACIÓN DE LA REPÚBLICA DOMINICANA</h3>
@@ -2798,15 +2796,103 @@ function generarRendicionCuentas(){
     <div class="twrap"><table id="pla-tabla-principal" style="border-collapse:collapse;width:100%">
       <thead><tr><th style="${th};text-align:left">Número</th><th style="${th};text-align:left">Detalles</th><th style="${th}">Presup. Anual</th><th style="${th}">Presup. Trimestral</th><th style="${th}">Ejecutado</th><th style="${th}">Disponible</th></tr></thead>
       <tbody>${bloques}
-        <tr style="background:var(--navy);color:#fff;font-weight:700"><td colspan="2" style="padding:8px 10px;text-align:left">TOTALES</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">${RD(granPresupuesto)}</td><td style="padding:8px 10px;text-align:right">${RD(granEjecutado)}</td><td style="padding:8px 10px;text-align:right;color:${dispGeneral>=0?'#86efac':'#fca5a5'}">${RD(dispGeneral)}</td></tr>
+        <tr style="background:var(--navy);color:#fff;font-weight:700"><td colspan="2" style="padding:8px 10px;text-align:left">TOTALES</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">${RD(granEjecutado)}</td><td style="padding:8px 10px;text-align:right">—</td></tr>
       </tbody>
     </table></div>
-    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">"Presupuesto Trimestral" se calcula aplicando el 40%/40%/20% de MINERD sobre el monto transferido en este período. "Presupuesto Anual" no se lleva en el sistema — complétalo a mano si lo necesitas.</p>
+    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">"Presupuesto Anual" y "Presupuesto Trimestral" no se llevan en el sistema — complétalos a mano si los necesitas.</p>
   `;
   document.getElementById('pla-resultado-titulo').textContent='📋 Rendición de Cuentas — '+d.centro.nombre;
   document.getElementById('pla-resultado-cont').innerHTML=html;
   document.getElementById('pla-resultado-card').style.display='block';
+  window.PLA_TIPO_ACTUAL='cuenta';
   document.getElementById('pla-resultado-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Decide cuál de los dos formatos exportar según el último reporte generado
+function exportarPlanillaOCuenta(){
+  const centroId=gv('pla-centro'), trxId=gv('pla-transferencia');
+  const d=datosPlanilla(centroId,trxId);
+  if(!d){ alert('Genera primero la Planilla o la Rendición de Cuentas.'); return; }
+  if(window.PLA_TIPO_ACTUAL==='cuenta') exportarCuentaExcel(d);
+  else exportarPlanillaExcel(d);
+}
+
+// Exporta la Planilla Auxiliar con el mismo formato de campos que la hoja "Planilla" del modelo
+function exportarPlanillaExcel(d){
+  const rubrosOrdenados=[...RUBROS].sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
+  const periodoStr=new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')+' al '+(d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy');
+  const aoa=[];
+  aoa.push(['DISTRITO EDUCATIVO 16-06 — PLANILLA AUXILIAR']);
+  aoa.push([]);
+  aoa.push(['DISTRITO EDUCATIVO:','16-06','','DISPONIBLE ANTERIOR',d.disponibleAnterior]);
+  aoa.push(['NOMBRE DEL CENTRO:',d.centro.codigo+' - '+d.centro.nombre,'','TRANSFERIDO',d.transferido]);
+  aoa.push(['TRANSFERENCIA No.:',d.transferencia.codigo||d.transferencia.descripcion,'','MONTO TOTAL',d.montoTotal]);
+  aoa.push(['PERIODO DE EJECUCION:',periodoStr,'','IMPUESTO 0.20%',d.impuesto]);
+  aoa.push(['','','','DISPONIBLE A COMPRAR O PAGAR',d.disponibleComprar]);
+  aoa.push(['','','','TOTAL EJECUTADO',d.totalEjecutado]);
+  aoa.push(['','','','COMISION BANCARIA',d.comisionBancaria]);
+  aoa.push(['','','','DISPONIBLE',d.disponibleFinal]);
+  aoa.push([]);
+  aoa.push(['Fila','Fecha','Cheque No.','Descripción','Valor en cheque','Retención ISR','Retención ITBIS','Total','Total Ejecutado',...rubrosOrdenados.map(r=>r.codigo),'Diferencia']);
+  let acumulado=0;
+  d.cheques.forEach((c,i)=>{
+    acumulado+=montoTotalCheque(c);
+    const total=parseFloat(c.monto_neto||0);
+    const fila=[i+1, new Date(c.fecha+'T00:00:00').toLocaleDateString('es-DO'), c.num_cheque, c.beneficiario||'', parseFloat(c.monto_neto||0), parseFloat(c.mto_isr||0), parseFloat(c.mto_itbis||0), total, acumulado];
+    rubrosOrdenados.forEach(r=>fila.push(c.rubro_id===r.id?total:0));
+    fila.push(0);
+    aoa.push(fila);
+  });
+  const totalesFila=['','','','','','','','TOTALES',d.totalEjecutado];
+  rubrosOrdenados.forEach(r=>totalesFila.push(d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0)));
+  totalesFila.push(0);
+  aoa.push(totalesFila);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8+rubrosOrdenados.length+1}}];
+  ws['!cols']=[{wch:6},{wch:12},{wch:12},{wch:26},{wch:14},{wch:12},{wch:12},{wch:14},{wch:14},...rubrosOrdenados.map(()=>({wch:10})),{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Planilla');
+  XLSX.writeFile(wb,'Planilla_'+d.centro.codigo+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// Exporta la Rendición de Cuentas con el mismo formato de campos que la hoja "Cuenta" del modelo
+function exportarCuentaExcel(d){
+  const categorias=[
+    {titulo:'2. SERVICIOS NO PERSONALES',prefijo:'2'},
+    {titulo:'3. MATERIALES Y SUMINISTRO',prefijo:'3'},
+    {titulo:'ACTIVO NO FINANCIERO',prefijo:'6'}
+  ];
+  const periodoStr=new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')+' al '+(d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy');
+  const aoa=[];
+  aoa.push(['Ministerio de Educación de la República Dominicana']);
+  aoa.push([]);
+  aoa.push(['Formulario de Rendición de Cuentas']);
+  aoa.push([]);
+  aoa.push(['Nombre de la junta','',d.centro.nombre,'Código No.',d.centro.codigo]);
+  aoa.push(['Fecha de emisión','',new Date().toLocaleDateString('es-DO'),'Transferencia',d.transferencia.codigo||d.transferencia.descripcion]);
+  aoa.push(['Período','',periodoStr,'Monto Total Ejecutado',d.totalEjecutado]);
+  aoa.push([]);
+  aoa.push(['Número Cuenta','Detalles','Presupuesto Anual','Presupuesto Trimestral','Ejecutado','Disponible']);
+  let granEjecutado=0;
+  categorias.forEach(cat=>{
+    aoa.push([cat.titulo]);
+    const rubrosCat=RUBROS.filter(r=>(r.codigo||'').startsWith(cat.prefijo)).sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
+    let subEjec=0;
+    rubrosCat.forEach(r=>{
+      const ejec=d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
+      subEjec+=ejec;
+      aoa.push([r.codigo,r.nombre,'','',ejec,'']);
+    });
+    granEjecutado+=subEjec;
+    aoa.push(['Sub-total','','','',subEjec,'']);
+  });
+  aoa.push(['TOTALES','','','',granEjecutado,'']);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}},{s:{r:2,c:0},e:{r:2,c:5}}];
+  ws['!cols']=[{wch:16},{wch:42},{wch:14},{wch:16},{wch:14},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Cuenta');
+  XLSX.writeFile(wb,'RendicionCuentas_'+d.centro.codigo+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 function renderTransferencias(data){
