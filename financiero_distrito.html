@@ -332,6 +332,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </button>
   <div class="sub-menu" id="grupo-trans-sub">
     <button class="nb" onclick="nav('cheques',this)"><span class="ni">🧾</span>Emisión de Cheques</button>
+    <button class="nb" onclick="nav('facturas',this)"><span class="ni">🧾</span>Facturas de Compra</button>
     <button class="nb" onclick="nav('ingresos',this)"><span class="ni">💵</span>Registro de Ingresos</button>
     <button class="nb" onclick="nav('libro',this)"><span class="ni">📒</span>Libro Banco</button>
   </div>
@@ -468,6 +469,36 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <thead><tr><th>Fecha</th><th>Documento</th><th>Ref.</th><th>Tipo</th><th>Beneficiario/Fuente</th><th>Concepto</th><th>Débito</th><th>Crédito</th><th>Saldo</th><th>ITBIS</th><th>ISR</th><th>Cargos</th><th>Estado</th></tr></thead>
       <tbody id="tb-libro"></tbody>
       <tfoot><tr style="background:var(--navy);color:#fff"><td colspan="6" style="padding:8px 12px;font-weight:700">TOTALES</td><td style="padding:8px 12px;font-weight:700" id="lb-total-deb">RD$ 0.00</td><td style="padding:8px 12px;font-weight:700" id="lb-total-cred">RD$ 0.00</td><td style="padding:8px 12px;font-weight:700" id="lb-saldo">RD$ 0.00</td><td style="padding:8px 12px;font-weight:700" id="lb-total-itbis">RD$ 0.00</td><td style="padding:8px 12px;font-weight:700" id="lb-total-isr">RD$ 0.00</td><td style="padding:8px 12px;font-weight:700" id="lb-total-cargos">RD$ 0.00</td><td></td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- FACTURAS DE COMPRA (NCF) -->
+<div id="page-facturas" class="page">
+  <div class="page-hdr"><h2>🧾 Facturas de Compra (Comprobante Fiscal)</h2><div class="phd-act"><button class="btn btn-primary" onclick="openNuevaFactura()">+ Nueva factura</button><button class="btn btn-amber" onclick="exportarExcelTabla('tb-facturas','FacturasCompra')">📗 Excel</button></div></div>
+  <div class="kpi-grid" style="margin-bottom:1rem">
+    <div class="kpi amber"><div class="kpi-val" id="fac-k-pendiente">RD$ 0.00</div><div class="kpi-lbl">Pendiente de pagar</div></div>
+    <div class="kpi green"><div class="kpi-val" id="fac-k-pagado">RD$ 0.00</div><div class="kpi-lbl">Pagado</div></div>
+    <div class="kpi navy"><div class="kpi-val" id="fac-k-count">0</div><div class="kpi-lbl">Facturas registradas</div></div>
+  </div>
+  <div class="card">
+    <div class="ttbar">
+      <input type="text" id="q-fac" placeholder="🔍 Buscar por NCF, proveedor o concepto..." oninput="filtrarFacturas()" style="flex:1"/>
+      <select id="q-fac-est" onchange="filtrarFacturas()"><option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="Pagada">Pagada</option><option value="Anulada">Anulada</option></select>
+      <input type="date" id="q-fac-d" onchange="filtrarFacturas()" title="Desde"/>
+      <input type="date" id="q-fac-h" onchange="filtrarFacturas()" title="Hasta"/>
+    </div>
+    <div id="fac-count" style="font-size:12px;color:var(--text2);margin-bottom:.5rem;display:flex;align-items:center;gap:8px">
+      <span id="fac-count-txt"></span>
+      <button class="btn btn-danger btn-xs" id="btn-del-facturas" style="display:none" onclick="eliminarSeleccionados('facturas','chk-fac')">🗑️ Eliminar seleccionadas</button>
+    </div>
+    <div class="twrap"><table>
+      <thead><tr>
+        <th><input type="checkbox" onclick="selTodo('chk-fac',this)" style="width:16px;height:16px"/></th>
+        <th>NCF</th><th>Tipo</th><th>Fecha</th><th>Proveedor</th><th>Rubro</th><th>Centro</th>
+        <th>Facturado</th><th>ITBIS</th><th>Retenciones</th><th>Neto a pagar</th><th>Estado</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="tb-facturas"></tbody>
     </table></div>
   </div>
 </div>
@@ -1500,6 +1531,67 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div>
 </div>
 
+<!-- Factura de Compra (NCF) -->
+<div class="mbg" id="m-factura">
+  <div class="mbox" style="max-width:680px">
+    <div class="mhdr">🧾 <span id="m-fac-tit">Nueva Factura de Compra</span><button class="mclose" onclick="closeMod('m-factura')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="fac-id"/>
+      <div style="font-size:11px;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--blue2)">📋 Comprobante Fiscal</div>
+      <div class="fgrid" style="margin-bottom:1rem">
+        <div class="fg"><label>NCF <span class="req">*</span></label><input type="text" id="fac-ncf" placeholder="B0100000001 / E310000000001" style="text-transform:none"/></div>
+        <div class="fg"><label>Tipo de comprobante <span class="req">*</span></label>
+          <select id="fac-tipo-ncf">
+            <option value="">Seleccionar...</option>
+            <option value="01 - Crédito Fiscal">01 - Crédito Fiscal</option>
+            <option value="02 - Consumo">02 - Consumo</option>
+            <option value="14 - Régimen Especial">14 - Régimen Especial</option>
+            <option value="15 - Gubernamental">15 - Gubernamental</option>
+            <option value="32 - Comprobante Único (E-CF)">32 - Comprobante Único (E-CF)</option>
+            <option value="34 - Nota de Crédito">34 - Nota de Crédito</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="fg"><label>Fecha del comprobante <span class="req">*</span></label><input type="date" id="fac-fecha"/></div>
+        <div class="fg"><label>NCF modificado<br><span style="font-weight:400;color:var(--text3)">Solo si es nota de crédito/débito</span></label><input type="text" id="fac-ncf-mod" placeholder="Opcional" style="text-transform:none"/></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--green2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--green2)">🏢 Proveedor</div>
+      <div class="fgrid" style="margin-bottom:1rem">
+        <div class="fg full">
+          <label>Seleccionar proveedor</label>
+          <div style="display:flex;gap:6px">
+            <select id="fac-ben-sel" onchange="autoRncBeneficiarioFactura()" style="flex:1">
+              <option value="">-- Seleccionar de la lista --</option>
+            </select>
+            <button type="button" class="btn btn-xs btn-primary" onclick="abrirNuevoBeneficiarioDesdeFactura()" title="Agregar nuevo proveedor">+ Nuevo</button>
+          </div>
+        </div>
+        <div class="fg"><label>Proveedor <span class="req">*</span></label><input type="text" id="fac-ben" readonly style="background:var(--surface2)" placeholder="Se completa al elegir de la lista"/></div>
+        <div class="fg"><label>RNC / Cédula</label><input type="text" id="fac-doc" readonly style="background:var(--surface2)" placeholder="Auto"/></div>
+        <div class="fg"><label>Rubro <span class="req">*</span></label><select id="fac-rubro"><option value="">Seleccionar...</option></select></div>
+        <div class="fg"><label>Centro o programa</label><select id="fac-centro"><option value="">General / Distrito</option></select></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--amber2)">💰 Montos y retenciones</div>
+      <div class="fgrid" style="margin-bottom:1rem">
+        <div class="fg"><label>Monto bruto facturado (RD$) <span class="req">*</span></label><input type="number" id="fac-bruto" placeholder="0.00" step="0.01" oninput="calcNetoFactura()"/></div>
+        <div class="fg"><label>ITBIS facturado (RD$)<br><span style="font-weight:400;color:var(--text3)">Se suma al bruto</span></label><input type="number" id="fac-itbis-facturado" placeholder="0.00" step="0.01" value="0" oninput="calcNetoFactura()"/></div>
+        <div class="fg"><label>Total facturado (RD$)<br><span style="font-weight:400;color:var(--text3)">Bruto + ITBIS</span></label><input type="number" id="fac-total-facturado" readonly style="background:var(--surface2);color:var(--navy)" placeholder="0.00"/></div>
+        <div class="fg"><label>% Retención ITBIS</label><input type="number" id="fac-itbis" placeholder="0" step="0.01" value="0" oninput="calcNetoFactura()"/></div>
+        <div class="fg"><label>% Retención ISR</label><input type="number" id="fac-isr" placeholder="0" step="0.01" value="0" oninput="calcNetoFactura()"/></div>
+        <div class="fg"><label>Monto ITBIS retenido</label><input type="number" id="fac-mto-itbis" readonly style="background:var(--surface2);color:var(--amber)" placeholder="0.00"/></div>
+        <div class="fg"><label>Monto ISR retenido</label><input type="number" id="fac-mto-isr" readonly style="background:var(--surface2);color:var(--red2)" placeholder="0.00"/></div>
+        <div class="fg"><label>Monto neto a pagar (RD$)</label><input type="number" id="fac-neto" readonly style="background:var(--surface2);color:var(--green);font-weight:700" placeholder="0.00"/></div>
+      </div>
+      <div class="fg full" style="margin-bottom:1rem"><label>Concepto <span class="req">*</span></label><textarea id="fac-concepto" placeholder="Descripción de la compra..."></textarea></div>
+      <div class="alert alert-err" id="fac-err"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="guardarFactura()">💾 Guardar factura</button>
+        <button class="btn" onclick="closeMod('m-factura')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Configuración de impresión de cheque físico -->
 <div class="mbg" id="m-config-imp">
   <div class="mbox" style="max-width:720px">
@@ -1872,7 +1964,7 @@ try{
 // ═══════════════════════════════════════════════
 let CU = null;
 let USERS_FIN = [];
-let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [], REFERENCIAS = [];
+let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [], REFERENCIAS = [], FACTURAS = [];
 let TECNICOS_VT = [], VISITAS_VT = [], CRONOGRAMA_VT = [];
 const MONTO_DIETA_VT = 500;
 let chartFlujo = null, chartRubros = null, chartDistCentros = null;
@@ -1930,7 +2022,7 @@ const hide = id => { const e=document.getElementById(id); if(e) e.classList.remo
 const openMod = id => document.getElementById(id).classList.add('show');
 const closeMod = id => {
   document.getElementById(id).classList.remove('show');
-  if(id==='m-cheque'){ window.VT_DIETA_FICHAS_PENDIENTES=null; window.VT_DIETA_CONSOLIDADO=null; }
+  if(id==='m-cheque'){ window.VT_DIETA_FICHAS_PENDIENTES=null; window.VT_DIETA_CONSOLIDADO=null; window.FACTURA_PENDIENTE_PAGO=null; }
 };
 const UP = s => (s||'').toUpperCase();
 const today = () => new Date().toISOString().slice(0,10);
@@ -2097,6 +2189,7 @@ async function nav(id,btn){
   if(btn) btn.classList.add('active');
   if(id==='dashboard') cargarDashboard();
   if(id==='cheques') renderCheques();
+  if(id==='facturas') renderFacturas();
   if(id==='ingresos') renderIngresos();
   if(id==='libro') cargarLibro();
   if(id==='cronograma-vt'){ await cargarCronogramaVT(); renderCronogramaVT(); }
@@ -2178,6 +2271,7 @@ function selTodo(cls,chk){
     'chk-aj':'btn-del-ajustes','chk-cen':'btn-del-centros',
     'chk-ben':'btn-del-beneficiarios','chk-rub':'btn-del-rubros','chk-fue':'btn-del-fuentes',
     'chk-refc':'btn-del-referencias','chk-cencat':'btn-del-centros-cat',
+    'chk-fac':'btn-del-facturas',
     'chk-usr':'btn-del-usuarios'
   };
   if(mapa[cls]) actualizarBtnBulk(cls,mapa[cls],cls==='chk-cheq'?'btn-imp-cheques':cls==='chk-ing'?'btn-imp-ingresos':undefined,cls==='chk-cheq'?'btn-ver-cheques':undefined);
@@ -2205,6 +2299,7 @@ async function eliminarSeleccionados(tabla,cls){
     ajustes:'ajustes_fin',centros:'centros_fin',
     beneficiarios:'beneficiarios_fin',rubros:'rubros_fin',fuentes:'fuentes_fin',
     referencias:'referencias_fin',
+    facturas:'facturas_compra_fin',
     usuarios:'usuarios_fin'
   };
   for(const id of ids) await sb.from(tablaMap[tabla]).delete().eq('id',id);
@@ -2219,6 +2314,7 @@ async function eliminarSeleccionados(tabla,cls){
   if(tabla==='rubros'){ await cargarRubros(); renderCatalogos(); }
   if(tabla==='fuentes'){ await cargarFuentes(); renderCatalogos(); }
   if(tabla==='referencias'){ await cargarReferencias(); renderCatalogos(); poblarSelectReferencias(); }
+  if(tabla==='facturas'){ await cargarFacturasCompra(); renderFacturas(); }
   if(tabla==='usuarios'){ await cargarUsuariosFin(); renderUsuarios(); }
   cargarDashboard();
 }
@@ -2914,7 +3010,7 @@ async function cargarUsuariosFin(){
 }
 
 async function cargarTodo(){
-  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarReferencias(),cargarTransferencias(),cargarTecnicosVT()]);
+  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarReferencias(),cargarTransferencias(),cargarTecnicosVT(),cargarFacturasCompra()]);
 }
 
 async function cargarTecnicosVT(){ const {data}=await sb.from('tecnicos_vt').select('*').order('nombre'); TECNICOS_VT=data||[]; }
@@ -3571,6 +3667,7 @@ async function cargarReferencias(){
 }
 
 async function cargarChequesFin(){ const {data}=await sb.from('cheques_fin').select('*').order('fecha',{ascending:false}); CHEQUES=data||[]; }
+async function cargarFacturasCompra(){ const {data}=await sb.from('facturas_compra_fin').select('*').order('fecha',{ascending:false}); FACTURAS=data||[]; }
 async function cargarIngresosFin(){ const {data}=await sb.from('ingresos_fin').select('*').order('fecha',{ascending:false}); INGRESOS=data||[]; }
 async function cargarAjustesFin(){ const {data}=await sb.from('ajustes_fin').select('*').order('fecha',{ascending:false}); AJUSTES=data||[]; }
 async function cargarCentrosFin(){ const {data}=await sb.from('centros_fin').select('*').order('nombre'); CENTROS=data||[]; if(!CENTROS.length) await insertarCentrosDefecto(); }
@@ -3880,6 +3977,7 @@ function siguienteNumCheque(){
 }
 
 async function openNuevoCheque(){
+  window.FACTURA_PENDIENTE_PAGO=null;
   sv('cheq-id',''); sv('cheq-fecha',today()); sv('cheq-num',siguienteNumCheque()); sv('cheq-ben',''); sv('cheq-doc','');
   sv('cheq-bruto',''); sv('cheq-itbis-facturado','0'); sv('cheq-itbis','0'); sv('cheq-isr','0'); sv('cheq-cargos','0');
   sv('cheq-mto-itbis','0'); sv('cheq-mto-isr','0'); sv('cheq-mto-cargos','0'); sv('cheq-total-facturado','0'); sv('cheq-neto',''); sv('cheq-concepto','');
@@ -3936,7 +4034,7 @@ async function poblarSelectReferencias(){
   sel.innerHTML='<option value="">Seleccionar...</option>'+REFERENCIAS.map(r=>`<option value="${r.codigo}">${r.codigo} — ${r.nombre}</option>`).join('');
   if(actual) sel.value=actual;
 }
-function abrirNuevoBeneficiarioDesdeCheque(){ sv('ben-id',''); sv('ben-nombre',''); sv('ben-rnc',''); ssv('ben-tipo',''); sv('ben-dir',''); openMod('m-beneficiario'); }
+function abrirNuevoBeneficiarioDesdeCheque(){ sv('ben-id',''); sv('ben-nombre',''); sv('ben-rnc',''); ssv('ben-tipo',''); sv('ben-dir',''); window.BEN_DESTINO='cheque'; openMod('m-beneficiario'); }
 function autoRncBeneficiario(){
   const val=gv('cheq-ben-sel');
   if(!val) return;
@@ -3999,6 +4097,14 @@ async function guardarCheque(){
     if(document.getElementById('page-dietas-vt')?.classList.contains('active')) calcularDietasVT();
     mostrarToastFin(`✅ Cheque consolidado generado para ${window.VT_DIETA_CONSOLIDADO.length} técnico(s).`);
     window.VT_DIETA_CONSOLIDADO=null;
+  }
+
+  // Si este cheque viene de "Pagar factura" (Facturas de Compra)
+  if(window.FACTURA_PENDIENTE_PAGO){
+    await sb.from('facturas_compra_fin').update({estado:'Pagada', cheque_id:chequeIdFinal, cheque_num:num}).eq('id',window.FACTURA_PENDIENTE_PAGO);
+    await cargarFacturasCompra();
+    if(document.getElementById('page-facturas')?.classList.contains('active')) renderFacturas();
+    window.FACTURA_PENDIENTE_PAGO=null;
   }
 
   await cargarChequesFin(); renderCheques(); cargarDashboard(); actualizarKPITrasCheque();
@@ -4372,6 +4478,183 @@ async function conciliarCheque(id){
   if(!confirm('¿Marcar este cheque como conciliado?')) return;
   await sb.from('cheques_fin').update({conciliado:true,estado:'Conciliado'}).eq('id',id);
   await cargarChequesFin(); renderCheques(); cargarDashboard();
+}
+
+// ═══════════════════════════════════════════════
+// FACTURAS DE COMPRA (COMPROBANTE FISCAL / NCF)
+// ═══════════════════════════════════════════════
+function calcNetoFactura(){
+  const bruto=parseFloat(gv('fac-bruto')||0);
+  const itbisFacturado=parseFloat(gv('fac-itbis-facturado')||0);
+  const pctItbis=parseFloat(gv('fac-itbis')||0);
+  const pctIsr=parseFloat(gv('fac-isr')||0);
+  const mtoItbis=itbisFacturado*pctItbis/100;
+  const mtoIsr=bruto*pctIsr/100;
+  const totalFacturado=bruto+itbisFacturado;
+  const neto=totalFacturado-mtoItbis-mtoIsr;
+  sv('fac-mto-itbis',mtoItbis.toFixed(2));
+  sv('fac-mto-isr',mtoIsr.toFixed(2));
+  sv('fac-total-facturado',totalFacturado.toFixed(2));
+  sv('fac-neto',neto.toFixed(2));
+}
+async function poblarSelectesFactura(){
+  if(!RUBROS.length) await cargarRubros();
+  if(!CENTROS.length) await cargarCentrosFin();
+  if(!BENEFICIARIOS.length) await cargarBeneficiarios();
+  const sr=document.getElementById('fac-rubro');
+  if(sr) sr.innerHTML='<option value="">Seleccionar...</option>'+RUBROS.map(r=>`<option value="${r.id}:${r.nombre}">${r.codigo} — ${r.nombre}</option>`).join('');
+  const sc=document.getElementById('fac-centro');
+  if(sc) sc.innerHTML='<option value="">General / Distrito</option>'+CENTROS.map(c=>`<option value="${c.id}:${c.nombre}">${c.codigo} — ${c.nombre}</option>`).join('');
+  const sb2=document.getElementById('fac-ben-sel');
+  if(sb2) sb2.innerHTML='<option value="">-- Seleccionar de la lista --</option>'+BENEFICIARIOS.map(b=>`<option value="${b.nombre}::${b.rnc||''}">${b.nombre}${b.rnc?' — '+b.rnc:''}</option>`).join('');
+}
+function autoRncBeneficiarioFactura(){
+  const val=gv('fac-ben-sel'); if(!val) return;
+  const partes=val.split('::');
+  sv('fac-ben', partes[0]||''); sv('fac-doc', partes[1]||'');
+}
+function abrirNuevoBeneficiarioDesdeFactura(){ sv('ben-id',''); sv('ben-nombre',''); sv('ben-rnc',''); ssv('ben-tipo',''); sv('ben-dir',''); window.BEN_DESTINO='factura'; openMod('m-beneficiario'); }
+
+async function openNuevaFactura(){
+  sv('fac-id',''); sv('fac-ncf',''); ssv('fac-tipo-ncf',''); sv('fac-fecha',today()); sv('fac-ncf-mod','');
+  sv('fac-ben',''); sv('fac-doc',''); sv('fac-bruto',''); sv('fac-itbis-facturado','0'); sv('fac-itbis','0'); sv('fac-isr','0');
+  sv('fac-mto-itbis','0'); sv('fac-mto-isr','0'); sv('fac-total-facturado','0'); sv('fac-neto',''); sv('fac-concepto','');
+  ssv('fac-rubro',''); ssv('fac-centro',''); ssv('fac-ben-sel','');
+  document.getElementById('m-fac-tit').textContent='Nueva Factura de Compra';
+  hide('fac-err');
+  await poblarSelectesFactura();
+  openMod('m-factura');
+}
+async function editarFactura(id){
+  const f=FACTURAS.find(x=>x.id===id); if(!f) return;
+  sv('fac-id',f.id); sv('fac-ncf',f.ncf); ssv('fac-tipo-ncf',f.tipo_ncf||''); sv('fac-fecha',f.fecha); sv('fac-ncf-mod',f.ncf_modificado||'');
+  sv('fac-ben',f.beneficiario); sv('fac-doc',f.cedula_beneficiario||'');
+  sv('fac-bruto',f.monto_bruto); sv('fac-itbis-facturado',f.itbis_facturado||0); sv('fac-itbis',f.pct_itbis||0); sv('fac-isr',f.pct_isr||0);
+  sv('fac-concepto',f.concepto);
+  document.getElementById('m-fac-tit').textContent='Editar Factura de Compra';
+  hide('fac-err');
+  await poblarSelectesFactura();
+  ssv('fac-rubro',f.rubro_id?f.rubro_id+':'+f.rubro_nombre:'');
+  ssv('fac-centro',f.centro_id?f.centro_id+':'+f.centro_nombre:'');
+  ssv('fac-ben-sel',f.beneficiario+'::'+(f.cedula_beneficiario||''));
+  calcNetoFactura();
+  openMod('m-factura');
+}
+async function guardarFactura(){
+  const ncf=UP(gv('fac-ncf')), tipoNcf=gv('fac-tipo-ncf'), fecha=gv('fac-fecha'), ben=UP(gv('fac-ben')), rubroVal=gv('fac-rubro'), concepto=UP(gv('fac-concepto'));
+  const bruto=parseFloat(gv('fac-bruto')||0);
+  hide('fac-err');
+  if(!ncf||!tipoNcf||!fecha||!ben||!rubroVal||!bruto||!concepto){ const e=document.getElementById('fac-err'); e.textContent='Completa todos los campos obligatorios.'; show('fac-err'); return; }
+  const [rubroId,rubroNombre]=rubroVal.split(':');
+  const centroVal=gv('fac-centro'); const [centroId,centroNombre]=(centroVal||':').split(':');
+  const id=gv('fac-id');
+  const row={
+    ncf, tipo_ncf:tipoNcf, ncf_modificado:UP(gv('fac-ncf-mod')), fecha,
+    beneficiario:ben, cedula_beneficiario:UP(gv('fac-doc')),
+    rubro_id:rubroId, rubro_nombre:rubroNombre,
+    centro_id:centroId||null, centro_nombre:centroNombre||null,
+    monto_bruto:bruto, itbis_facturado:parseFloat(gv('fac-itbis-facturado')||0),
+    pct_itbis:parseFloat(gv('fac-itbis')||0), mto_itbis:parseFloat(gv('fac-mto-itbis')||0),
+    pct_isr:parseFloat(gv('fac-isr')||0), mto_isr:parseFloat(gv('fac-mto-isr')||0),
+    monto_neto:parseFloat(gv('fac-neto')||0),
+    concepto, registrado_por:CU.nombre
+  };
+  let resp;
+  if(id){ resp=await sb.from('facturas_compra_fin').update(row).eq('id',id); }
+  else { row.id='FAC'+Date.now(); row.estado='Pendiente'; row.created_at=new Date().toISOString(); resp=await sb.from('facturas_compra_fin').insert(row); }
+  if(resp.error){ const e=document.getElementById('fac-err'); e.textContent='No se pudo guardar: '+resp.error.message; show('fac-err'); return; }
+  await cargarFacturasCompra(); renderFacturas(); closeMod('m-factura'); sv('fac-id','');
+  mostrarToastFin('✅ Factura guardada.');
+}
+async function eliminarFactura(id){
+  const f=FACTURAS.find(x=>x.id===id);
+  if(f&&f.estado==='Pagada'){ alert('Esta factura ya está pagada y ligada a un cheque — no se puede eliminar.'); return; }
+  if(!confirm('¿Eliminar esta factura?')) return;
+  await sb.from('facturas_compra_fin').delete().eq('id',id);
+  await cargarFacturasCompra(); renderFacturas();
+}
+async function anularFactura(id){
+  if(!confirm('¿Anular esta factura?')) return;
+  await sb.from('facturas_compra_fin').update({estado:'Anulada'}).eq('id',id);
+  await cargarFacturasCompra(); renderFacturas();
+}
+function camposFactura(f){
+  return [
+    {label:'NCF',value:f.ncf}, {label:'Tipo de comprobante',value:f.tipo_ncf},
+    {label:'NCF modificado',value:f.ncf_modificado}, {label:'Fecha',value:f.fecha},
+    {label:'Proveedor',value:f.beneficiario}, {label:'RNC/Cédula',value:f.cedula_beneficiario},
+    {label:'Rubro',value:f.rubro_nombre}, {label:'Centro/Programa',value:f.centro_nombre},
+    {label:'Concepto',value:f.concepto},
+    {label:'Monto bruto',value:RD(f.monto_bruto)}, {label:'ITBIS facturado',value:RD(f.itbis_facturado||0)},
+    {label:'Retención ITBIS',value:RD(f.mto_itbis||0)}, {label:'Retención ISR',value:RD(f.mto_isr||0)},
+    {label:'Neto a pagar',value:RD(f.monto_neto)}, {label:'Estado',value:f.estado},
+    {label:'Cheque',value:f.cheque_num||'Sin pagar aún'}
+  ];
+}
+function verFactura(id){ const f=FACTURAS.find(x=>String(x.id)===String(id)); if(!f) return; verRegistroGenerico('Factura de Compra','Detalle de la factura',camposFactura(f)); }
+function imprimirFactura(id){ const f=FACTURAS.find(x=>String(x.id)===String(id)); if(!f) return; imprimirRegistroGenerico('Factura de Compra','Detalle de la factura',camposFactura(f)); }
+
+// Genera un cheque para pagar una factura pendiente, prellenando el formulario de cheque
+async function generarChequeDesdeFactura(id){
+  const f=FACTURAS.find(x=>x.id===id); if(!f) return;
+  if(f.estado!=='Pendiente'){ alert('Esta factura no está pendiente de pago.'); return; }
+  await openNuevoCheque();
+  ssv('cheq-ben-sel', f.beneficiario+'::'+(f.cedula_beneficiario||''));
+  sv('cheq-ben', f.beneficiario); sv('cheq-doc', f.cedula_beneficiario||'');
+  ssv('cheq-rubro', f.rubro_id?f.rubro_id+':'+f.rubro_nombre:'');
+  ssv('cheq-centro', f.centro_id?f.centro_id+':'+f.centro_nombre:'');
+  sv('cheq-bruto', f.monto_bruto); sv('cheq-itbis-facturado', f.itbis_facturado||0);
+  sv('cheq-itbis', f.pct_itbis||0); sv('cheq-isr', f.pct_isr||0);
+  sv('cheq-concepto', 'NCF '+f.ncf+' — '+f.concepto);
+  calcNeto();
+  window.FACTURA_PENDIENTE_PAGO=f.id;
+  mostrarToastFin('Completa el número de cheque y guarda para marcar la factura como pagada.');
+}
+
+function renderFacturas(data){
+  data=data||FACTURAS;
+  const tb=document.getElementById('tb-facturas');
+  const countEl=document.getElementById('fac-count-txt');
+  if(countEl) countEl.textContent='Mostrando '+data.length+' de '+FACTURAS.length+' facturas';
+  const isAdmin=CU&&(CU.rol==='admin'||CU.rol==='supervisor');
+  if(!data.length){ tb.innerHTML='<tr class="erow"><td colspan="13">Sin facturas registradas</td></tr>'; }
+  else tb.innerHTML=data.map(f=>{
+    const retenciones=parseFloat(f.mto_itbis||0)+parseFloat(f.mto_isr||0);
+    const totalFacturado=parseFloat(f.monto_bruto||0)+parseFloat(f.itbis_facturado||0);
+    return `<tr>
+    <td><input type="checkbox" class="chk-fac" value="${f.id}" style="width:16px;height:16px;cursor:pointer"/></td>
+    <td><strong>${f.ncf}</strong>${f.ncf_modificado?`<div class="cs">Mod: ${f.ncf_modificado}</div>`:''}</td>
+    <td style="font-size:11px">${(f.tipo_ncf||'').split(' - ')[0]||f.tipo_ncf||'—'}</td>
+    <td>${new Date(f.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
+    <td><div class="cm">${f.beneficiario}</div><div class="cs">${f.cedula_beneficiario||''}</div></td>
+    <td style="font-size:11px">${f.rubro_nombre||'—'}</td>
+    <td style="font-size:11px">${f.centro_nombre||'General'}</td>
+    <td>${RD(totalFacturado)}</td>
+    <td style="color:var(--amber)">${RD(f.itbis_facturado||0)}</td>
+    <td style="color:var(--red2)">${RD(retenciones)}</td>
+    <td><strong style="color:var(--green2)">${RD(f.monto_neto)}</strong></td>
+    <td><span class="badge ${f.estado==='Pagada'?'b-act':f.estado==='Anulada'?'b-anu':'b-pen'}">${f.estado}</span>${f.cheque_num?`<div class="cs">Cheque ${f.cheque_num}</div>`:''}</td>
+    <td><div style="display:flex;gap:3px;flex-wrap:wrap">
+      <button class="btn btn-xs" onclick="verFactura('${f.id}')" title="Ver detalles">👁️</button>
+      <button class="btn btn-xs btn-amber" onclick="imprimirFactura('${f.id}')" title="Imprimir">🖨️</button>
+      ${f.estado==='Pendiente'?`<button class="btn btn-xs btn-success" onclick="generarChequeDesdeFactura('${f.id}')" title="Generar cheque">🧾 Pagar</button>`:''}
+      ${isAdmin&&f.estado==='Pendiente'?`<button class="btn btn-xs btn-primary" onclick="editarFactura('${f.id}')" title="Editar">✏️</button>`:''}
+      ${isAdmin&&f.estado==='Pendiente'?`<button class="btn btn-xs btn-danger" onclick="anularFactura('${f.id}')" title="Anular">🚫</button>`:''}
+      ${isAdmin&&f.estado!=='Pagada'?`<button class="btn btn-xs btn-danger" onclick="eliminarFactura('${f.id}')" title="Eliminar">🗑️</button>`:''}
+    </div></td>
+  </tr>`;}).join('');
+  const pendiente=FACTURAS.filter(f=>f.estado==='Pendiente').reduce((s,f)=>s+parseFloat(f.monto_neto||0),0);
+  const pagado=FACTURAS.filter(f=>f.estado==='Pagada').reduce((s,f)=>s+parseFloat(f.monto_neto||0),0);
+  const elP=document.getElementById('fac-k-pendiente'); if(elP) elP.textContent=RD(pendiente);
+  const elG=document.getElementById('fac-k-pagado'); if(elG) elG.textContent=RD(pagado);
+  const elC=document.getElementById('fac-k-count'); if(elC) elC.textContent=FACTURAS.length;
+}
+function filtrarFacturas(){
+  const q=(gv('q-fac')||'').toLowerCase(), est=gv('q-fac-est'), dd=gv('q-fac-d'), dh=gv('q-fac-h');
+  renderFacturas(FACTURAS.filter(f=>{
+    const mq=!q||[f.ncf,f.beneficiario,f.concepto].some(v=>(v||'').toLowerCase().includes(q));
+    return mq&&(!est||f.estado===est)&&(!dd||f.fecha>=dd)&&(!dh||f.fecha<=dh);
+  }));
 }
 
 // ═══════════════════════════════════════════════
@@ -4762,10 +5045,17 @@ async function guardarBeneficiario(){
   else { row.id='B'+Date.now(); resp=await sb.from('beneficiarios_fin').insert(row); }
   if(resp.error){ alert('No se pudo guardar el beneficiario:\n\n'+resp.error.message); return; }
   await cargarBeneficiarios(); renderCatalogos(); closeMod('m-beneficiario'); sv('ben-id','');
-  // Si se agregó desde el formulario de cheque, refresca el select y deja el nuevo beneficiario elegido
-  await poblarSelectBeneficiarios();
-  ssv('cheq-ben-sel', nombre+'::'+(rnc||''));
-  autoRncBeneficiario();
+  // Si se agregó desde el formulario de cheque o de factura, refresca el select y deja el nuevo beneficiario elegido
+  if(window.BEN_DESTINO==='factura'){
+    await poblarSelectesFactura();
+    ssv('fac-ben-sel', nombre+'::'+(rnc||''));
+    autoRncBeneficiarioFactura();
+  } else {
+    await poblarSelectBeneficiarios();
+    ssv('cheq-ben-sel', nombre+'::'+(rnc||''));
+    autoRncBeneficiario();
+  }
+  window.BEN_DESTINO=null;
   mostrarToastFin('✅ Beneficiario guardado.');
 }
 async function eliminarBeneficiario(id){ if(!confirm('¿Eliminar beneficiario?')) return; await sb.from('beneficiarios_fin').delete().eq('id',id); await cargarBeneficiarios(); renderCatalogos(); }
