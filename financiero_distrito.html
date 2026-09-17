@@ -779,6 +779,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <div class="btn-row" style="margin-top:.75rem">
       <button class="btn btn-primary" onclick="generarPlanillaAuxiliar()">📑 Ver Planilla Auxiliar</button>
       <button class="btn btn-navy" onclick="generarRendicionCuentas()">📋 Ver Rendición de Cuentas</button>
+      <button class="btn btn-success" onclick="abrirPresupuesto()">💵 Registrar Presupuesto Anual</button>
     </div>
     <div class="alert alert-err" id="pla-err" style="margin-top:.75rem"></div>
   </div>
@@ -1806,6 +1807,45 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
   </div>
 </div>
 
+<!-- Presupuesto (Solicitud de Recursos Financieros) -->
+<div class="mbg" id="m-presupuesto">
+  <div class="mbox" style="max-width:700px">
+    <div class="mhdr">💵 <span id="m-pre-tit">Presupuesto Anual del Centro</span><button class="mclose" onclick="closeMod('m-presupuesto')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="pre-id"/>
+      <div style="font-size:11px;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--blue2)">📋 Datos generales</div>
+      <div class="fgrid" style="margin-bottom:1rem">
+        <div class="fg"><label>Centro</label><input type="text" id="pre-centro-txt" readonly style="background:var(--surface2)"/></div>
+        <div class="fg"><label>Año <span class="req">*</span></label><input type="number" id="pre-anio" placeholder="2026" style="text-transform:none"/></div>
+        <div class="fg"><label>Fecha de emisión</label><input type="date" id="pre-fecha"/></div>
+        <div class="fg"><label>Monto anual total (RD$)<br><span style="font-weight:400;color:var(--text3)">Para sugerir la distribución</span></label><input type="number" id="pre-monto-anual" placeholder="0.00" step="0.01"/></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--green2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid var(--green2)">🏷️ Distribución del presupuesto anual por rubro</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.75rem">Puedes escribir el monto anual de cada rubro directamente, o sugerir una distribución 40%/40%/20% (Servicios/Materiales/Activo) repartida en partes iguales dentro de cada categoría, y luego ajustarla.</div>
+      <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="sugerirPresupuesto404020()">⚖️ Sugerir 40/40/20</button>
+        <button class="btn btn-sm" onclick="limpiarPresupuesto()">✕ Limpiar</button>
+        <span style="font-size:12px;color:var(--text2);align-self:center">Total distribuido: <strong id="pre-total-dist" style="color:var(--green2)">RD$ 0.00</strong> / <strong id="pre-total-ref">RD$ 0.00</strong></span>
+      </div>
+      <div id="pre-grid" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0">
+            <th style="padding:8px 10px;text-align:left">Código</th>
+            <th style="padding:8px 10px;text-align:left">Rubro</th>
+            <th style="padding:8px 10px;text-align:right">Presupuesto anual (RD$)</th>
+          </tr></thead>
+          <tbody id="tb-pre-rubros"></tbody>
+        </table>
+      </div>
+      <div class="alert alert-err" id="pre-err" style="margin-top:1rem"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="guardarPresupuesto()">💾 Guardar presupuesto</button>
+        <button class="btn" onclick="closeMod('m-presupuesto')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Beneficiario -->
 <div class="mbg" id="m-beneficiario">
   <div class="mbox" style="max-width:480px">
@@ -2009,7 +2049,7 @@ try{
 // ═══════════════════════════════════════════════
 let CU = null;
 let USERS_FIN = [];
-let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [], REFERENCIAS = [], FACTURAS = [];
+let CHEQUES = [], INGRESOS = [], AJUSTES = [], CENTROS = [], RUBROS = [], FUENTES = [], BENEFICIARIOS = [], TRANSFERENCIAS = [], REFERENCIAS = [], FACTURAS = [], PRESUPUESTOS = [];
 let TECNICOS_VT = [], VISITAS_VT = [], CRONOGRAMA_VT = [];
 const MONTO_DIETA_VT = 500;
 let chartFlujo = null, chartRubros = null, chartDistCentros = null;
@@ -2760,6 +2800,9 @@ function generarRendicionCuentas(){
   if(!centroId||!trxId){ const e=document.getElementById('pla-err'); e.textContent='Selecciona el centro y la transferencia.'; show('pla-err'); return; }
   const d=datosPlanilla(centroId,trxId);
   if(!d){ const e=document.getElementById('pla-err'); e.textContent='No se pudo calcular la rendición de cuentas.'; show('pla-err'); return; }
+  const anioTransferencia=new Date(d.transferencia.fecha).getFullYear();
+  const presupuesto=PRESUPUESTOS.find(p=>p.centro_id===centroId&&String(p.anio)===String(anioTransferencia));
+  const distPresupuesto=presupuesto&&presupuesto.distribucion?JSON.parse(presupuesto.distribucion):{};
   const categorias=[
     {titulo:'2. SERVICIOS NO PERSONALES', prefijo:'2'},
     {titulo:'3. MATERIALES Y SUMINISTRO', prefijo:'3'},
@@ -2767,18 +2810,23 @@ function generarRendicionCuentas(){
   ];
   const th='background:var(--navy);color:#fff;padding:6px 10px;text-align:right;font-size:11px';
   const td='padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-size:12px';
-  let granEjecutado=0;
+  let granEjecutado=0, granAnual=0, granTrimestral=0, granDisponible=0;
   const bloques=categorias.map(cat=>{
     const rubrosCat=RUBROS.filter(r=>(r.codigo||'').startsWith(cat.prefijo)).sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
-    let subEjec=0;
+    let subEjec=0, subAnual=0, subTrim=0;
     const filas=rubrosCat.map(r=>{
       const ejec=d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
-      subEjec+=ejec;
-      return `<tr><td style="${td};text-align:left">${r.codigo}</td><td style="${td};text-align:left;white-space:normal">${r.nombre}</td><td style="${td}">—</td><td style="${td}">—</td><td style="${td}">${RD(ejec)}</td><td style="${td}">—</td></tr>`;
+      const anual=distPresupuesto[r.id]?parseFloat(distPresupuesto[r.id].monto||0):0;
+      const trimestral=anual/4;
+      const disponible=trimestral-ejec;
+      subEjec+=ejec; subAnual+=anual; subTrim+=trimestral;
+      return `<tr><td style="${td};text-align:left">${r.codigo}</td><td style="${td};text-align:left;white-space:normal">${r.nombre}</td><td style="${td}">${anual?RD(anual):'—'}</td><td style="${td}">${anual?RD(trimestral):'—'}</td><td style="${td}">${RD(ejec)}</td><td style="${td};color:${anual?(disponible>=0?'var(--green2)':'var(--red2)'):'inherit'}">${anual?RD(disponible):'—'}</td></tr>`;
     }).join('');
-    granEjecutado+=subEjec;
+    granEjecutado+=subEjec; granAnual+=subAnual; granTrimestral+=subTrim;
+    const subDisp=subTrim-subEjec;
+    granDisponible+=subDisp;
     return `<tr><td colspan="6" style="padding:8px 10px;font-weight:700;background:var(--surface2);text-align:left">${cat.titulo}</td></tr>${filas}
-      <tr style="font-weight:700"><td colspan="2" style="${td};text-align:left">Sub-total</td><td style="${td}">—</td><td style="${td}">—</td><td style="${td}">${RD(subEjec)}</td><td style="${td}">—</td></tr>`;
+      <tr style="font-weight:700"><td colspan="2" style="${td};text-align:left">Sub-total</td><td style="${td}">${subAnual?RD(subAnual):'—'}</td><td style="${td}">${subAnual?RD(subTrim):'—'}</td><td style="${td}">${RD(subEjec)}</td><td style="${td};color:${subAnual?(subDisp>=0?'var(--green2)':'var(--red2)'):'inherit'}">${subAnual?RD(subDisp):'—'}</td></tr>`;
   }).join('');
   const html=`
     <div style="text-align:center;margin-bottom:1rem">
@@ -2793,13 +2841,14 @@ function generarRendicionCuentas(){
       <div><strong>Monto total ejecutado:</strong> ${RD(granEjecutado)}</div>
       <div><strong>Período:</strong> ${new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')} al ${d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy'}</div>
     </div>
+    ${!presupuesto?`<div style="background:var(--amber-bg);border:1px solid var(--amber2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:1rem">⚠️ Este centro no tiene un Presupuesto Anual ${anioTransferencia} registrado — las columnas de presupuesto quedan en blanco. Usa el botón "💵 Registrar Presupuesto Anual" para completarlas.</div>`:''}
     <div class="twrap"><table id="pla-tabla-principal" style="border-collapse:collapse;width:100%">
       <thead><tr><th style="${th};text-align:left">Número</th><th style="${th};text-align:left">Detalles</th><th style="${th}">Presup. Anual</th><th style="${th}">Presup. Trimestral</th><th style="${th}">Ejecutado</th><th style="${th}">Disponible</th></tr></thead>
       <tbody>${bloques}
-        <tr style="background:var(--navy);color:#fff;font-weight:700"><td colspan="2" style="padding:8px 10px;text-align:left">TOTALES</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">${RD(granEjecutado)}</td><td style="padding:8px 10px;text-align:right">—</td></tr>
+        <tr style="background:var(--navy);color:#fff;font-weight:700"><td colspan="2" style="padding:8px 10px;text-align:left">TOTALES</td><td style="padding:8px 10px;text-align:right">${granAnual?RD(granAnual):'—'}</td><td style="padding:8px 10px;text-align:right">${granAnual?RD(granTrimestral):'—'}</td><td style="padding:8px 10px;text-align:right">${RD(granEjecutado)}</td><td style="padding:8px 10px;text-align:right">${granAnual?RD(granDisponible):'—'}</td></tr>
       </tbody>
     </table></div>
-    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">"Presupuesto Anual" y "Presupuesto Trimestral" no se llevan en el sistema — complétalos a mano si los necesitas.</p>
+    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">"Presupuesto Trimestral" = Presupuesto Anual ÷ 4, tomado del Presupuesto Anual ${anioTransferencia} registrado para este centro.</p>
   `;
   document.getElementById('pla-resultado-titulo').textContent='📋 Rendición de Cuentas — '+d.centro.nombre;
   document.getElementById('pla-resultado-cont').innerHTML=html;
@@ -2862,6 +2911,9 @@ function exportarCuentaExcel(d){
     {titulo:'3. MATERIALES Y SUMINISTRO',prefijo:'3'},
     {titulo:'ACTIVO NO FINANCIERO',prefijo:'6'}
   ];
+  const anioTransferencia=new Date(d.transferencia.fecha).getFullYear();
+  const presupuesto=PRESUPUESTOS.find(p=>p.centro_id===d.centro.id&&String(p.anio)===String(anioTransferencia));
+  const distPresupuesto=presupuesto&&presupuesto.distribucion?JSON.parse(presupuesto.distribucion):{};
   const periodoStr=new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')+' al '+(d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy');
   const aoa=[];
   aoa.push(['Ministerio de Educación de la República Dominicana']);
@@ -2871,6 +2923,7 @@ function exportarCuentaExcel(d){
   aoa.push(['Nombre de la junta','',d.centro.nombre,'Código No.',d.centro.codigo]);
   aoa.push(['Fecha de emisión','',new Date().toLocaleDateString('es-DO'),'Transferencia',d.transferencia.codigo||d.transferencia.descripcion]);
   aoa.push(['Período','',periodoStr,'Monto Total Ejecutado',d.totalEjecutado]);
+  if(!presupuesto) aoa.push(['','','Sin Presupuesto Anual '+anioTransferencia+' registrado para este centro']);
   aoa.push([]);
   aoa.push(['Número Cuenta','Detalles','Presupuesto Anual','Presupuesto Trimestral','Ejecutado','Disponible']);
   let granEjecutado=0;
@@ -2880,8 +2933,9 @@ function exportarCuentaExcel(d){
     let subEjec=0;
     rubrosCat.forEach(r=>{
       const ejec=d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
+      const anual=distPresupuesto[r.id]?parseFloat(distPresupuesto[r.id].monto||0):0;
       subEjec+=ejec;
-      aoa.push([r.codigo,r.nombre,'','',ejec,'']);
+      aoa.push([r.codigo,r.nombre,anual||'',anual?anual/4:'',ejec,anual?(anual/4-ejec):'']);
     });
     granEjecutado+=subEjec;
     aoa.push(['Sub-total','','','',subEjec,'']);
@@ -2893,6 +2947,151 @@ function exportarCuentaExcel(d){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Cuenta');
   XLSX.writeFile(wb,'RendicionCuentas_'+d.centro.codigo+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════
+// PRESUPUESTO ANUAL POR CENTRO (Solicitud de Recursos Financieros)
+// ═══════════════════════════════════════════════
+function categoriaDeRubro(codigo){
+  if((codigo||'').startsWith('2')) return {titulo:'2. SERVICIOS NO PERSONALES',pct:0.40};
+  if((codigo||'').startsWith('3')) return {titulo:'3. MATERIALES Y SUMINISTRO',pct:0.40};
+  if((codigo||'').startsWith('6')) return {titulo:'ACTIVO NO FINANCIERO',pct:0.20};
+  return {titulo:'OTROS',pct:0};
+}
+async function abrirPresupuesto(){
+  const centroId=gv('pla-centro');
+  if(!centroId){ alert('Selecciona primero un centro.'); return; }
+  const centro=CENTROS.find(c=>c.id===centroId);
+  const trxId=gv('pla-transferencia');
+  const anioSugerido=trxId?new Date((TRANSFERENCIAS.find(t=>t.id===trxId)||{}).fecha||today()).getFullYear():new Date().getFullYear();
+  if(!RUBROS.length) await cargarRubros();
+  sv('pre-centro-txt', centro.codigo+' — '+centro.nombre);
+  sv('pre-anio', anioSugerido); sv('pre-fecha', today()); sv('pre-monto-anual','');
+  const existente=PRESUPUESTOS.find(p=>p.centro_id===centroId&&String(p.anio)===String(anioSugerido));
+  sv('pre-id', existente?existente.id:'');
+  document.getElementById('m-pre-tit').textContent=existente?'Editar Presupuesto Anual':'Nuevo Presupuesto Anual';
+  const montos={};
+  if(existente&&existente.distribucion){
+    const d=JSON.parse(existente.distribucion);
+    Object.entries(d).forEach(([rid,v])=>montos[rid]=v.monto);
+    sv('pre-monto-anual', existente.monto_anual_total||'');
+  }
+  hide('pre-err');
+  poblarGridPresupuesto(montos);
+  openMod('m-presupuesto');
+}
+function poblarGridPresupuesto(montos={}){
+  const tb=document.getElementById('tb-pre-rubros'); if(!tb) return;
+  const rubrosOrdenados=[...RUBROS].sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
+  let catActual='';
+  const filas=[];
+  rubrosOrdenados.forEach(r=>{
+    const cat=categoriaDeRubro(r.codigo);
+    if(cat.titulo!==catActual){
+      catActual=cat.titulo;
+      filas.push(`<tr><td colspan="3" style="padding:6px 10px;font-weight:700;background:var(--surface2);font-size:11px">${cat.titulo}</td></tr>`);
+    }
+    const monto=montos[r.id]||'';
+    filas.push(`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px 10px;font-size:11px"><code>${r.codigo}</code></td>
+      <td style="padding:6px 10px;font-size:12px">${r.nombre}</td>
+      <td style="padding:6px 10px">
+        <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
+          <input type="number" class="inp-pre-pct" data-id="${r.id}" placeholder="%"
+            value="" step="0.01" min="0" oninput="pctAMontoPresupuesto('${r.id}')"
+            style="width:52px;padding:5px 4px;border:1px solid var(--border2);border-radius:6px;font-size:12px;text-align:right"/>
+          <span style="font-size:11px;color:var(--text3)">%</span>
+          <input type="number" class="inp-pre" data-id="${r.id}" data-codigo="${r.codigo}" data-nombre="${r.nombre}"
+            value="${monto}" placeholder="0.00" step="0.01" min="0"
+            oninput="montoAPctPresupuesto('${r.id}')"
+            style="width:110px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:13px;text-align:right"/>
+        </div>
+      </td>
+    </tr>`);
+  });
+  tb.innerHTML=filas.join('');
+  // Si ya había montos cargados (editando un presupuesto existente), calcula su % correspondiente
+  Object.keys(montos).forEach(rid=>montoAPctPresupuesto(rid,true));
+  calcTotalPresupuesto();
+}
+// Al escribir un %, calcula el monto de ese rubro = % del monto anual total
+function pctAMontoPresupuesto(rubroId){
+  const total=parseFloat(gv('pre-monto-anual')||0);
+  const inpPct=document.querySelector(`.inp-pre-pct[data-id="${rubroId}"]`);
+  const inpMonto=document.querySelector(`.inp-pre[data-id="${rubroId}"]`);
+  if(!inpPct||!inpMonto) return;
+  const pct=parseFloat(inpPct.value||0);
+  if(total>0) inpMonto.value=(total*pct/100).toFixed(2);
+  calcTotalPresupuesto();
+}
+// Al escribir un monto directo, calcula a qué % del monto anual total equivale (solo informativo)
+function montoAPctPresupuesto(rubroId, silencioso){
+  const total=parseFloat(gv('pre-monto-anual')||0);
+  const inpPct=document.querySelector(`.inp-pre-pct[data-id="${rubroId}"]`);
+  const inpMonto=document.querySelector(`.inp-pre[data-id="${rubroId}"]`);
+  if(!inpPct||!inpMonto) return;
+  const monto=parseFloat(inpMonto.value||0);
+  if(total>0&&monto>0) inpPct.value=(monto/total*100).toFixed(2);
+  else if(!monto) inpPct.value='';
+  if(!silencioso) calcTotalPresupuesto();
+}
+function calcTotalPresupuesto(){
+  const total=[...document.querySelectorAll('.inp-pre')].reduce((s,i)=>s+parseFloat(i.value||0),0);
+  const ref=parseFloat(gv('pre-monto-anual')||0);
+  const el=document.getElementById('pre-total-dist');
+  const elRef=document.getElementById('pre-total-ref');
+  if(el) el.textContent=RD(total);
+  if(elRef) elRef.textContent=RD(ref);
+  if(el) el.style.color=ref>0&&Math.abs(total-ref)<0.01?'var(--green2)':'var(--amber)';
+}
+// Reparte el "Monto anual total" en 40%/40%/20% por categoría, y dentro de cada categoría
+// en partes iguales entre sus rubros — un punto de partida que luego se puede ajustar a mano.
+function sugerirPresupuesto404020(){
+  const total=parseFloat(gv('pre-monto-anual')||0);
+  if(!total){ alert('Escribe primero el monto anual total.'); return; }
+  const inputs=[...document.querySelectorAll('.inp-pre')];
+  const porCategoria={};
+  inputs.forEach(i=>{
+    const cat=categoriaDeRubro(i.dataset.codigo).titulo;
+    if(!porCategoria[cat]) porCategoria[cat]=[];
+    porCategoria[cat].push(i);
+  });
+  Object.entries(porCategoria).forEach(([cat,ins])=>{
+    const pct=categoriaDeRubro(ins[0].dataset.codigo).pct;
+    const montoCategoria=total*pct;
+    const porRubro=ins.length?Math.floor((montoCategoria/ins.length)*100)/100:0;
+    ins.forEach(i=>{ i.value=porRubro; montoAPctPresupuesto(i.dataset.id,true); });
+  });
+  calcTotalPresupuesto();
+}
+function limpiarPresupuesto(){
+  document.querySelectorAll('.inp-pre').forEach(i=>i.value='');
+  document.querySelectorAll('.inp-pre-pct').forEach(i=>i.value='');
+  calcTotalPresupuesto();
+}
+async function guardarPresupuesto(){
+  const centroId=gv('pla-centro'), anio=gv('pre-anio'), fecha=gv('pre-fecha');
+  hide('pre-err');
+  if(!centroId||!anio){ const e=document.getElementById('pre-err'); e.textContent='Completa el centro y el año.'; show('pre-err'); return; }
+  const centro=CENTROS.find(c=>c.id===centroId);
+  const distribucion={};
+  document.querySelectorAll('.inp-pre').forEach(inp=>{
+    const val=parseFloat(inp.value||0);
+    if(val>0) distribucion[inp.dataset.id]={codigo:inp.dataset.codigo,nombre:inp.dataset.nombre,monto:val};
+  });
+  const row={
+    centro_id:centroId, centro_nombre:centro.nombre, anio:parseInt(anio,10), fecha_emision:fecha,
+    monto_anual_total:parseFloat(gv('pre-monto-anual')||0),
+    distribucion:JSON.stringify(distribucion), registrado_por:CU.nombre
+  };
+  const id=gv('pre-id');
+  let resp;
+  if(id){ resp=await sb.from('presupuestos_fin').update(row).eq('id',id); }
+  else { row.id='PRE'+Date.now(); row.created_at=new Date().toISOString(); resp=await sb.from('presupuestos_fin').insert(row); }
+  if(resp.error){ const e=document.getElementById('pre-err'); e.textContent='No se pudo guardar: '+resp.error.message; show('pre-err'); return; }
+  await cargarPresupuestos();
+  closeMod('m-presupuesto'); sv('pre-id','');
+  mostrarToastFin('✅ Presupuesto guardado. Ya se puede usar en la Rendición de Cuentas.');
 }
 
 function renderTransferencias(data){
@@ -3338,7 +3537,7 @@ async function cargarUsuariosFin(){
 }
 
 async function cargarTodo(){
-  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarReferencias(),cargarTransferencias(),cargarTecnicosVT(),cargarFacturasCompra()]);
+  await Promise.all([cargarRubros(),cargarFuentes(),cargarCentrosFin(),cargarChequesFin(),cargarIngresosFin(),cargarAjustesFin(),cargarBeneficiarios(),cargarReferencias(),cargarTransferencias(),cargarTecnicosVT(),cargarFacturasCompra(),cargarPresupuestos()]);
 }
 
 async function cargarTecnicosVT(){ const {data}=await sb.from('tecnicos_vt').select('*').order('nombre'); TECNICOS_VT=data||[]; }
@@ -3996,6 +4195,7 @@ async function cargarReferencias(){
 
 async function cargarChequesFin(){ const {data}=await sb.from('cheques_fin').select('*').order('fecha',{ascending:false}); CHEQUES=data||[]; }
 async function cargarFacturasCompra(){ const {data}=await sb.from('facturas_compra_fin').select('*').order('fecha',{ascending:false}); FACTURAS=data||[]; }
+async function cargarPresupuestos(){ const {data}=await sb.from('presupuestos_fin').select('*'); PRESUPUESTOS=data||[]; }
 async function cargarIngresosFin(){ const {data}=await sb.from('ingresos_fin').select('*').order('fecha',{ascending:false}); INGRESOS=data||[]; }
 async function cargarAjustesFin(){ const {data}=await sb.from('ajustes_fin').select('*').order('fecha',{ascending:false}); AJUSTES=data||[]; }
 async function cargarCentrosFin(){ const {data}=await sb.from('centros_fin').select('*').order('nombre'); CENTROS=data||[]; if(!CENTROS.length) await insertarCentrosDefecto(); }
