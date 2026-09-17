@@ -358,6 +358,7 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
     <button class="nb" onclick="nav('conciliacion',this)"><span class="ni">🔄</span>Conciliación Bancaria</button>
     <button class="nb" onclick="nav('ajustes',this)"><span class="ni">⚖️</span>Ajustes Contables</button>
     <button class="nb" onclick="nav('centros',this)"><span class="ni">🏫</span>Centros Auxiliares</button>
+    <button class="nb" onclick="nav('planilla',this)"><span class="ni">📑</span>Planilla y Rendición de Cuentas</button>
   </div>
   <div class="sb-sec">Reportes</div>
   <button class="nb-grupo" id="grupo-reportes-btn" onclick="toggleGrupoSidebar('reportes')">
@@ -757,6 +758,37 @@ body.rol-tecnico-vt #dgrupo-vt-btn .chev{display:none}
       <thead><tr><th><input type="checkbox" onclick="selTodo('chk-cen',this)" style="width:16px;height:16px;cursor:pointer"/></th><th>Código</th><th>Nombre del centro</th><th>Director</th><th>Zona</th><th>Acciones</th></tr></thead>
       <tbody id="tb-centros"></tbody>
     </table></div>
+  </div>
+</div>
+
+<!-- PLANILLA AUXILIAR Y RENDICIÓN DE CUENTAS -->
+<div id="page-planilla" class="page">
+  <div class="page-hdr"><h2>📑 Planilla Auxiliar y Rendición de Cuentas</h2></div>
+  <div class="card" style="border-left:4px solid var(--blue2)">
+    <div class="chdr">🔍 Selecciona el centro y la transferencia</div>
+    <div class="fgrid">
+      <div class="fg"><label>Centro / Programa <span class="req">*</span></label>
+        <select id="pla-centro" onchange="actualizarTransferenciasPlanilla()"><option value="">Seleccionar...</option></select>
+      </div>
+      <div class="fg"><label>Transferencia <span class="req">*</span></label>
+        <select id="pla-transferencia" onchange="precargarFechasPlanilla()"><option value="">Primero elige un centro</option></select>
+      </div>
+      <div class="fg"><label>Desde<br><span style="font-weight:400;color:var(--text3)">Se llena solo, pero puedes cambiarla</span></label><input type="date" id="pla-fecha-desde"/></div>
+      <div class="fg"><label>Hasta<br><span style="font-weight:400;color:var(--text3)">Se llena solo, pero puedes cambiarla</span></label><input type="date" id="pla-fecha-hasta"/></div>
+    </div>
+    <div class="btn-row" style="margin-top:.75rem">
+      <button class="btn btn-primary" onclick="generarPlanillaAuxiliar()">📑 Ver Planilla Auxiliar</button>
+      <button class="btn btn-navy" onclick="generarRendicionCuentas()">📋 Ver Rendición de Cuentas</button>
+    </div>
+    <div class="alert alert-err" id="pla-err" style="margin-top:.75rem"></div>
+  </div>
+  <div class="card" id="pla-resultado-card" style="display:none">
+    <div class="chdr" id="pla-resultado-titulo">Resultado</div>
+    <div class="btn-row" style="margin-bottom:.75rem">
+      <button class="btn btn-amber btn-sm" onclick="exportarExcelTabla('pla-tabla-principal','Planilla')">📗 Excel</button>
+      <button class="btn btn-navy btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+    <div id="pla-resultado-cont"></div>
   </div>
 </div>
 
@@ -2214,6 +2246,7 @@ async function nav(id,btn){
   if(id==='conciliacion') cargarConciliacion();
   if(id==='ajustes') renderAjustes();
   if(id==='centros') renderCentros();
+  if(id==='planilla') poblarSelectCentroPlanilla();
   if(id==='catalogos'){ renderCatalogos(); renderCentrosCat(); }
   if(id==='usuarios') renderUsuarios();  if(id==='transferencias'){ await cargarTransferencias(); renderTransferencias(); renderKPIActiva(); }
   if(id==='config-fin'){ cargarConfig(); verificarConexion(); }
@@ -2578,6 +2611,202 @@ function actualizarSaldoCentroSeleccionado(){
   box.innerHTML=`💰 Saldo disponible en <strong>${centroNombre}</strong>: <strong>${RD(saldoBase)}</strong>`+
     (totalAfecta>0?` — Después de este cheque: <strong>${RD(saldoDespues)}</strong>`:'')+
     (saldoDespues<0?' ⚠️ Saldo insuficiente':'');
+}
+
+// ═══════════════════════════════════════════════
+// PLANILLA AUXILIAR Y RENDICIÓN DE CUENTAS (por centro + transferencia)
+// ═══════════════════════════════════════════════
+function poblarSelectCentroPlanilla(){
+  const sel=document.getElementById('pla-centro'); if(!sel) return;
+  sel.innerHTML='<option value="">Seleccionar...</option>'+CENTROS.map(c=>`<option value="${c.id}">${c.codigo} — ${c.nombre}</option>`).join('');
+  document.getElementById('pla-transferencia').innerHTML='<option value="">Primero elige un centro</option>';
+  const card=document.getElementById('pla-resultado-card'); if(card) card.style.display='none';
+}
+// Todas las transferencias (Activa o Cerrada) que distribuyeron algo a este centro, en orden cronológico
+function transferenciasDeCentro(centroId){
+  return TRANSFERENCIAS.filter(t=>(t.estado==='Activa'||t.estado==='Cerrada')).map(t=>{
+    const d=t.distribucion?JSON.parse(t.distribucion):{};
+    return {t, monto:d[centroId]?parseFloat(d[centroId].monto||0):0};
+  }).filter(x=>x.monto>0).sort((a,b)=>new Date(a.t.fecha)-new Date(b.t.fecha));
+}
+function actualizarTransferenciasPlanilla(){
+  const centroId=gv('pla-centro');
+  const sel=document.getElementById('pla-transferencia');
+  const card=document.getElementById('pla-resultado-card'); if(card) card.style.display='none';
+  sv('pla-fecha-desde',''); sv('pla-fecha-hasta','');
+  if(!centroId){ sel.innerHTML='<option value="">Primero elige un centro</option>'; return; }
+  const lista=transferenciasDeCentro(centroId);
+  if(!lista.length){ sel.innerHTML='<option value="">Este centro no tiene transferencias distribuidas</option>'; return; }
+  sel.innerHTML='<option value="">Seleccionar...</option>'+lista.map(x=>`<option value="${x.t.id}">${x.t.codigo||x.t.descripcion} — ${RD(x.monto)} (${new Date(x.t.fecha+'T00:00:00').toLocaleDateString('es-DO')})</option>`).join('');
+}
+// Al elegir la transferencia, sugiere el período (desde su fecha hasta la siguiente transferencia
+// de ese centro, o hasta hoy) en los campos de fecha — pero quedan editables por si Sandro
+// necesita ajustar el rango manualmente.
+function precargarFechasPlanilla(){
+  const centroId=gv('pla-centro'), trxId=gv('pla-transferencia');
+  if(!centroId||!trxId){ sv('pla-fecha-desde',''); sv('pla-fecha-hasta',''); return; }
+  const lista=transferenciasDeCentro(centroId);
+  const idx=lista.findIndex(x=>x.t.id===trxId);
+  if(idx<0) return;
+  sv('pla-fecha-desde', lista[idx].t.fecha);
+  sv('pla-fecha-hasta', idx+1<lista.length?lista[idx+1].t.fecha:today());
+}
+// Calcula todos los datos de la planilla para un centro + una transferencia especifica,
+// usando el orden cronologico de las transferencias de ese centro para delimitar el periodo
+// (desde la fecha de esta transferencia hasta la fecha de la siguiente que le corresponda a
+// este mismo centro, o hasta hoy si es la ultima).
+function datosPlanilla(centroId, transferenciaId){
+  const centro=CENTROS.find(c=>c.id===centroId);
+  const lista=transferenciasDeCentro(centroId);
+  const idx=lista.findIndex(x=>x.t.id===transferenciaId);
+  if(!centro||idx<0) return null;
+  const actual=lista[idx];
+  // El período sugerido va desde la fecha de esta transferencia hasta la siguiente del mismo
+  // centro (o hasta hoy) — pero si Sandro escribió/cambió las fechas en el formulario, esas mandan.
+  const fechaDesdeManual=gv('pla-fecha-desde'), fechaHastaManual=gv('pla-fecha-hasta');
+  const fechaInicio=fechaDesdeManual||actual.t.fecha;
+  const fechaFin=fechaHastaManual||(idx+1<lista.length?lista[idx+1].t.fecha:null);
+  // Disponible anterior: todo lo distribuido a este centro ANTES de esta transferencia,
+  // menos todo lo ejecutado en cheques antes de la fecha de esta transferencia.
+  const disponibleAnterior=lista.slice(0,idx).reduce((s,x)=>s+x.monto,0)
+    - CHEQUES.filter(c=>c.centro_id===centroId&&c.estado!=='Anulado'&&c.fecha<fechaInicio).reduce((s,c)=>s+montoTotalCheque(c),0);
+  const transferido=actual.monto;
+  const montoTotal=disponibleAnterior+transferido;
+  const impuesto=Math.round(transferido*0.0020*100)/100; // 0.20% sobre el monto transferido
+  const disponibleComprar=montoTotal-impuesto;
+  const cheques=CHEQUES.filter(c=>c.centro_id===centroId&&c.estado!=='Anulado'&&c.fecha>=fechaInicio&&(!fechaFin||c.fecha<fechaFin)).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const totalEjecutado=cheques.reduce((s,c)=>s+montoTotalCheque(c),0);
+  const comisionBancaria=cheques.reduce((s,c)=>s+parseFloat(c.cargos_bancarios||0),0);
+  const disponibleFinal=disponibleComprar-totalEjecutado;
+  return {centro,transferencia:actual.t,fechaInicio,fechaFin,disponibleAnterior,transferido,montoTotal,impuesto,disponibleComprar,cheques,totalEjecutado,comisionBancaria,disponibleFinal};
+}
+function generarPlanillaAuxiliar(){
+  const centroId=gv('pla-centro'), trxId=gv('pla-transferencia');
+  hide('pla-err');
+  if(!centroId||!trxId){ const e=document.getElementById('pla-err'); e.textContent='Selecciona el centro y la transferencia.'; show('pla-err'); return; }
+  const d=datosPlanilla(centroId,trxId);
+  if(!d){ const e=document.getElementById('pla-err'); e.textContent='No se pudo calcular la planilla.'; show('pla-err'); return; }
+  const rubrosOrdenados=[...RUBROS].sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
+  const ks='background:var(--surface2);border-radius:6px;padding:.6rem;text-align:center;border:1px solid var(--border)';
+  const kn='font-family:Arial, sans-serif;font-size:15px;font-weight:800;color:var(--navy)';
+  const kl='font-size:10px;color:var(--text2);margin-top:2px';
+  const th='background:var(--navy);color:#fff;padding:6px 8px;text-align:right;font-size:10px;white-space:nowrap';
+  const td='padding:5px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;white-space:nowrap';
+  let acumulado=0;
+  const filas=d.cheques.map((c,i)=>{
+    acumulado+=montoTotalCheque(c);
+    const total=parseFloat(c.monto_neto||0);
+    return `<tr>
+      <td style="${td};text-align:center">${i+1}</td>
+      <td style="${td};text-align:left">${new Date(c.fecha+'T00:00:00').toLocaleDateString('es-DO')}</td>
+      <td style="${td};text-align:left">${c.num_cheque}</td>
+      <td style="${td};text-align:left;white-space:normal;min-width:160px">${c.concepto||''}</td>
+      <td style="${td}">${RD(c.monto_neto)}</td>
+      <td style="${td}">${RD(c.mto_isr||0)}</td>
+      <td style="${td}">${RD(c.mto_itbis||0)}</td>
+      <td style="${td};font-weight:600">${RD(total)}</td>
+      <td style="${td};color:var(--text2)">${RD(acumulado)}</td>
+      ${rubrosOrdenados.map(r=>`<td style="${td}">${c.rubro_id===r.id?RD(total):'—'}</td>`).join('')}
+      <td style="${td}">${RD(0)}</td>
+    </tr>`;
+  }).join('');
+  const totalesRubro=rubrosOrdenados.map(r=>d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0));
+  const html=`
+    <div style="text-align:center;margin-bottom:1rem">
+      <h3 style="font-family:Arial,sans-serif;color:var(--navy)">DISTRITO EDUCATIVO 16-06 — PLANILLA AUXILIAR</h3>
+    </div>
+    <div class="fgrid" style="margin-bottom:1rem;font-size:12px">
+      <div><strong>Centro:</strong> ${d.centro.codigo} — ${d.centro.nombre}</div>
+      <div><strong>Transferencia:</strong> ${d.transferencia.codigo||d.transferencia.descripcion}</div>
+      <div><strong>Período:</strong> ${new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')} al ${d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy'}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem">
+      <div style="${ks}"><div style="${kn}">${RD(d.disponibleAnterior)}</div><div style="${kl}">Disponible anterior</div></div>
+      <div style="${ks}"><div style="${kn};color:var(--green2)">${RD(d.transferido)}</div><div style="${kl}">Transferido</div></div>
+      <div style="${ks}"><div style="${kn}">${RD(d.montoTotal)}</div><div style="${kl}">Monto total</div></div>
+      <div style="${ks}"><div style="${kn};color:var(--amber)">${RD(d.impuesto)}</div><div style="${kl}">Impuesto 0.20%</div></div>
+      <div style="${ks}"><div style="${kn}">${RD(d.disponibleComprar)}</div><div style="${kl}">Disponible a comprar/pagar</div></div>
+      <div style="${ks}"><div style="${kn};color:var(--red2)">${RD(d.totalEjecutado)}</div><div style="${kl}">Total ejecutado</div></div>
+      <div style="${ks}"><div style="${kn}">${RD(d.comisionBancaria)}</div><div style="${kl}">Comisión bancaria</div></div>
+      <div style="${ks}"><div style="${kn};color:${d.disponibleFinal>=0?'var(--green2)':'var(--red2)'}">${RD(d.disponibleFinal)}</div><div style="${kl}">Disponible</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">Impuesto calculado automáticamente al 0.20% sobre el monto transferido.</div>
+    <div class="twrap"><table id="pla-tabla-principal" style="border-collapse:collapse;width:100%">
+      <thead><tr>
+        <th style="${th}">#</th><th style="${th};text-align:left">Fecha</th><th style="${th};text-align:left">Cheque No.</th><th style="${th};text-align:left">Descripción</th>
+        <th style="${th}">Valor cheque</th><th style="${th}">Ret. ISR</th><th style="${th}">Ret. ITBIS</th><th style="${th}">Total</th><th style="${th}">Ejecutado acum.</th>
+        ${rubrosOrdenados.map(r=>`<th style="${th}">${r.codigo}</th>`).join('')}
+        <th style="${th}">Diferencia</th>
+      </tr></thead>
+      <tbody>${filas||'<tr><td colspan="20" style="text-align:center;padding:1rem;color:var(--text3)">Sin cheques en este período</td></tr>'}</tbody>
+      <tfoot><tr style="background:var(--navy);color:#fff;font-weight:700">
+        <td colspan="7" style="padding:6px 8px;text-align:right;font-size:11px">TOTALES</td>
+        <td style="padding:6px 8px;text-align:right;font-size:11px">${RD(d.totalEjecutado)}</td><td></td>
+        ${totalesRubro.map(t=>`<td style="padding:6px 8px;text-align:right;font-size:11px">${RD(t)}</td>`).join('')}
+        <td></td>
+      </tr></tfoot>
+    </table></div>
+    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">Columnas por rubro (código MINERD) según el catálogo de Rubros de gasto. "Diferencia" verifica que cada cheque quede clasificado en un solo rubro.</p>
+  `;
+  document.getElementById('pla-resultado-titulo').textContent='📑 Planilla Auxiliar — '+d.centro.nombre;
+  document.getElementById('pla-resultado-cont').innerHTML=html;
+  document.getElementById('pla-resultado-card').style.display='block';
+  document.getElementById('pla-resultado-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function generarRendicionCuentas(){
+  const centroId=gv('pla-centro'), trxId=gv('pla-transferencia');
+  hide('pla-err');
+  if(!centroId||!trxId){ const e=document.getElementById('pla-err'); e.textContent='Selecciona el centro y la transferencia.'; show('pla-err'); return; }
+  const d=datosPlanilla(centroId,trxId);
+  if(!d){ const e=document.getElementById('pla-err'); e.textContent='No se pudo calcular la rendición de cuentas.'; show('pla-err'); return; }
+  const categorias=[
+    {titulo:'2. SERVICIOS NO PERSONALES 40%', prefijo:'2', pct:0.40},
+    {titulo:'3. MATERIALES Y SUMINISTRO 40%', prefijo:'3', pct:0.40},
+    {titulo:'ACTIVO NO FINANCIERO 20%', prefijo:'6', pct:0.20}
+  ];
+  const th='background:var(--navy);color:#fff;padding:6px 10px;text-align:right;font-size:11px';
+  const td='padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-size:12px';
+  let granEjecutado=0, granPresupuesto=0;
+  const bloques=categorias.map(cat=>{
+    const rubrosCat=RUBROS.filter(r=>(r.codigo||'').startsWith(cat.prefijo)).sort((a,b)=>(a.codigo||'').localeCompare(b.codigo||''));
+    const presupuestoTrimestral=Math.round(d.transferido*cat.pct*100)/100;
+    let subEjec=0;
+    const filas=rubrosCat.map(r=>{
+      const ejec=d.cheques.filter(c=>c.rubro_id===r.id).reduce((s,c)=>s+parseFloat(c.monto_neto||0),0);
+      subEjec+=ejec;
+      return `<tr><td style="${td};text-align:left">${r.codigo}</td><td style="${td};text-align:left;white-space:normal">${r.nombre}</td><td style="${td}">—</td><td style="${td}">${RD(0)}</td><td style="${td}">${RD(ejec)}</td><td style="${td}">${RD(-ejec)}</td></tr>`;
+    }).join('');
+    granEjecutado+=subEjec; granPresupuesto+=presupuestoTrimestral;
+    const disp=presupuestoTrimestral-subEjec;
+    return `<tr><td colspan="6" style="padding:8px 10px;font-weight:700;background:var(--surface2);text-align:left">${cat.titulo}</td></tr>${filas}
+      <tr style="font-weight:700"><td colspan="2" style="${td};text-align:left">Sub-total</td><td style="${td}">—</td><td style="${td}">${RD(presupuestoTrimestral)}</td><td style="${td}">${RD(subEjec)}</td><td style="${td};color:${disp>=0?'var(--green2)':'var(--red2)'}">${RD(disp)}</td></tr>`;
+  }).join('');
+  const dispGeneral=granPresupuesto-granEjecutado;
+  const html=`
+    <div style="text-align:center;margin-bottom:1rem">
+      <h3 style="font-family:Arial,sans-serif;color:var(--navy)">MINISTERIO DE EDUCACIÓN DE LA REPÚBLICA DOMINICANA</h3>
+      <p style="font-size:12px;color:var(--text2)">Formulario de Rendición de Cuentas</p>
+    </div>
+    <div class="fgrid" style="margin-bottom:1rem;font-size:12px">
+      <div><strong>Nombre de la junta / centro:</strong> ${d.centro.nombre}</div>
+      <div><strong>Código:</strong> ${d.centro.codigo}</div>
+      <div><strong>Fecha de emisión:</strong> ${new Date().toLocaleDateString('es-DO')}</div>
+      <div><strong>Transferencia:</strong> ${d.transferencia.codigo||d.transferencia.descripcion}</div>
+      <div><strong>Monto total ejecutado:</strong> ${RD(granEjecutado)}</div>
+      <div><strong>Período:</strong> ${new Date(d.fechaInicio+'T00:00:00').toLocaleDateString('es-DO')} al ${d.fechaFin?new Date(d.fechaFin+'T00:00:00').toLocaleDateString('es-DO'):'hoy'}</div>
+    </div>
+    <div class="twrap"><table id="pla-tabla-principal" style="border-collapse:collapse;width:100%">
+      <thead><tr><th style="${th};text-align:left">Número</th><th style="${th};text-align:left">Detalles</th><th style="${th}">Presup. Anual</th><th style="${th}">Presup. Trimestral</th><th style="${th}">Ejecutado</th><th style="${th}">Disponible</th></tr></thead>
+      <tbody>${bloques}
+        <tr style="background:var(--navy);color:#fff;font-weight:700"><td colspan="2" style="padding:8px 10px;text-align:left">TOTALES</td><td style="padding:8px 10px;text-align:right">—</td><td style="padding:8px 10px;text-align:right">${RD(granPresupuesto)}</td><td style="padding:8px 10px;text-align:right">${RD(granEjecutado)}</td><td style="padding:8px 10px;text-align:right;color:${dispGeneral>=0?'#86efac':'#fca5a5'}">${RD(dispGeneral)}</td></tr>
+      </tbody>
+    </table></div>
+    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">"Presupuesto Trimestral" se calcula aplicando el 40%/40%/20% de MINERD sobre el monto transferido en este período. "Presupuesto Anual" no se lleva en el sistema — complétalo a mano si lo necesitas.</p>
+  `;
+  document.getElementById('pla-resultado-titulo').textContent='📋 Rendición de Cuentas — '+d.centro.nombre;
+  document.getElementById('pla-resultado-cont').innerHTML=html;
+  document.getElementById('pla-resultado-card').style.display='block';
+  document.getElementById('pla-resultado-card').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function renderTransferencias(data){
